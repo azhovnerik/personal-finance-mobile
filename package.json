@@ -1,0 +1,14 @@
+{
+  "name": "personal-finance-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "generate:sdk": "openapi-typescript openapi/moneydrive.openapi.yaml --output src/shared/lib/api/sdk.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.9.8"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^6.7.0"
+  }
+}

@@ -50,7 +50,16 @@ export default function IndexScreen() {
     let isMounted = true;
 
     const checkAuth = async () => {
-      const token = await getToken();
+      let token: string | null = null;
+
+      try {
+        token = await getToken();
+      } catch {
+        if (isMounted) {
+          router.replace("/login");
+        }
+        return;
+      }
 
       if (!token) {
         if (isMounted) {
@@ -62,7 +71,11 @@ export default function IndexScreen() {
 
       const exp = getTokenExp(token);
       if (exp && exp * 1000 <= Date.now()) {
-        await removeToken();
+        try {
+          await removeToken();
+        } catch {
+          // ignore remove failures; routing to login below
+        }
         if (isMounted) {
           router.replace("/login");
           setIsChecking(false);
@@ -79,7 +92,11 @@ export default function IndexScreen() {
           return;
         }
         if (response.status === 401 || response.status === 403) {
-          await removeToken();
+          try {
+            await removeToken();
+          } catch {
+            // ignore remove failures; routing to login below
+          }
         }
       } catch {
         // ignore network errors, handled below

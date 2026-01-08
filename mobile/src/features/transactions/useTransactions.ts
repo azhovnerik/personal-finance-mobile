@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import client from "../../../../src/shared/lib/api/client";
-import type { components } from "../../../../src/shared/lib/api/sdk";
+import client from "../../shared/lib/api/client";
+import type { components } from "../../shared/lib/api/sdk";
 
 import { getToken } from "../../storage/auth";
 

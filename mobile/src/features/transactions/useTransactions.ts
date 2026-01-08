@@ -57,12 +57,6 @@ export const useTransactions = (): UseTransactionsResult => {
     setIsLoading(true);
     setError(null);
 
-    if (useMocks) {
-      setTransactions(MOCK_TRANSACTIONS);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const token = await getToken();
       if (!token) {
@@ -71,6 +65,12 @@ export const useTransactions = (): UseTransactionsResult => {
         router.replace("/login");
         return;
       }
+
+      if (useMocks) {
+        setTransactions(MOCK_TRANSACTIONS);
+        return;
+      }
+
       const headers = { Authorization: `Bearer ${token}` };
       const { data, error: apiError } = await client.GET("/transactions", {
         headers,

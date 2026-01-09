@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { getToken, removeToken } from "../src/storage/auth";
-import { ScreenContainer, Text } from "../src/shared/ui";
+import { Button, ScreenContainer, Text } from "../src/shared/ui";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
@@ -34,7 +34,7 @@ const getTokenExp = (token: string): number | null => {
 };
 
 const fetchMe = async (token: string) => {
-  return fetch(`${API_BASE_URL}/api/v1/me`, {
+  return fetch(`${API_BASE_URL}/api/v2/user/me`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -45,83 +45,104 @@ const fetchMe = async (token: string) => {
 export default function IndexScreen() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [hasNetworkError, setHasNetworkError] = useState(false);
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    let isMounted = true;
+  const checkAuth = useCallback(async () => {
+    setIsChecking(true);
+    setHasNetworkError(false);
+    const updateIfMounted = (action: () => void) => {
+      if (isMountedRef.current) {
+        action();
+      }
+    };
 
-    const checkAuth = async () => {
-      // Временно очищаем токен для тестирования
-      await removeToken();
+    let token: string | null = null;
 
-      let token: string | null = null;
+    try {
+      token = await getToken();
+    } catch {
+      updateIfMounted(() => {
+        router.replace("/login");
+      });
+      return;
+    }
 
+    if (!token) {
+      updateIfMounted(() => {
+        router.replace("/login");
+        setIsChecking(false);
+      });
+      return;
+    }
+
+    const exp = getTokenExp(token);
+    if (exp && exp * 1000 <= Date.now()) {
       try {
-        token = await getToken();
+        await removeToken();
       } catch {
-        if (isMounted) {
-          router.replace("/login");
-        }
+        // ignore remove failures; routing to login below
+      }
+      updateIfMounted(() => {
+        router.replace("/login");
+        setIsChecking(false);
+      });
+      return;
+    }
+
+    try {
+      const response = await fetchMe(token);
+      if (response.status === 200) {
+        updateIfMounted(() => {
+          router.replace("/home");
+        });
         return;
       }
-
-      if (!token) {
-        if (isMounted) {
-          router.replace("/login");
-          setIsChecking(false);
-        }
-        return;
-      }
-
-      const exp = getTokenExp(token);
-      if (exp && exp * 1000 <= Date.now()) {
+      if (response.status === 401 || response.status === 403) {
         try {
           await removeToken();
         } catch {
           // ignore remove failures; routing to login below
         }
-        if (isMounted) {
-          router.replace("/login");
-          setIsChecking(false);
-        }
-        return;
       }
+    } catch {
+      updateIfMounted(() => {
+        setHasNetworkError(true);
+        setIsChecking(false);
+      });
+      return;
+    }
 
-      try {
-        const response = await fetchMe(token);
-        if (response.status === 200) {
-          if (isMounted) {
-            router.replace("/home");
-          }
-          return;
-        }
-        if (response.status === 401 || response.status === 403) {
-          try {
-            await removeToken();
-          } catch {
-            // ignore remove failures; routing to login below
-          }
-        }
-      } catch {
-        // ignore network errors, handled below
-      }
+    updateIfMounted(() => {
+      router.replace("/login");
+    });
+  }, [router]);
 
-      if (isMounted) {
-        router.replace("/login");
-      }
-    };
-
+  useEffect(() => {
+    isMountedRef.current = true;
     checkAuth().finally(() => {
-      if (isMounted) {
+      if (isMountedRef.current) {
         setIsChecking(false);
       }
     });
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
-  }, [router]);
+  }, [checkAuth]);
 
   if (!isChecking) {
+    if (hasNetworkError) {
+      return (
+        <ScreenContainer>
+          <View style={styles.loader}>
+            <Text>Нет соединения с сервером.</Text>
+            <Button title="Повторить" onPress={checkAuth} />
+          </View>
+        </ScreenContainer>
+      );
+    }
+
     return null;
   }
 

@@ -29,7 +29,7 @@ export interface paths {
       };
     };
   };
-  "/me": {
+  "/api/v2/user/me": {
     get: {
       responses: {
         200: {

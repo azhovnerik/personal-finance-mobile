@@ -38,6 +38,8 @@ const fetchMe = async (token: string) => {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
+      "Cache-Control": "no-store",
+      Pragma: "no-cache",
     },
   });
 };

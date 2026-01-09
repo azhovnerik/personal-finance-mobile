@@ -50,6 +50,9 @@ export default function IndexScreen() {
     let isMounted = true;
 
     const checkAuth = async () => {
+      // Временно очищаем токен для тестирования
+      await removeToken();
+
       let token: string | null = null;
 
       try {

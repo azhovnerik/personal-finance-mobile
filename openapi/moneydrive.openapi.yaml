@@ -5,7 +5,7 @@ info:
 servers:
   - url: https://api.moneydrive.local
 paths:
-  /auth/login:
+  /api/v2/user/auth/login:
     post:
       summary: Login
       operationId: login

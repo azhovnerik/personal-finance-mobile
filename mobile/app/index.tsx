@@ -51,6 +51,7 @@ export default function IndexScreen() {
   const isMountedRef = useRef(true);
 
   const checkAuth = useCallback(async () => {
+    console.log("START checkAuth *********** ")
     setIsChecking(true);
     setHasNetworkError(false);
     const updateIfMounted = (action: () => void) => {
@@ -63,6 +64,7 @@ export default function IndexScreen() {
 
     try {
       token = await getToken();
+      console.log("token: " + token)
     } catch {
       updateIfMounted(() => {
         router.replace("/login");
@@ -93,7 +95,11 @@ export default function IndexScreen() {
     }
 
     try {
+      console.log("START fetchMe *********** ")
       const response = await fetchMe(token);
+      console.log("response: " + response)
+      console.log("response.status: " + response.status)
+      console.log("response.body: " + response.body)
       if (response.status === 200) {
         updateIfMounted(() => {
           router.replace("/home");

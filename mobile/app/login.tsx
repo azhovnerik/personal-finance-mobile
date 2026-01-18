@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useLogin } from "../src/features/auth/useLogin";
-import { Button, ScreenContainer, Text } from "../src/shared/ui";
+import { Button, Input, ScreenContainer, Text } from "../src/shared/ui";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     const isSuccess = await login(email.trim(), password);
     if (isSuccess) {
-      router.replace("/home");
+      router.replace("/(tabs)");
     }
   };
 
@@ -22,7 +22,7 @@ export default function LoginScreen() {
     <ScreenContainer>
       <View style={styles.content}>
         <Text variant="title">Войти</Text>
-        <TextInput
+        <Input
           placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
@@ -30,16 +30,14 @@ export default function LoginScreen() {
           value={email}
           onChangeText={setEmail}
           editable={!isLoading}
-          style={styles.input}
         />
-        <TextInput
+        <Input
           placeholder="Пароль"
           secureTextEntry
           textContentType="password"
           value={password}
           onChangeText={setPassword}
           editable={!isLoading}
-          style={styles.input}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
@@ -55,15 +53,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: "#111827",
   },
   error: {
     color: "#dc2626",

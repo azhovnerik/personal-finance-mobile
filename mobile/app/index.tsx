@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { getToken, removeToken } from "../src/storage/auth";
-import { Button, ScreenContainer, Text } from "../src/shared/ui";
+import { Button, ScreenContainer, Text, colors } from "../src/shared/ui";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
@@ -51,7 +51,6 @@ export default function IndexScreen() {
   const isMountedRef = useRef(true);
 
   const checkAuth = useCallback(async () => {
-    console.log("START checkAuth *********** ")
     setIsChecking(true);
     setHasNetworkError(false);
     const updateIfMounted = (action: () => void) => {
@@ -64,7 +63,6 @@ export default function IndexScreen() {
 
     try {
       token = await getToken();
-      console.log("token: " + token)
     } catch {
       updateIfMounted(() => {
         router.replace("/login");
@@ -95,14 +93,10 @@ export default function IndexScreen() {
     }
 
     try {
-      console.log("START fetchMe *********** ")
       const response = await fetchMe(token);
-      console.log("response: " + response)
-      console.log("response.status: " + response.status)
-      console.log("response.body: " + response.body)
       if (response.status === 200) {
         updateIfMounted(() => {
-          router.replace("/home");
+          router.replace("/(tabs)");
         });
         return;
       }
@@ -157,7 +151,7 @@ export default function IndexScreen() {
   return (
     <ScreenContainer>
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#1f2937" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text>Проверяем авторизацию...</Text>
       </View>
     </ScreenContainer>

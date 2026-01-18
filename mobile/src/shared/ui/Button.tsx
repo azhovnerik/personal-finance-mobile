@@ -6,9 +6,11 @@ import {
   PressableProps,
 } from "react-native";
 
+import { colors, radius, spacing } from "./theme";
+
 type ButtonProps = PressableProps & {
   title: string;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "ghost";
   style?: ViewStyle;
 };
 
@@ -30,29 +32,37 @@ export function Button({ title, variant = "primary", style, ...props }: ButtonPr
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   primary: {
-    backgroundColor: "#2563eb",
+    backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: "#e5e7eb",
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  ghost: {
+    backgroundColor: "transparent",
   },
   pressed: {
     opacity: 0.8,
   },
   text: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
   },
   primaryText: {
-    color: "#ffffff",
+    color: colors.card,
   },
   secondaryText: {
-    color: "#111827",
+    color: colors.textPrimary,
+  },
+  ghostText: {
+    color: colors.primary,
   },
 });

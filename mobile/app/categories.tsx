@@ -1,18 +1,11 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
+import { Button, Card, Chip, Input, ScreenContainer, Text, spacing } from "../src/shared/ui";
+import { mockCategoryTree } from "../src/shared/mocks";
 
-const INCOME_CATEGORIES = [
-  { id: "i1", name: "Зарплата", subcategories: ["Бонус", "Премия"] },
-  { id: "i2", name: "Фриланс", subcategories: ["Проекты", "Консалтинг"] },
-];
-
-const EXPENSE_CATEGORIES = [
-  { id: "e1", name: "Продукты", subcategories: ["Супермаркет", "Кафе"] },
-  { id: "e2", name: "Дом", subcategories: ["Коммунальные", "Ремонт"] },
-  { id: "e3", name: "Транспорт", subcategories: ["Такси", "Метро"] },
-];
+const incomeCategories = mockCategoryTree.filter((category) => category.type === "INCOME");
+const expenseCategories = mockCategoryTree.filter((category) => category.type === "EXPENSES");
 
 export default function CategoriesScreen() {
   const router = useRouter();
@@ -25,7 +18,7 @@ export default function CategoriesScreen() {
             <Text variant="title">Категории</Text>
             <Text variant="caption">Доходы и расходы с подкатегориями</Text>
           </View>
-          <Button title="Назад" variant="secondary" onPress={() => router.back()} />
+          <Button title="Назад" variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
         </View>
 
         <Card style={styles.formCard}>
@@ -41,22 +34,20 @@ export default function CategoriesScreen() {
           <Text variant="caption">Редактирование и удаление</Text>
         </View>
         <View style={styles.list}>
-          {INCOME_CATEGORIES.map((category) => (
+          {incomeCategories.map((category) => (
             <Card key={category.id} style={styles.categoryCard}>
               <View style={styles.categoryHeader}>
                 <Text>{category.name}</Text>
                 <View style={styles.actionRow}>
-                  <Button title="Изменить" variant="secondary" />
-                  <Button title="Удалить" variant="ghost" />
+                  <Button title="Изменить" variant="secondary" size="sm" />
+                  <Button title="Удалить" variant="ghost" size="sm" />
                 </View>
               </View>
               <View style={styles.subcategoryRow}>
-                {category.subcategories.map((subcategory) => (
-                  <Text key={subcategory} style={styles.subcategoryChip}>
-                    {subcategory}
-                  </Text>
+                {(category.subcategories ?? []).map((subcategory) => (
+                  <Chip key={subcategory.id} label={subcategory.name} />
                 ))}
-                <Text style={styles.subcategoryChip}>+ Подкатегория</Text>
+                <Chip label="+ Подкатегория" isActive />
               </View>
             </Card>
           ))}
@@ -67,22 +58,20 @@ export default function CategoriesScreen() {
           <Text variant="caption">Группы для планирования бюджета</Text>
         </View>
         <View style={styles.list}>
-          {EXPENSE_CATEGORIES.map((category) => (
+          {expenseCategories.map((category) => (
             <Card key={category.id} style={styles.categoryCard}>
               <View style={styles.categoryHeader}>
                 <Text>{category.name}</Text>
                 <View style={styles.actionRow}>
-                  <Button title="Изменить" variant="secondary" />
-                  <Button title="Удалить" variant="ghost" />
+                  <Button title="Изменить" variant="secondary" size="sm" />
+                  <Button title="Удалить" variant="ghost" size="sm" />
                 </View>
               </View>
               <View style={styles.subcategoryRow}>
-                {category.subcategories.map((subcategory) => (
-                  <Text key={subcategory} style={styles.subcategoryChip}>
-                    {subcategory}
-                  </Text>
+                {(category.subcategories ?? []).map((subcategory) => (
+                  <Chip key={subcategory.id} label={subcategory.name} />
                 ))}
-                <Text style={styles.subcategoryChip}>+ Подкатегория</Text>
+                <Chip label="+ Подкатегория" isActive />
               </View>
             </Card>
           ))}
@@ -127,15 +116,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xs,
-  },
-  subcategoryChip: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    fontSize: 12,
-    color: colors.textSecondary,
   },
 });

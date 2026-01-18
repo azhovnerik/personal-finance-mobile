@@ -8,43 +8,90 @@ import {
 
 import { colors, radius, spacing } from "./theme";
 
+type ButtonTone = "primary" | "secondary" | "success" | "danger" | "info";
+type ButtonSize = "sm" | "md" | "lg";
+
 type ButtonProps = PressableProps & {
   title: string;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "outline";
+  tone?: ButtonTone;
+  size?: ButtonSize;
   style?: ViewStyle;
 };
 
-export function Button({ title, variant = "primary", style, ...props }: ButtonProps) {
+const toneColors: Record<ButtonTone, string> = {
+  primary: colors.primary,
+  secondary: colors.secondary,
+  success: colors.success,
+  danger: colors.danger,
+  info: colors.info,
+};
+
+export function Button({
+  title,
+  variant = "primary",
+  tone = "primary",
+  size = "md",
+  style,
+  ...props
+}: ButtonProps) {
+  const toneColor = toneColors[tone];
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.base,
+        styles[`size${size}`],
         styles[variant],
+        variant === "outline" && { borderColor: toneColor },
         pressed && styles.pressed,
         style,
       ]}
       {...props}
     >
-      <RNText style={[styles.text, styles[`${variant}Text`]]}>{title}</RNText>
+      <RNText
+        style={[
+          styles.text,
+          styles[`text${size}`],
+          styles[`${variant}Text`],
+          variant === "outline" && { color: toneColor },
+        ]}
+      >
+        {title}
+      </RNText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  sizesm: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  sizemd: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  sizelg: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   primary: {
     backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
+  },
+  outline: {
+    backgroundColor: colors.surface,
   },
   ghost: {
     backgroundColor: "transparent",
@@ -53,14 +100,25 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   text: {
-    fontSize: 15,
     fontWeight: "600",
   },
+  textsm: {
+    fontSize: 12,
+  },
+  textmd: {
+    fontSize: 14,
+  },
+  textlg: {
+    fontSize: 16,
+  },
   primaryText: {
-    color: colors.card,
+    color: colors.surface,
   },
   secondaryText: {
     color: colors.textPrimary,
+  },
+  outlineText: {
+    color: colors.primary,
   },
   ghostText: {
     color: colors.primary,

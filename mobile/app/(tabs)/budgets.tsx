@@ -1,25 +1,12 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
-
-const BUDGETS = [
-  {
-    id: "b1",
-    title: "Семейные расходы",
-    amount: "₴ 20 000",
-    spent: "₴ 12 450",
-    categories: ["Продукты", "Дом", "Транспорт"],
-  },
-  {
-    id: "b2",
-    title: "Личные цели",
-    amount: "₴ 8 000",
-    spent: "₴ 6 120",
-    categories: ["Обучение", "Спорт"],
-  },
-];
+import { formatCurrency } from "../../src/shared/utils/format";
+import { mockBudgets, mockUser } from "../../src/shared/mocks";
 
 export default function BudgetsScreen() {
+  const baseCurrency = mockUser.baseCurrency ?? "UAH";
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -28,7 +15,7 @@ export default function BudgetsScreen() {
             <Text variant="title">Бюджеты</Text>
             <Text variant="caption">Планирование и контроль расходов</Text>
           </View>
-          <Button title="Новый" />
+          <Button title="Новый" variant="outline" tone="primary" size="sm" />
         </View>
 
         <Card style={styles.formCard}>
@@ -45,24 +32,49 @@ export default function BudgetsScreen() {
         </View>
 
         <View style={styles.list}>
-          {BUDGETS.map((budget) => (
+          {mockBudgets.map((budget) => (
             <Card key={budget.id} style={styles.budgetCard}>
               <View style={styles.budgetHeader}>
                 <View>
-                  <Text>{budget.title}</Text>
-                  <Text variant="caption">Лимит {budget.amount}</Text>
+                  <Text>{budget.month}</Text>
+                  <Text variant="caption">
+                    Лимит {formatCurrency(budget.totalExpense ?? 0, budget.baseCurrency ?? baseCurrency)}
+                  </Text>
                 </View>
-                <Text style={styles.spentValue}>{budget.spent}</Text>
+                <Text style={styles.spentValue}>
+                  {formatCurrency(budget.totalExpenseFact ?? 0, budget.baseCurrency ?? baseCurrency)}
+                </Text>
               </View>
               <View style={styles.categoryRow}>
-                {budget.categories.map((category) => (
-                  <Chip key={category} label={category} />
+                {(budget.expenseBudgetCategories ?? []).map((category) => (
+                  <Chip
+                    key={category.id}
+                    label={category.category.name}
+                  />
                 ))}
                 <Chip label="+ Категория" isActive />
               </View>
+              <View style={styles.summaryRow}>
+                <Text variant="caption">План</Text>
+                <Text style={styles.summaryValue}>
+                  {formatCurrency(budget.totalExpense ?? 0, budget.baseCurrency ?? baseCurrency)}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text variant="caption">Факт</Text>
+                <Text style={[styles.summaryValue, styles.negativeValue]}>
+                  {formatCurrency(budget.totalExpenseFact ?? 0, budget.baseCurrency ?? baseCurrency)}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text variant="caption">Остаток</Text>
+                <Text style={[styles.summaryValue, styles.positiveValue]}>
+                  {formatCurrency(budget.totalExpenseLeftover ?? 0, budget.baseCurrency ?? baseCurrency)}
+                </Text>
+              </View>
               <View style={styles.actionRow}>
-                <Button title="Изменить" variant="secondary" />
-                <Button title="Удалить" variant="ghost" />
+                <Button title="Изменить" variant="secondary" size="sm" />
+                <Button title="Удалить" variant="ghost" size="sm" />
               </View>
             </Card>
           ))}
@@ -72,15 +84,30 @@ export default function BudgetsScreen() {
           <Text variant="subtitle">Сводка бюджета</Text>
           <View style={styles.summaryRow}>
             <Text>Всего запланировано</Text>
-            <Text style={styles.summaryValue}>₴ 28 000</Text>
+            <Text style={styles.summaryValue}>
+              {formatCurrency(
+                mockBudgets.reduce((sum, budget) => sum + (budget.totalExpense ?? 0), 0),
+                baseCurrency,
+              )}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text>Потрачено</Text>
-            <Text style={[styles.summaryValue, { color: colors.danger }]}>₴ 18 570</Text>
+            <Text style={[styles.summaryValue, styles.negativeValue]}>
+              {formatCurrency(
+                mockBudgets.reduce((sum, budget) => sum + (budget.totalExpenseFact ?? 0), 0),
+                baseCurrency,
+              )}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text>Остаток</Text>
-            <Text style={[styles.summaryValue, { color: colors.success }]}>₴ 9 430</Text>
+            <Text style={[styles.summaryValue, styles.positiveValue]}>
+              {formatCurrency(
+                mockBudgets.reduce((sum, budget) => sum + (budget.totalExpenseLeftover ?? 0), 0),
+                baseCurrency,
+              )}
+            </Text>
           </View>
         </Card>
       </ScrollView>
@@ -116,7 +143,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   spentValue: {
-    color: colors.warning,
+    color: colors.accent,
     fontWeight: "600",
   },
   categoryRow: {
@@ -137,5 +164,11 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontWeight: "600",
+  },
+  negativeValue: {
+    color: colors.danger,
+  },
+  positiveValue: {
+    color: colors.success,
   },
 });

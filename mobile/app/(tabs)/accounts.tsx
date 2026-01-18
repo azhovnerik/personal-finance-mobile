@@ -1,27 +1,8 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
-
-const ACCOUNTS = [
-  {
-    id: "a1",
-    name: "Основной счет",
-    balance: "₴ 42 600",
-    type: "Банк",
-  },
-  {
-    id: "a2",
-    name: "Карта путешествий",
-    balance: "₴ 18 900",
-    type: "Карта",
-  },
-  {
-    id: "a3",
-    name: "Наличные",
-    balance: "₴ 2 200",
-    type: "Кошелек",
-  },
-];
+import { formatCurrency } from "../../src/shared/utils/format";
+import { mockAccountDtos, mockUser } from "../../src/shared/mocks";
 
 export default function AccountsScreen() {
   return (
@@ -32,7 +13,7 @@ export default function AccountsScreen() {
             <Text variant="title">Счета</Text>
             <Text variant="caption">Управление балансами и переводами</Text>
           </View>
-          <Button title="Новый" />
+          <Button title="Новый" variant="outline" tone="primary" size="sm" />
         </View>
 
         <Card style={styles.formCard}>
@@ -49,22 +30,31 @@ export default function AccountsScreen() {
         </View>
 
         <View style={styles.list}>
-          {ACCOUNTS.map((account) => (
+          {mockAccountDtos.map((account) => (
             <Card key={account.id} style={styles.accountCard}>
               <View style={styles.accountHeader}>
-                <View>
+                <View style={styles.accountInfo}>
                   <Text>{account.name}</Text>
                   <Text variant="caption">{account.type}</Text>
                 </View>
-                <Text style={styles.balanceValue}>{account.balance}</Text>
+                <View style={styles.accountBalance}>
+                  <Text style={styles.balanceValue}>
+                    {formatCurrency(account.balance ?? 0, account.currency ?? mockUser.baseCurrency ?? "UAH")}
+                  </Text>
+                  {account.currency && account.currency !== mockUser.baseCurrency ? (
+                    <Text variant="caption">
+                      ≈ {formatCurrency(account.balanceInBase ?? 0, mockUser.baseCurrency ?? "UAH")}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
               <View style={styles.actionRow}>
-                <Button title="Изменить" variant="secondary" />
-                <Button title="Баланс" variant="secondary" />
+                <Button title="Изменить" variant="secondary" size="sm" />
+                <Button title="Баланс" variant="secondary" size="sm" />
               </View>
               <View style={styles.actionRow}>
-                <Button title="Трансфер" variant="secondary" />
-                <Button title="Удалить" variant="ghost" />
+                <Button title="Трансфер" variant="secondary" size="sm" />
+                <Button title="Удалить" variant="ghost" size="sm" />
               </View>
             </Card>
           ))}
@@ -109,8 +99,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  accountInfo: {
+    gap: 2,
+  },
+  accountBalance: {
+    alignItems: "flex-end",
+  },
   balanceValue: {
-    fontWeight: "700",
+    fontWeight: "600",
     color: colors.primaryDark,
   },
   actionRow: {

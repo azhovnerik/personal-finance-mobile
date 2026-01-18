@@ -32,17 +32,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surfaceMuted,
   },
   chipActive: {
     borderColor: colors.primary,
-    backgroundColor: "#dbeafe",
+    backgroundColor: "rgba(15, 118, 110, 0.12)",
   },
   chipPressed: {
     opacity: 0.8,
   },
   text: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: "500",
   },

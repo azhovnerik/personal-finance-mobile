@@ -3,7 +3,7 @@ import { Text as RNText, StyleSheet, TextProps as RNTextProps } from "react-nati
 import { colors } from "./theme";
 
 type TextProps = RNTextProps & {
-  variant?: "title" | "body" | "caption" | "subtitle";
+  variant?: "title" | "body" | "caption" | "subtitle" | "heading";
 };
 
 export function Text({ style, variant = "body", ...props }: TextProps) {
@@ -15,15 +15,21 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "600",
+    color: colors.heading,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: colors.heading,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
   },
   body: {
-    fontSize: 16,
+    fontSize: 15,
   },
   caption: {
     fontSize: 12,

@@ -1,6 +1,8 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { formatCurrency } from "../../src/shared/utils/format";
+import { mockTransactions, mockUser } from "../../src/shared/mocks";
 
 const FILTERS = [
   { label: "Все", active: true },
@@ -9,34 +11,9 @@ const FILTERS = [
   { label: "Счет: Основной", active: false },
 ];
 
-const TRANSACTIONS = [
-  {
-    id: "t1",
-    title: "Супермаркет",
-    category: "Продукты",
-    account: "Основной счет",
-    amount: "-₴ 2 350",
-    date: "Сегодня, 12:40",
-  },
-  {
-    id: "t2",
-    title: "Такси",
-    category: "Транспорт",
-    account: "Карта",
-    amount: "-₴ 480",
-    date: "Сегодня, 08:10",
-  },
-  {
-    id: "t3",
-    title: "Фриланс",
-    category: "Доход",
-    account: "Основной счет",
-    amount: "+₴ 9 200",
-    date: "Вчера, 18:30",
-  },
-];
-
 export default function TransactionsScreen() {
+  const baseCurrency = mockUser.baseCurrency ?? "UAH";
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -45,7 +22,7 @@ export default function TransactionsScreen() {
             <Text variant="title">Транзакции</Text>
             <Text variant="caption">Список операций и фильтры</Text>
           </View>
-          <Button title="Добавить" />
+          <Button title="Добавить" variant="outline" tone="primary" size="sm" />
         </View>
 
         <View style={styles.filterRow}>
@@ -69,24 +46,27 @@ export default function TransactionsScreen() {
         </View>
 
         <View style={styles.list}>
-          {TRANSACTIONS.map((transaction) => (
+          {mockTransactions.map((transaction) => (
             <Card key={transaction.id} style={styles.transactionCard}>
               <View style={styles.transactionHeader}>
                 <View>
-                  <Text>{transaction.title}</Text>
-                  <Text variant="caption">{transaction.category}</Text>
+                  <Text>{transaction.category.name}</Text>
+                  <Text variant="caption">{transaction.comment}</Text>
                 </View>
                 <Text
-                  style={transaction.amount.startsWith("-") ? styles.negativeValue : styles.positiveValue}
+                  style={
+                    transaction.direction === "DECREASE" ? styles.negativeValue : styles.positiveValue
+                  }
                 >
-                  {transaction.amount}
+                  {transaction.direction === "DECREASE" ? "-" : "+"}
+                  {formatCurrency(transaction.amount, transaction.currency ?? baseCurrency)}
                 </Text>
               </View>
               <Text variant="caption">{transaction.date}</Text>
-              <Text variant="caption">{transaction.account}</Text>
+              <Text variant="caption">{transaction.account.name}</Text>
               <View style={styles.actionRow}>
-                <Button title="Редактировать" variant="secondary" />
-                <Button title="Удалить" variant="ghost" />
+                <Button title="Редактировать" variant="secondary" size="sm" />
+                <Button title="Удалить" variant="ghost" size="sm" />
               </View>
             </Card>
           ))}

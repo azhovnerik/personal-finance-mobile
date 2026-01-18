@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 
 import client from "../../shared/lib/api/client";
 import type { components } from "../../shared/lib/api/sdk";
 
-import { getToken } from "../../storage/auth";
+import { getToken, removeToken } from "../../storage/auth";
 
 type Transaction = components["schemas"]["Transaction"];
 
@@ -45,7 +46,9 @@ const MOCK_TRANSACTIONS: Transaction[] = [
 ];
 
 export const useTransactions = (): UseTransactionsResult => {
-  const useMocks = process.env.EXPO_PUBLIC_USE_MOCKS === "true";
+  const useMocks =
+    __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,20 +57,32 @@ export const useTransactions = (): UseTransactionsResult => {
     setIsLoading(true);
     setError(null);
 
-    if (useMocks) {
-      setTransactions(MOCK_TRANSACTIONS);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const token = await getToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      if (!token) {
+        setTransactions([]);
+        setError("Сессия истекла. Войдите снова.");
+        router.replace("/login");
+        return;
+      }
+
+      if (useMocks) {
+        setTransactions(MOCK_TRANSACTIONS);
+        return;
+      }
+
+      const headers = { Authorization: `Bearer ${token}` };
       const { data, error: apiError } = await client.GET("/transactions", {
         headers,
       });
 
       if (apiError || !data) {
+        if (apiError?.status === 401) {
+          await removeToken();
+          setError("Сессия истекла. Войдите снова.");
+          router.replace("/login");
+          return;
+        }
         setTransactions([]);
         setError("Не удалось загрузить транзакции.");
       } else {
@@ -79,7 +94,7 @@ export const useTransactions = (): UseTransactionsResult => {
     } finally {
       setIsLoading(false);
     }
-  }, [useMocks]);
+  }, [router, useMocks]);
 
   useEffect(() => {
     void loadTransactions();

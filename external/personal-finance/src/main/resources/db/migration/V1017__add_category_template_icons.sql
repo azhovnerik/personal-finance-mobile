@@ -1,0 +1,33 @@
+-- Assign Bootstrap icon classes to category templates
+UPDATE category_template SET icon = 'bi-cash-stack' WHERE code = 'SALARY';
+UPDATE category_template SET icon = 'bi-trophy' WHERE code = 'BONUS';
+UPDATE category_template SET icon = 'bi-laptop' WHERE code = 'FREELANCE';
+UPDATE category_template SET icon = 'bi-piggy-bank' WHERE code = 'INTEREST';
+UPDATE category_template SET icon = 'bi-cash-coin' WHERE code = 'DIVIDENDS';
+UPDATE category_template SET icon = 'bi-house' WHERE code = 'RENT';
+UPDATE category_template SET icon = 'bi-arrow-repeat' WHERE code = 'CASHBACK';
+UPDATE category_template SET icon = 'bi-gift' WHERE code = 'GIFTS_IN';
+UPDATE category_template SET icon = 'bi-wallet' WHERE code = 'OTHER_INCOME';
+
+UPDATE category_template SET icon = 'bi-basket' WHERE code = 'GROCERIES';
+UPDATE category_template SET icon = 'bi-cup-straw' WHERE code = 'RESTAURANTS';
+UPDATE category_template SET icon = 'bi-bus-front' WHERE code = 'TRANSPORT';
+UPDATE category_template SET icon = 'bi-building' WHERE code = 'RENT_HOME';
+UPDATE category_template SET icon = 'bi-plug' WHERE code = 'UTILITIES';
+UPDATE category_template SET icon = 'bi-phone' WHERE code = 'MOBILE_INTERNET';
+UPDATE category_template SET icon = 'bi-heart-pulse' WHERE code = 'HEALTH_PHARMACY';
+UPDATE category_template SET icon = 'bi-shirt' WHERE code = 'CLOTHES';
+UPDATE category_template SET icon = 'bi-controller' WHERE code = 'ENTERTAINMENT';
+UPDATE category_template SET icon = 'bi-credit-card' WHERE code = 'SUBSCRIPTIONS';
+UPDATE category_template SET icon = 'bi-airplane' WHERE code = 'TRAVEL';
+UPDATE category_template SET icon = 'bi-balloon' WHERE code = 'KIDS';
+UPDATE category_template SET icon = 'bi-fuel-pump' WHERE code = 'AUTO_FUEL';
+UPDATE category_template SET icon = 'bi-shield-check' WHERE code = 'AUTO_INSURANCE';
+UPDATE category_template SET icon = 'bi-wrench' WHERE code = 'AUTO_SERVICE';
+UPDATE category_template SET icon = 'bi-tools' WHERE code = 'REPAIRS';
+UPDATE category_template SET icon = 'bi-gift-fill' WHERE code = 'GIFTS_OUT';
+UPDATE category_template SET icon = 'bi-bicycle' WHERE code = 'SPORT_HOBBY';
+UPDATE category_template SET icon = 'bi-bank' WHERE code = 'TAXES';
+UPDATE category_template SET icon = 'bi-heart' WHERE code = 'CHARITY';
+UPDATE category_template SET icon = 'bi-graph-up' WHERE code = 'INVESTMENTS_SAVINGS';
+UPDATE category_template SET icon = 'bi-three-dots' WHERE code = 'OTHER_EXPENSE';

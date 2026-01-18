@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{subscription.title}">Subscription</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+</head>
+<header th:insert="blocks/header :: menu"></header>
+<body th:data-activation-plan="${activationPendingPlan}" th:data-status-url="@{/subscriptions/status}">
+<div class="container mt-4 mb-5">
+    <h1 class="mb-4" th:text="#{subscription.heading}">Subscription</h1>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${infoMessage}" class="alert alert-info" th:text="${infoMessage}"></div>
+    <div th:if="${warningMessage}" class="alert alert-warning" th:text="${warningMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div id="jsMessage" class="alert d-none" role="alert"></div>
+
+    <div th:if="${checkoutFormHtml}" class="alert alert-info">
+        <strong th:text="#{subscription.checkout.ready.title}">Ready!</strong>
+        <span th:text="#{subscription.checkout.ready.message}">Use the embedded LiqPay form below to confirm your subscription payment. If it does not appear, submit the manual form.</span>
+    </div>
+
+    <div th:if="${checkoutUrl}" class="alert alert-primary">
+        <strong th:text="#{subscription.checkout.redirect.title}">Almost there!</strong>
+        <span class="ms-1">
+            <a class="alert-link" th:href="${checkoutUrl}" target="_blank" th:text="#{subscription.checkout.redirect.link}">Open the LiqPay checkout page</a>
+            <span class="ms-1" th:text="#{subscription.checkout.redirect.message}">to enter your card details. The page will open in a new tab.</span>
+        </span>
+    </div>
+
+    <div id="liqpay-embed-container" class="mt-3 d-none"></div>
+    <div id="liqpay-manual-container" class="mt-3" th:classappend="${checkoutFormHtml} != null ? '' : ' d-none'"
+         th:utext="${checkoutFormHtml}"></div>
+
+    <section class="mb-5" th:if="${subscription != null}">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h4" th:text="#{subscription.status.heading}">Current status</h2>
+                <p th:if="${subscription.status == null}" th:text="#{subscription.status.empty}">No subscription found. Please choose a plan to get started.</p>
+                <div th:if="${subscription.status != null}">
+                    <p class="mb-1"><strong th:text="#{subscription.status.label}">Status:</strong> <span th:text="${subscription.status}"></span></p>
+                    <p class="mb-1" th:if="${subscription.planDisplayName != null}">
+                        <strong th:text="#{subscription.status.planLabel}">Plan:</strong>
+                        <span th:text="${subscription.planDisplayName}"></span>
+                    </p>
+                    <p class="mb-1" th:if="${subscription.trial}">
+                        <strong th:text="#{subscription.status.trialEnds}">Trial ends:</strong>
+                        <span th:text="${#temporals.format(subscription.trialEndsAt, 'yyyy-MM-dd')}"></span>
+                    </p>
+                    <p class="mb-1" th:if="${!subscription.trial && subscription.currentPeriodEndsAt != null}">
+                        <strong th:text="#{subscription.status.periodEnds}">Current period ends:</strong>
+                        <span th:text="${#temporals.format(subscription.currentPeriodEndsAt, 'yyyy-MM-dd')}"></span>
+                    </p>
+                    <div class="alert alert-warning mt-3" th:if="${subscription.paymentRequired}">
+                        <span th:text="#{subscription.status.paymentRequired}">To continue using MoneyDrive.me please add your card and activate the Standard plan.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4" th:text="#{subscription.plans.heading}">Choose a plan</h2>
+        <form id="subscription-selection-form" th:action="@{/subscriptions/select}" th:object="${selectionForm}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                <div class="col" th:each="plan : ${subscription.plans}">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h3 class="h5" th:text="${plan.displayName}"></h3>
+                            <div class="d-flex align-items-baseline gap-2 mb-1">
+                                <span class="h5 text-muted text-decoration-line-through mb-0"
+                                      th:if="${plan.oldPrice != null && plan.oldPrice.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                                      th:text="|${plan.oldPrice} ${plan.currencyLabel != null && !#strings.isEmpty(plan.currencyLabel) ? plan.currencyLabel : plan.currency}|"></span>
+                                <p class="display-6 mb-0"
+                                   th:text="|${plan.price} ${plan.currencyLabel != null && !#strings.isEmpty(plan.currencyLabel) ? plan.currencyLabel : plan.currency}|"></p>
+                            </div>
+                            <p class="text-muted" th:if="${plan.trialPeriodDays != null}" th:text="#{subscription.plans.trial(${plan.trialPeriodDays})}">Includes trial for 14 days.</p>
+                            <div class="alert alert-success py-1 px-2 mb-2"
+                                 th:if="${subscription.status == T(com.example.personalFinance.model.SubscriptionStatus).ACTIVE} and ${subscription.planCode} == ${plan.code}">
+                                <span th:text="#{subscription.plan.active}">Current active plan</span>
+                            </div>
+                            <div class="mt-auto">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" th:field="*{planId}" th:value="${plan.id}"
+                                           th:disabled="${subscription.status == T(com.example.personalFinance.model.SubscriptionStatus).ACTIVE} and ${subscription.planCode} == ${plan.code}"/>
+                                    <label class="form-check-label" th:text="#{subscription.plans.selectLabel}">Select this plan</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn md-btn md-btn-primary" th:text="#{subscription.plans.submit}">Continue to payment</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="mb-5" th:if="${subscription.cancellable}">
+        <a class="link-danger" data-bs-toggle="collapse" href="#cancelSubscription" role="button"
+           aria-expanded="false" aria-controls="cancelSubscription" th:text="#{subscription.cancel.link}">Cancel subscription</a>
+        <div class="collapse mt-3" id="cancelSubscription">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5" th:text="#{subscription.cancel.heading}">Cancel subscription</h2>
+                    <p class="text-muted" th:text="#{subscription.cancel.message}">We are sorry to see you go. Please tell us why you are cancelling.</p>
+                    <form th:action="@{/subscriptions/cancel}" th:object="${cancellationForm}" method="post" class="row g-3">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <div class="col-12 col-md-6">
+                            <label for="reasonType" class="form-label" th:text="#{subscription.cancel.reason.label}">Reason</label>
+                            <select id="reasonType" class="form-select" th:field="*{reasonType}">
+                                <option value="" disabled selected th:text="#{subscription.cancel.reason.placeholder}">Select a reason</option>
+                                <option th:each="reason : ${cancellationReasons}" th:value="${reason}"
+                                        th:text="${reason}"></option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="additionalDetails" class="form-label" th:text="#{subscription.cancel.details.label}">Tell us more (optional)</label>
+                            <textarea id="additionalDetails" class="form-control" rows="3"
+                                      th:field="*{additionalDetails}" th:placeholder="#{subscription.cancel.details.placeholder}"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn md-btn md-btn-outline md-btn-outline-danger" th:text="#{subscription.cancel.submit}">Cancel subscription</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+<script src="https://static.liqpay.ua/libjs/checkout.js"></script>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        const messageBox = document.getElementById('jsMessage');
+        const embedContainer = document.getElementById('liqpay-embed-container');
+        const manualContainer = document.getElementById('liqpay-manual-container');
+        const pendingPlan = document.body.dataset.activationPlan;
+        const statusUrl = document.body.dataset.statusUrl;
+
+        const messages = {
+            selectPlanRequired: /*[[#{subscription.js.selectPlanRequired}]]*/ 'Please choose a subscription plan.',
+            embedReady: /*[[#{subscription.js.embedReady}]]*/ 'Complete your payment using the embedded LiqPay form below.',
+            embedFallback: /*[[#{subscription.js.embedFallback}]]*/ 'We could not load the embedded checkout. Use the LiqPay form below to finish the payment.',
+            checkoutPage: /*[[#{subscription.js.checkoutPage}]]*/ 'Open the LiqPay checkout page to complete the payment.',
+            checkoutUnavailable: /*[[#{subscription.js.checkoutUnavailable}]]*/ 'Unable to prepare LiqPay checkout. Please try again later.',
+            checkoutError: /*[[#{subscription.js.checkoutError}]]*/ 'Unable to start checkout. Please try again later.',
+            activationDelayed: /*[[#{subscription.js.activationDelayed}]]*/ 'Subscription activation is taking longer than expected. Refresh the page in a few seconds.',
+            activationStatusError: /*[[#{subscription.js.activationStatusError}]]*/ 'Unable to verify subscription status. Refresh the page later.'
+        };
+
+        if (pendingPlan && statusUrl) {
+            startActivationPolling(statusUrl, pendingPlan);
+        }
+
+        const form = document.getElementById('subscription-selection-form');
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            hideMessage(messageBox);
+            const formData = new FormData(form);
+            if (!formData.get('planId')) {
+                showMessage(messageBox, messages.selectPlanRequired, 'danger');
+                return;
+            }
+            const body = new URLSearchParams(formData);
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                };
+                const csrfToken = formData.get('_csrf');
+                if (csrfToken) {
+                    headers['X-CSRF-TOKEN'] = csrfToken;
+                }
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers,
+                    body
+                });
+                const payload = await response.json();
+                if (!response.ok) {
+                    const message = payload && payload.error ? payload.error : messages.checkoutError;
+                    showMessage(messageBox, message, 'danger');
+                    return;
+                }
+                const embedReady = launchEmbeddedCheckout(payload, embedContainer);
+                if (embedReady) {
+                    clearManualContainer(manualContainer);
+                    showMessage(messageBox, messages.embedReady, 'info');
+                    return;
+                }
+                const fallbackRendered = renderFallbackForm(payload, manualContainer);
+                if (fallbackRendered) {
+                    showMessage(messageBox, messages.embedFallback, 'warning');
+                    return;
+                }
+                if (payload.checkoutUrl) {
+                    showMessage(messageBox, messages.checkoutPage, 'info');
+                    window.open(payload.checkoutUrl, '_blank', 'noopener');
+                    return;
+                }
+                showMessage(messageBox, messages.checkoutUnavailable, 'danger');
+            } catch (error) {
+                console.error('Unable to initiate LiqPay checkout', error);
+                showMessage(messageBox, messages.checkoutError, 'danger');
+            }
+        });
+    });
+
+    function showMessage(box, message, type) {
+        if (!box) {
+            return;
+        }
+        box.className = 'alert alert-' + type;
+        box.textContent = message;
+        box.classList.remove('d-none');
+    }
+
+    function hideMessage(box) {
+        if (!box) {
+            return;
+        }
+        box.classList.add('d-none');
+        box.textContent = '';
+    }
+
+    function launchEmbeddedCheckout(session, container) {
+        if (!container) {
+            return false;
+        }
+        if (!session || !session.data || !session.signature) {
+            container.classList.add('d-none');
+            container.innerHTML = '';
+            return false;
+        }
+        if (typeof window.LiqPayCheckout === 'undefined' || typeof window.LiqPayCheckout.init !== 'function') {
+            container.classList.add('d-none');
+            return false;
+        }
+        try {
+            container.innerHTML = '';
+            container.classList.remove('d-none');
+            if (window.__liqpayEmbedInstance && typeof window.__liqpayEmbedInstance.close === 'function') {
+                window.__liqpayEmbedInstance.close();
+            }
+            const language = session && session.language ? session.language : 'en';
+            window.__liqpayEmbedInstance = window.LiqPayCheckout.init({
+                data: session.data,
+                signature: session.signature,
+                embedTo: '#liqpay-embed-container',
+                mode: 'embed',
+                language: language
+            });
+            attachLiqPayHandlers(window.__liqpayEmbedInstance, session);
+            return !!window.__liqpayEmbedInstance;
+        } catch (error) {
+            console.error('Unable to initialize embedded LiqPay checkout', error);
+            container.classList.add('d-none');
+            return false;
+        }
+    }
+
+    function clearManualContainer(container) {
+        if (!container) {
+            return;
+        }
+        container.innerHTML = '';
+        container.classList.add('d-none');
+    }
+
+    function renderFallbackForm(session, container) {
+        if (!container) {
+            return false;
+        }
+        if (session && session.checkoutFormHtml) {
+            container.innerHTML = session.checkoutFormHtml;
+            container.classList.remove('d-none');
+            return true;
+        }
+        if (session && session.data && session.signature) {
+            container.innerHTML = buildManualCheckoutForm(session);
+            container.classList.remove('d-none');
+            return true;
+        }
+        container.innerHTML = '';
+        container.classList.add('d-none');
+        return false;
+    }
+
+    function buildManualCheckoutForm(session) {
+        const action = escapeHtml(session.checkoutUrl || 'https://www.liqpay.ua/api/3/checkout');
+        const dataValue = escapeHtml(session.data || '');
+        const signatureValue = escapeHtml(session.signature || '');
+        return '<form method="POST" action="' + action + '" target="_blank" rel="noopener">' +
+            '<input type="hidden" name="data" value="' + dataValue + '">' +
+            '<input type="hidden" name="signature" value="' + signatureValue + '">' +
+            '<p class="mb-2">If the embedded form does not appear, use this button to open the LiqPay checkout page.</p>' +
+            '<button type="submit" class="btn md-btn md-btn-success">Open LiqPay Checkout</button>' +
+            '</form>';
+    }
+
+    function escapeHtml(value) {
+        if (value == null) {
+            return '';
+        }
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function attachLiqPayHandlers(instance, session) {
+        if (!instance || typeof instance.on !== 'function') {
+            return;
+        }
+        const planCode = session && session.providerReference ? session.providerReference : null;
+        instance.on('liqpay.callback', function (data) {
+            if (isSuccessfulStatus(data && data.status)) {
+                redirectAfterSuccess(planCode);
+            }
+        });
+    }
+
+    function isSuccessfulStatus(status) {
+        if (!status) {
+            return false;
+        }
+        const normalized = String(status).toLowerCase();
+        return normalized === 'success' || normalized === 'sandbox' || normalized === 'payok' || normalized === 'subscribed';
+    }
+
+    function redirectAfterSuccess(planCode) {
+        try {
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.hash = '';
+            if (planCode) {
+                url.searchParams.set('activated', planCode);
+            }
+            window.location.assign(url.toString());
+        } catch (error) {
+            console.warn('Unable to build redirect URL', error);
+            if (planCode) {
+                window.location.assign('/subscriptions?activated=' + encodeURIComponent(planCode));
+            } else {
+                window.location.assign('/subscriptions');
+            }
+        }
+    }
+
+    function startActivationPolling(statusUrl, planCode) {
+        const normalizedPlanCode = planCode ? planCode.toString().toUpperCase() : null;
+        const messageBox = document.getElementById('jsMessage');
+        let attempts = 0;
+        const maxAttempts = 20;
+        const delayMs = 3000;
+
+        const poll = () => {
+            attempts += 1;
+            fetch(statusUrl, {headers: {'Accept': 'application/json'}})
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Status request failed');
+                    }
+                    return response.json();
+                })
+                .then(payload => {
+                    if (!payload) {
+                        throw new Error('Empty status payload');
+                    }
+                    const status = payload.status ? payload.status.toString().toUpperCase() : null;
+                    const plan = payload.planCode ? payload.planCode.toString().toUpperCase() : null;
+                    if (status === 'ACTIVE' && normalizedPlanCode && plan === normalizedPlanCode) {
+                        redirectAfterSuccess(plan);
+                        return;
+                    }
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, delayMs);
+                    } else {
+                        showMessage(messageBox,
+                            messages.activationDelayed,
+                            'warning');
+                    }
+                })
+                .catch(() => {
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, delayMs);
+                    } else {
+                        showMessage(messageBox,
+                            messages.activationStatusError,
+                            'warning');
+                    }
+                });
+        };
+
+        poll();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale?.toLanguageTag()}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{login.metaTitle}">Log in with your account</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link href="/css/dashboard.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" th:href="@{/images/favicon.svg}"/>
+    <link rel="icon" type="image/png" href="/images/my-logo.png" th:href="@{/images/my-logo.png}"/>
+</head>
+
+<body>
+<div class="container">
+    <div class="md-auth-brand text-center">
+        <img src="/images/my-logo.png" th:src="@{/images/my-logo.png}" alt="MoneyDrive.me logo" class="md-navbar-logo">
+        <p class="md-auth-brand__name" th:text="#{app.name}">MoneyDrive.me</p>
+    </div>
+    <form class="form-signin" method="POST" th:action="@{/auth/login-form}">
+        <h2 class="form-heading text-center" th:text="#{login.heading}">Log in</h2>
+
+        <div class="form-group">
+            <div th:if="${message}" class="alert alert-success" role="alert" th:text="${message}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+            <div th:if="${infoMessage}" class="alert alert-info" role="alert" th:text="${infoMessage}"></div>
+            <div th:if="${warningMessage}" class="alert alert-warning" role="alert">
+                <p class="mb-1" th:text="${warningMessage}"></p>
+                <div th:if="${unverifiedEmail}">
+                    <a th:href="@{/api/v1/user/resend-verification(email=${unverifiedEmail})}" class="alert-link" th:text="#{login.resendVerification}">Resend verification email</a>
+                </div>
+            </div>
+            <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
+            <input name="username" type="text" class="form-control" placeholder="Username" th:placeholder="#{login.username}"
+                   autofocus="true"/>
+
+            <input name="password" type="password" class="form-control" placeholder="Password" th:placeholder="#{login.password}"/>
+
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+            <button class="btn md-btn md-btn-primary md-btn-lg md-btn-block" type="submit" th:text="#{login.submit}">Log In</button>
+            <div class="text-center mt-3" th:if="${showForgotPasswordLink}">
+                <a class="text-muted" th:href="@{/login(forgotPassword=true)}" th:text="#{login.forgotPasswordLink}">Forgot password?</a>
+            </div>
+            <div class="text-center mt-3">
+                <a class="btn md-btn md-btn-outline md-btn-outline-primary md-btn-block" href="api/v1/user/registration" role="button" th:text="#{login.createAccount}">Create an account</a>
+            </div>
+            <div class="text-center mt-3">
+                <a class="btn md-btn md-btn-outline md-btn-outline-primary md-btn-block d-flex align-items-center justify-content-center" href="/oauth2/authorization/google">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" class="mr-2" style="width:20px;height:20px;"/>
+                    <span th:text="#{login.google}">Login with Google</span>
+                </a>
+            </div>
+        </div>
+    </form>
+    <div class="mt-5" th:if="${showForgotPasswordForm}">
+        <h4 th:text="#{login.reset.heading}">Reset your password</h4>
+        <p class="text-muted" th:text="#{login.reset.description}">Enter your email address and we will send you a reset link.</p>
+        <form class="mt-3" method="post" th:action="@{/auth/forgot-password}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="form-group">
+                <label for="forgotPasswordEmail" th:text="#{login.reset.emailLabel}">Email</label>
+                <input id="forgotPasswordEmail" name="email" type="email" class="form-control" th:value="${forgotPasswordEmail}">
+                <div class="text-danger mt-2" th:if="${forgotPasswordError}" th:text="${forgotPasswordError}"></div>
+            </div>
+            <button class="btn md-btn md-btn-primary" type="submit" th:text="#{login.reset.submit}">Send reset link</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

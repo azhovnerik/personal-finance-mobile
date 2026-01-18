@@ -1,0 +1,2 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_email VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_email_requested_at TIMESTAMP;

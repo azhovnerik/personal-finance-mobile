@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{settings.title}">Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="icon" type="image/png" href="/images/my-logo.png" th:href="@{/images/my-logo.png}"/>
+</head>
+<header th:insert="blocks/header :: menu"></header>
+<body>
+<div class="container mt-4">
+    <h1 class="mb-4" th:text="#{settings.heading}">Account settings</h1>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${infoMessage}" class="alert alert-info" th:text="${infoMessage}"></div>
+    <div th:if="${warningMessage}" class="alert alert-warning" th:text="${warningMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <div class="mb-4">
+        <a class="btn md-btn md-btn-outline md-btn-outline-primary" href="/subscriptions" th:text="#{settings.subscription.manage}">Manage subscription</a>
+    </div>
+
+    <section class="mb-5">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+            <h2 class="h4 mb-0" th:text="#{settings.section.profile}">Profile</h2>
+            <span th:if="${userSettings.verified}" class="badge bg-success" th:text="#{settings.badge.verified}">Verified</span>
+            <span th:if="${!userSettings.verified}" class="badge bg-warning text-dark" th:text="#{settings.badge.verificationRequired}">Verification required</span>
+        </div>
+        <form th:action="@{/settings/profile}" th:object="${profileForm}" method="post" class="needs-validation" novalidate>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="mb-3">
+                <label for="email" class="form-label" th:text="#{settings.profile.email}">Email</label>
+                <input id="email" type="email" class="form-control" th:classappend="${#fields.hasErrors('email')}? ' is-invalid'" th:field="*{email}">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                <div class="form-text" th:if="${userSettings.pendingEmail != null}">
+                    <span th:text="#{settings.profile.email.pending}">Current email:</span>
+                    <strong th:text="${userSettings.email}"></strong>.
+                    <span th:text="#{settings.profile.email.pending.new}">New email</span>
+                    <strong th:text="${userSettings.pendingEmail}"></strong>
+                    <span th:text="#{settings.profile.email.pending.waiting}">is waiting for confirmation.</span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="name" class="form-label" th:text="#{settings.profile.name}">Name</label>
+                <input id="name" type="text" class="form-control" th:classappend="${#fields.hasErrors('name')}? ' is-invalid'" th:field="*{name}" required>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+            </div>
+            <div class="mb-3">
+                <label for="telegramName" class="form-label" th:text="#{settings.profile.telegram}">Telegram name</label>
+                <input id="telegramName" type="text" class="form-control" th:field="*{telegramName}">
+            </div>
+            <div class="mb-3">
+                <label for="interfaceLanguage" class="form-label" th:text="#{settings.profile.language}">Default interface language</label>
+                <select id="interfaceLanguage" class="form-select" th:field="*{interfaceLanguage}">
+                    <option th:each="lang : ${supportedLanguages}" th:value="${lang.code}" th:text="${lang.displayName}"></option>
+                </select>
+                <div class="form-text" th:text="#{settings.profile.language.help}">This language is used for the interface and email notifications.</div>
+            </div>
+            <div class="mb-3">
+                <label for="baseCurrency" class="form-label" th:text="#{settings.profile.currency}">Base currency</label>
+                <select id="baseCurrency" class="form-select" th:field="*{baseCurrency}">
+                    <option th:each="c : ${currencies}" th:value="${c}" th:text="${c}"></option>
+                </select>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('baseCurrency')}" th:errors="*{baseCurrency}"></div>
+                <div class="form-text" th:text="#{settings.profile.currency.help}">You can change the base currency only before creating budgets or transactions.</div>
+            </div>
+            <button type="submit" class="btn md-btn md-btn-primary" th:text="#{settings.button.save}">Save</button>
+        </form>
+        <div class="mt-3">
+            <a class="btn md-btn md-btn-outline md-btn-outline-secondary md-btn-sm" href="/settings/currency-rates" th:text="#{settings.currency.manage}">Manage exchange rates</a>
+        </div>
+        <div class="mt-3" th:if="${userSettings.pendingEmail != null}">
+            <form th:action="@{/settings/email/resend}" method="post" class="d-inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn md-btn md-btn-outline md-btn-outline-secondary md-btn-sm" th:text="#{settings.email.resend}">Resend verification email</button>
+            </form>
+            <small class="text-muted ms-2" th:if="${userSettings.pendingEmailRequestedAt != null}">
+                <span th:text="#{settings.email.lastRequested}">Last requested at</span>
+                <span th:text="${#temporals.format(userSettings.pendingEmailRequestedAt, 'yyyy-MM-dd HH:mm')}"/>
+            </small>
+        </div>
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4" th:text="#{settings.section.password}">Password</h2>
+        <div th:if="${canChangePassword}" th:object="${passwordChangeForm}">
+            <button class="btn md-btn md-btn-link ps-0" type="button" data-bs-toggle="collapse" data-bs-target="#changePasswordPanel" aria-expanded="false" aria-controls="changePasswordPanel">
+                <span th:text="#{settings.password.change}">Change password</span>
+            </button>
+            <div id="changePasswordPanel" class="collapse" th:classappend="${#fields.hasErrors('currentPassword') or #fields.hasErrors('newPassword') or #fields.hasErrors('confirmNewPassword')}? ' show'">
+                <form th:action="@{/settings/password}" th:object="${passwordChangeForm}" method="post" class="mt-3">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label" th:text="#{settings.password.current}">Current password</label>
+                        <input id="currentPassword" type="password" class="form-control" th:classappend="${#fields.hasErrors('currentPassword')}? ' is-invalid'" th:field="*{currentPassword}">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label" th:text="#{settings.password.new}">New password</label>
+                        <input id="newPassword" type="password" class="form-control" th:classappend="${#fields.hasErrors('newPassword')}? ' is-invalid'" th:field="*{newPassword}">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmNewPassword" class="form-label" th:text="#{settings.password.confirm}">Confirm new password</label>
+                        <input id="confirmNewPassword" type="password" class="form-control" th:classappend="${#fields.hasErrors('confirmNewPassword')}? ' is-invalid'" th:field="*{confirmNewPassword}">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmNewPassword')}" th:errors="*{confirmNewPassword}"></div>
+                    </div>
+                    <button type="submit" class="btn md-btn md-btn-primary" th:text="#{settings.password.update}">Update password</button>
+                </form>
+            </div>
+        </div>
+        <div th:if="${!canChangePassword}">
+            <p class="mb-3" th:text="#{settings.password.google}">You sign in using Google. Set a password to enable direct login.</p>
+            <form th:action="@{/settings/password/setup/request}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn md-btn md-btn-outline md-btn-outline-primary" th:text="#{settings.password.sendLink}">Send link to set password</button>
+            </form>
+        </div>
+    </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+</body>
+</html>

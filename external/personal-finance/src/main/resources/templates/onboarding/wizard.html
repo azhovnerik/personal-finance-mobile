@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta name="_csrf" th:if="${_csrf}" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:if="${_csrf}" th:content="${_csrf.headerName}"/>
+
+
+    <title th:text="#{onboarding.title}">Setup Wizard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/tables.css}"/>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" th:href="@{/images/favicon.svg}"/>
+    <link rel="icon" type="image/png" href="/images/my-logo.png" th:href="@{/images/my-logo.png}"/>
+</head>
+<body class="onboarding-body">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+
+<div class="modal fade show onboarding-modal" id="onboardingModal" tabindex="-1" aria-hidden="true" style="display:block;">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content d-flex flex-column">
+            <div class="modal-header">
+                <h5 class="modal-title" th:text="#{onboarding.title}">Setup Wizard</h5>
+            </div>
+            <div class="modal-body flex-grow-1 d-flex flex-column">
+                <div class="progress onboarding-progress mb-4">
+                    <div class="progress-bar" role="progressbar" style="width:0%" id="wizard-progress"></div>
+                </div>
+
+                <div class="flex-grow-1 onboarding-step-card">
+                    <div class="wizard-step" id="step-base-currency">
+                        <h3 th:text="#{onboarding.currency.title}">Base currency</h3>
+                        <p class="text-muted" th:text="#{onboarding.currency.subtitle}">
+                            Choose the currency used to aggregate analytics and budgets.
+                        </p>
+                        <form th:action="@{/onboarding/base-currency}" method="post" class="row g-3" id="baseCurrencyForm">
+                            <div class="col-12 col-md-6">
+                                <label for="language" class="form-label" th:text="#{onboarding.language.label}">Interface language</label>
+                                <select class="form-select" id="language" name="language">
+                                    <option th:each="lang : ${languages}" th:value="${lang.code}"
+                                            th:text="${lang.displayName}" th:selected="${lang.code == selectedLanguage}"></option>
+                                </select>
+                                <div class="form-text" th:text="#{onboarding.language.help}">
+                                    Choose the language used for the interface and email notifications.
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="baseCurrency" class="form-label" th:text="#{onboarding.currency.label}">
+                                    Base currency
+                                </label>
+                                <select class="form-select" id="baseCurrency" name="currency">
+                                    <option th:each="c : ${currencies}" th:value="${c}" th:text="${c}"
+                                            th:selected="${c == selectedBaseCurrency}"></option>
+                                </select>
+                                <div class="form-text" th:text="#{onboarding.currency.help}">
+                                    You can change it later only before creating budgets or transactions.
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="wizard-step d-none" id="step-income">
+                        <h3 th:text="#{onboarding.income.title}">Income Categories</h3>
+                        <button type="button" class="btn md-btn md-btn-outline md-btn-outline-secondary md-btn-sm mb-2" id="toggleIncome"
+                                th:attr="data-select-text=#{onboarding.button.selectAll},data-deselect-text=#{onboarding.button.deselectAll}"
+                                th:text="#{onboarding.button.selectAll}">Select All</button>
+                        <form th:action="@{/onboarding/income}" method="post" class="row g-3" id="incomeForm">
+                            <div class="col-12 mb-3">
+                                <div th:each="tmpl : ${incomeTemplates}" class="form-check">
+                                    <input class="form-check-input" type="checkbox" th:id="'inc-' + ${tmpl.id}"
+                                           name="incomes" th:value="${tmpl.id}">
+                                    <label class="form-check-label onboarding-template" th:for="'inc-' + ${tmpl.id}"
+                                           th:attr="data-icon-seed=${tmpl.icon ?: tmpl.displayName}">
+                                        <span class="template-icon" th:attr="data-icon-seed=${tmpl.icon ?: tmpl.displayName}">
+                                            <i class="bi" th:classappend="' ' + ${tmpl.icon}"></i>
+                                        </span>
+                                        <span class="onboarding-template-title" th:text="${tmpl.displayName}">Salary</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="wizard-step d-none" id="step-expense">
+                        <h3 th:text="#{onboarding.expense.title}">Expense Categories</h3>
+                        <button type="button" class="btn md-btn md-btn-outline md-btn-outline-secondary md-btn-sm mb-2" id="toggleExpense"
+                                th:attr="data-select-text=#{onboarding.button.selectAll},data-deselect-text=#{onboarding.button.deselectAll}"
+                                th:text="#{onboarding.button.selectAll}">Select All</button>
+                        <form th:action="@{/onboarding/expense}" method="post" class="row g-3" id="expenseForm">
+                            <div class="col-12 mb-3">
+                                <div th:each="tmpl : ${expenseTemplates}" class="form-check">
+                                    <input class="form-check-input" type="checkbox" th:id="'exp-' + ${tmpl.id}"
+                                           name="expenses" th:value="${tmpl.id}">
+                                    <label class="form-check-label onboarding-template" th:for="'exp-' + ${tmpl.id}"
+                                           th:attr="data-icon-seed=${tmpl.icon ?: tmpl.displayName}">
+                                        <span class="template-icon" th:attr="data-icon-seed=${tmpl.icon ?: tmpl.displayName}">
+                                            <i class="bi" th:classappend="' ' + ${tmpl.icon}"></i>
+                                        </span>
+                                        <span class="onboarding-template-title" th:text="${tmpl.displayName}">Food</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="wizard-step d-none" id="step-review">
+                        <h3 th:text="#{onboarding.review.title}">Review</h3>
+                        <p th:text="#{onboarding.review.message}">Review your entries before proceeding.</p>
+                        <div class="mb-3">
+                            <strong th:text="#{onboarding.language.label}">Interface language</strong>:
+                            <span id="review-language">English</span>
+                        </div>
+                        <div class="mb-3">
+                            <strong th:text="#{onboarding.currency.label}">Base currency</strong>:
+                            <span id="review-base-currency">USD</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>Income Categories</h4>
+                                <ul id="review-incomes"></ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>Expense Categories</h4>
+                                <ul id="review-expenses"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wizard-step d-none" id="step-accounts">
+                        <h3 th:text="#{onboarding.accounts.title}">Accounts</h3>
+                        <form th:action="@{/onboarding/accounts}" method="post" class="row g-3" id="accountsForm">
+                            <div class="col-12">
+                                <div id="accountEntries" class="d-flex flex-column gap-3"></div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-text" id="accountCurrencyHint"
+                                     th:text="#{onboarding.account.currencyHint}"
+                                     th:attr="data-template=#{onboarding.account.currencyHintSpecific},data-default-text=#{onboarding.account.currencyHint}">
+                                    Defaults to your base currency.
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn btn-outline-primary" id="addAccountBtn"
+                                        th:text="#{onboarding.account.add}">Add account</button>
+                            </div>
+                        </form>
+                        <template id="accountEntryTemplate">
+                            <div class="account-entry border rounded p-3">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label" data-field-label="name" th:text="#{onboarding.account.name}">Account Name</label>
+                                        <input class="form-control" data-field-input="name" name="name" type="text"/>
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label" data-field-label="description" th:text="#{onboarding.account.description}">Description</label>
+                                        <input class="form-control" data-field-input="description" name="description" type="text"/>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label" data-field-label="type" th:text="#{onboarding.account.type}">Type</label>
+                                        <select class="form-select" data-field-input="type" name="type">
+                                            <option value="CASH">CASH</option>
+                                            <option value="CARD">CARD</option>
+                                            <option value="BANK_ACCOUNT">BANK_ACCOUNT</option>
+                                            <option value="DEBT">DEBT</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label" data-field-label="currency" th:text="#{onboarding.account.currency}">Currency</label>
+                                        <select class="form-select account-currency-select" data-field-input="currency" name="currency">
+                                            <option th:each="c : ${currencies}" th:value="${c}" th:text="${c}"></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label" data-field-label="balance" th:text="#{onboarding.account.balance}">Initial balance</label>
+                                        <input class="form-control" data-field-input="balance" name="balance" type="number" step="0.01" inputmode="decimal"/>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-outline-danger remove-account"
+                                                    th:text="#{onboarding.account.remove}">Remove</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="wizard-step d-none" id="step-finish">
+                        <h3 th:text="#{onboarding.finish.title}">Finish</h3>
+                        <p th:text="#{onboarding.finish.message}">You are all set!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer onboarding-action-bar">
+                <button type="button" class="btn md-btn md-btn-secondary" id="prevBtn" th:text="#{onboarding.button.prev}">Previous</button>
+                <button type="button" class="btn md-btn md-btn-primary" id="nextBtn" th:text="#{onboarding.button.next}" th:attr="data-next-text=#{onboarding.button.next},data-finish-text=#{onboarding.button.finish}">Next</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script th:inline="javascript">
+const steps = Array.from(document.querySelectorAll('.wizard-step'));
+let currentStep = 0;
+const progress = document.getElementById('wizard-progress');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const csrfMeta = document.querySelector('meta[name="_csrf"]');
+const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+const csrfToken = csrfMeta ? csrfMeta.content : null;
+const csrfHeader = csrfHeaderMeta ? csrfHeaderMeta.content : 'X-CSRF-TOKEN';
+const baseCurrencyForm = document.getElementById('baseCurrencyForm');
+const baseCurrencySelect = document.getElementById('baseCurrency');
+const languageSelect = document.getElementById('language');
+const accountEntriesContainer = document.getElementById('accountEntries');
+const accountEntryTemplate = document.getElementById('accountEntryTemplate');
+const addAccountBtn = document.getElementById('addAccountBtn');
+const accountCurrencyHintElement = document.getElementById('accountCurrencyHint');
+const accountCurrencyHintDefaults = accountCurrencyHintElement ? {
+    defaultText: accountCurrencyHintElement.dataset.defaultText || accountCurrencyHintElement.textContent,
+    template: accountCurrencyHintElement.dataset.template || null
+} : null;
+const initialAccountsData = /*[[${accounts}]]*/ [];
+const reviewBaseCurrency = document.getElementById('review-base-currency');
+const reviewLanguage = document.getElementById('review-language');
+let lastBaseCurrency = baseCurrencySelect ? baseCurrencySelect.value : null;
+
+function accountCurrencySelects() {
+    return Array.from(document.querySelectorAll('.account-currency-select'));
+}
+
+function generateAccountFieldId(field) {
+    return `account-${field}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function addAccountEntry(data = {}) {
+    if (!accountEntryTemplate || !accountEntriesContainer) {
+        return;
+    }
+    const fragment = accountEntryTemplate.content.cloneNode(true);
+    const entry = fragment.querySelector('.account-entry');
+    if (!entry) {
+        return;
+    }
+    entry.querySelectorAll('[data-field-input]').forEach(input => {
+        const field = input.dataset.fieldInput;
+        const generatedId = generateAccountFieldId(field);
+        input.id = generatedId;
+        const label = entry.querySelector(`[data-field-label="${field}"]`);
+        if (label) {
+            label.setAttribute('for', generatedId);
+        }
+        const value = data[field];
+        if (value !== undefined && value !== null && value !== '') {
+            input.value = value;
+        }
+        if (field === 'currency' && (!input.value || input.value === '')) {
+            if (baseCurrencySelect && baseCurrencySelect.value) {
+                input.value = baseCurrencySelect.value;
+            }
+        }
+    });
+    entry.querySelectorAll('.remove-account').forEach(button => {
+        button.addEventListener('click', () => {
+            entry.remove();
+        });
+    });
+    accountEntriesContainer.appendChild(entry);
+    updateBaseCurrencyDisplays(false);
+}
+
+function computeIconGradient(seed) {
+    const source = seed || 'moneydrive';
+    let hash = 0;
+    for (let i = 0; i < source.length; i++) {
+        hash = source.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash % 360);
+    const secondaryHue = (hue + 25) % 360;
+    const primary = `hsl(${hue}, 78%, 54%)`;
+    const secondary = `hsl(${secondaryHue}, 82%, 62%)`;
+    return `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`;
+}
+
+function decorateTemplateIcons() {
+    document.querySelectorAll('.template-icon').forEach(icon => {
+        let seed = icon.dataset.iconSeed || icon.textContent || '';
+        if (!seed && icon.parentElement && icon.parentElement.dataset) {
+            seed = icon.parentElement.dataset.iconSeed || seed;
+        }
+        icon.style.background = computeIconGradient(seed);
+    });
+}
+
+function syncTemplateStates() {
+    document.querySelectorAll('.form-check-input[name="incomes"], .form-check-input[name="expenses"]').forEach(input => {
+        const label = input.nextElementSibling;
+        if (label && label.classList.contains('onboarding-template')) {
+            label.classList.toggle('active', input.checked);
+        }
+    });
+}
+
+function toggleAll(btn, selector){
+    const checkboxes = document.querySelectorAll(selector);
+    const select = btn.dataset.state !== 'selected';
+    checkboxes.forEach(cb=> cb.checked = select);
+    btn.dataset.state = select ? 'selected' : 'deselected';
+    btn.textContent = select ? btn.getAttribute('data-deselect-text') : btn.getAttribute('data-select-text');
+    syncTemplateStates();
+}
+
+function updateReview(){
+    const incomeList = document.getElementById('review-incomes');
+    const expenseList = document.getElementById('review-expenses');
+    incomeList.innerHTML = '';
+    document.querySelectorAll('#step-income input[name="incomes"]:checked').forEach(cb=>{
+        const li = document.createElement('li');
+        li.textContent = cb.nextElementSibling.textContent;
+        incomeList.appendChild(li);
+    });
+    expenseList.innerHTML = '';
+    document.querySelectorAll('#step-expense input[name="expenses"]:checked').forEach(cb=>{
+        const li = document.createElement('li');
+        li.textContent = cb.nextElementSibling.textContent;
+        expenseList.appendChild(li);
+    });
+    updateBaseCurrencyDisplays(false);
+    updateLanguageDisplay();
+}
+
+function updateBaseCurrencyDisplays(forceSelect){
+    const currentCurrency = baseCurrencySelect ? baseCurrencySelect.value : null;
+    if (reviewBaseCurrency) {
+        reviewBaseCurrency.textContent = currentCurrency || 'USD';
+    }
+    if (accountCurrencyHintElement) {
+        if (currentCurrency && accountCurrencyHintDefaults && accountCurrencyHintDefaults.template) {
+            accountCurrencyHintElement.textContent = accountCurrencyHintDefaults.template.replace('{0}', currentCurrency);
+        } else {
+            const fallbackText = accountCurrencyHintDefaults ? accountCurrencyHintDefaults.defaultText : accountCurrencyHintElement.textContent;
+            accountCurrencyHintElement.textContent = fallbackText;
+        }
+    }
+    if (currentCurrency) {
+        accountCurrencySelects().forEach(select => {
+            const previous = select.dataset.lastBaseCurrency;
+            if (forceSelect || !select.value || !previous || previous === lastBaseCurrency) {
+                select.value = currentCurrency;
+            }
+            select.dataset.lastBaseCurrency = currentCurrency;
+        });
+    }
+    lastBaseCurrency = currentCurrency;
+}
+
+function updateLanguageDisplay(){
+    if (!languageSelect || !reviewLanguage) {
+        return;
+    }
+    const selectedOption = languageSelect.options[languageSelect.selectedIndex];
+    if (selectedOption) {
+        reviewLanguage.textContent = selectedOption.textContent;
+    }
+}
+
+function showStep(idx){
+    steps.forEach((s,i)=>{
+        s.classList.toggle('d-none', i!==idx);
+    });
+    prevBtn.classList.toggle('d-none', idx===0);
+    const pct = ((idx+1)/steps.length)*100;
+    progress.style.width = pct + '%';
+    nextBtn.textContent = idx === steps.length-1 ? nextBtn.getAttribute('data-finish-text') : nextBtn.getAttribute('data-next-text');
+    updateBaseCurrencyDisplays(false);
+    if (steps[idx] && steps[idx].id === 'step-review') {
+        updateReview();
+    }
+}
+
+function postForm(form){
+    const action = form.getAttribute('action');
+    const formData = new FormData(form);
+    const headers = {};
+    if (csrfToken) {
+        headers[csrfHeader] = csrfToken;
+    }
+    return fetch(action,{
+        method:'POST',
+        headers,
+        body:new URLSearchParams(formData),
+        credentials:'same-origin'
+    });
+}
+
+const toggleIncomeBtn = document.getElementById('toggleIncome');
+if (toggleIncomeBtn) {
+    toggleIncomeBtn.addEventListener('click', function(){
+        toggleAll(this, '#step-income input[name="incomes"]');
+    });
+}
+const toggleExpenseBtn = document.getElementById('toggleExpense');
+if (toggleExpenseBtn) {
+    toggleExpenseBtn.addEventListener('click', function(){
+        toggleAll(this, '#step-expense input[name="expenses"]');
+    });
+}
+
+document.querySelectorAll('.form-check-input[name="incomes"], .form-check-input[name="expenses"]').forEach(input => {
+    input.addEventListener('change', syncTemplateStates);
+});
+
+prevBtn.addEventListener('click', ()=>{ if(currentStep>0){currentStep--;showStep(currentStep);} });
+
+nextBtn.addEventListener('click', ()=>{
+    const step = steps[currentStep];
+    const form = step.querySelector('form');
+    const proceed = ()=>{
+        if(currentStep < steps.length-1){
+            currentStep++;
+            showStep(currentStep);
+        } else {
+            const headers = {};
+            if (csrfToken) {
+                headers[csrfHeader] = csrfToken;
+            }
+            fetch('/onboarding/finish',{method:'POST',headers})
+                .then(()=> window.location.href = '/');
+        }
+    };
+    if(form){
+        postForm(form).then(proceed);
+    } else {
+        proceed();
+    }
+});
+
+const normalizedInitialAccounts = Array.isArray(initialAccountsData) ? initialAccountsData : [];
+if (accountEntriesContainer && accountEntryTemplate) {
+    if (normalizedInitialAccounts.length > 0) {
+        normalizedInitialAccounts.forEach(account => {
+            addAccountEntry({
+                name: account.name,
+                description: account.description,
+                type: account.type,
+                currency: account.currency,
+                balance: account.initialBalance
+            });
+        });
+    } else {
+        addAccountEntry();
+    }
+}
+
+if (addAccountBtn) {
+    addAccountBtn.addEventListener('click', () => addAccountEntry());
+}
+
+decorateTemplateIcons();
+syncTemplateStates();
+
+if (baseCurrencySelect) {
+    baseCurrencySelect.addEventListener('change', () => updateBaseCurrencyDisplays(true));
+}
+
+if (languageSelect) {
+    languageSelect.addEventListener('change', () => {
+        updateLanguageDisplay();
+        const redirectWithLang = () => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', languageSelect.value);
+            window.location.href = url.toString();
+        };
+        if (baseCurrencyForm) {
+            postForm(baseCurrencyForm).finally(redirectWithLang);
+        } else {
+            redirectWithLang();
+        }
+    });
+}
+
+updateBaseCurrencyDisplays(true);
+updateLanguageDisplay();
+showStep(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{transactions.title}">Transactions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/tables.css}"/>
+    <link rel="icon" type="image/png" href="/images/my-logo.png" th:href="@{/images/my-logo.png}"/>
+</head>
+<body data-confirm-delete-title="Confirm deletion"
+      data-confirm-delete-message="Are you sure you want to delete this item?"
+      data-confirm-delete-confirm="Delete"
+      data-confirm-delete-cancel="Cancel"
+      th:attr="data-confirm-delete-title=#{common.confirmDeletionTitle}, data-confirm-delete-message=#{common.confirmDeletionMessage}, data-confirm-delete-confirm=#{common.delete}, data-confirm-delete-cancel=#{common.cancel}">
+<div th:replace="blocks/header.html :: menu"></div>
+
+<main class="container mt-5">
+
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-end">
+        <div>
+            <h1 class="mb-0" th:text="#{transactions.title}">Transactions</h1>
+            <p class="mb-1 text-muted" th:if="${startDate != null and endDate != null}"
+               th:text="#{transactions.period(${startDate}, ${endDate})}"></p>
+            <b th:if="${month != null}" th:text="${month}"></b><br th:if="${month != null}">
+            <b th:if="${category != null}" th:text="${category}"></b><br th:if="${category != null}">
+            <div class="d-flex d-lg-none mt-3">
+                <a class="btn md-btn md-btn-primary w-100" th:href="@{/transactions/add}" role="button">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    <span th:text="#{transactions.add}">Add new transaction</span>
+                </a>
+            </div>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2 text-muted" th:if="${transactionsPage != null}">
+            <span th:text="#{transactions.summary(${transactionsPage.numberOfElements}, ${transactionsPage.totalElements})}">Showing 0 of 0 transactions</span>
+            <span class="badge badge-soft d-inline-flex align-items-center gap-2">
+                <i class="bi bi-currency-exchange"></i>
+                <span th:text="${baseCurrency}">USD</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="alert alert-info d-flex align-items-start gap-3 mt-4" role="note">
+        <i class="bi bi-telegram fs-3 text-primary"></i>
+        <div>
+            <h2 class="h5 mb-2" th:text="#{transactions.telegramHint.title}">Track transactions with the Telegram bot</h2>
+            <p class="mb-2" th:text="#{transactions.telegramHint.note}">
+                Especially convenient on mobile — no need to open the app.
+            </p>
+            <p class="mb-0">
+                <a class="link-primary fw-semibold me-3" href="https://t.me/addtransactionbot" target="_blank" rel="noopener noreferrer">
+                    @addtransactionbot
+                </a>
+                <a class="link-primary" th:href="@{/settings}" th:text="#{transactions.telegramHint.settingsCta}">Fill in your Telegram name in Settings</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="table-toolbar flex-column flex-lg-row align-items-stretch align-items-lg-end mt-4">
+        <form class="row g-3 align-items-end flex-grow-1" th:action="@{/transactions}" method="get"
+              data-transactions-filter>
+            <input type="hidden" name="page" value="1"/>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="startDate" class="form-label" th:text="#{common.startDate}">Start date</label>
+                <input type="date" class="form-control" id="startDate" name="startDate" th:value="${startDate}">
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="endDate" class="form-label" th:text="#{common.endDate}">End date</label>
+                <input type="date" class="form-control" id="endDate" name="endDate" th:value="${endDate}">
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="type" class="form-label" th:text="#{transactions.filter.type}">Type</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="" th:text="#{transactions.filter.type.all}"
+                            th:selected="${selectedTransactionType == null}">All types</option>
+                    <option th:each="typeOption : ${transactionTypes}" th:value="${typeOption}"
+                            th:selected="${selectedTransactionType != null and selectedTransactionType == typeOption}"
+                            th:text="${#messages.msgOrNull('transactions.type.' + typeOption.name()) ?: typeOption.name()}">Expense</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <label for="accountId" class="form-label" th:text="#{transactions.filter.account}">Account</label>
+                <select class="form-select" id="accountId" name="accountId">
+                    <option value="" th:text="#{transactions.filter.account.all}"
+                            th:selected="${selectedAccountId == null}">All accounts</option>
+                    <option th:each="account : ${accounts}" th:value="${account.id}"
+                            th:selected="${selectedAccountId != null and selectedAccountId.equals(account.id)}"
+                            th:text="${account.name + ' (' + account.currency + ')'}">Account</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn md-btn md-btn-primary mt-2 mt-sm-4" th:text="#{common.apply}">Apply</button>
+            </div>
+        </form>
+        <div class="toolbar-actions">
+            <a class="btn md-btn md-btn-primary d-none d-lg-inline-flex" th:href="@{/transactions/add}" role="button">
+                <i class="bi bi-plus-circle me-2"></i>
+                <span th:text="#{transactions.add}">Add new transaction</span>
+            </a>
+            <a class="btn btn-outline-primary"
+               th:href="@{/transactions/export(format=${'XLSX'}, startDate=${startDate}, endDate=${endDate}, type=${selectedTransactionType}, accountId=${selectedAccountId})}"
+               th:text="#{transactions.export}">
+                Export to xls
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${transactionsPage != null and transactionsPage.totalElements == 0}" class="alert alert-info"
+         th:text="#{transactions.empty}">
+        There are no transactions for the selected period.
+    </div>
+
+    <div class="table-responsive table-responsive-card transactions-table-wrapper"
+         th:if="${transactionsPage == null or transactionsPage.totalElements > 0}">
+        <table class="table table-hover table-zebra table-card table-sticky align-middle transactions-table">
+
+        <thead class="bg-light">
+        <tr>
+            <th scope="col" th:text="#{transactions.table.date}">Date</th>
+            <th scope="col" class="d-none d-md-table-cell" th:text="#{transactions.table.account}">Account</th>
+            <th scope="col" th:text="#{transactions.table.category}">Category</th>
+            <th scope="col" th:text="#{transactions.table.currency}">Currency</th>
+            <th scope="col" class="text-end" th:text="#{transactions.table.amount}">Amount</th>
+            <th scope="col" class="text-end d-none d-md-table-cell table-card-mobile-hidden"
+                th:text="#{transactions.table.amountBase(${baseCurrency})}">Amount (USD)</th>
+            <th scope="col" class="d-none d-md-table-cell" th:text="#{transactions.table.type}">Type</th>
+            <th scope="col" class="d-none d-md-table-cell" th:text="#{transactions.table.direction}">Direction</th>
+            <th scope="col" class="d-none d-md-table-cell table-card-mobile-hidden" th:text="#{transactions.table.comment}">Comment</th>
+            <th scope="col" class="text-end text-nowrap"
+                th:text="${#messages.msgOrNull('common.actions')} ?: 'Actions'">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="el, st : ${transactionsPage != null ? transactionsPage.content : transactions}"
+            th:classappend="${st.even} ? 'fw-normal' : ''">
+            <td th:data-label="#{transactions.table.date}" class="transactions-table-date text-nowrap">
+                <a class="text-decoration-none" th:text="${el.date.substring(0,10)}" th:href="'/transactions/' + ${el.id}"></a>
+            </td>
+            <td th:data-label="#{transactions.table.account}" th:text="${el.account.name}" class="d-none d-md-table-cell table-card-mobile-hidden">
+            </td>
+            <td th:data-label="#{transactions.table.category}" th:text="${el.category?.name}" class="transactions-table-category">
+            </td>
+            <td th:data-label="#{transactions.table.currency}" th:text="${el.currency}" class="transactions-table-currency text-nowrap"></td>
+            <td th:data-label="#{transactions.table.amount}" class="text-end transactions-table-amount text-nowrap">
+                <span th:text="|${#numbers.formatDecimal(el.amount, 1, 'COMMA', 2, 'POINT')} ${el.currency}|"></span>
+            </td>
+            <td th:data-label="#{transactions.table.amountBase(${baseCurrency})}" class="text-end d-none d-md-table-cell table-card-mobile-hidden">
+                <span th:text="${#numbers.formatDecimal(el.amountInBase, 1, 'COMMA', 2, 'POINT')}"></span>
+            </td>
+            <td th:data-label="#{transactions.table.type}" class="transactions-table-type">
+                <span class="badge badge-soft text-uppercase"
+                      th:text="${el.type != null ? (#messages.msgOrNull('transactions.type.' + el.type.name()) ?: el.type.name()) : '—'}"></span>
+            </td>
+            <td th:data-label="#{transactions.table.direction}" class="transactions-table-direction">
+                <span class="badge rounded-pill d-inline-flex align-items-center gap-1"
+                      th:classappend="${el.direction.name() == 'DECREASE'} ? ' badge-soft-danger' : ' badge-soft-success'">
+                    <i class="bi" th:class="${el.direction.name() == 'DECREASE'} ? 'bi-arrow-down-right' : 'bi-arrow-up-right'"></i>
+                    <span th:text="${el.direction}"></span>
+                </span>
+            </td>
+            <td th:data-label="#{transactions.table.comment}" class="d-none d-md-table-cell table-card-mobile-hidden" th:text="${el.comment}">
+            </td>
+            <td data-label="${#messages.msgOrNull('common.actions')} ?: 'Actions'" class="text-end text-nowrap table-card-actions transactions-table-actions">
+                <div class="table-action-buttons" th:if="${el.type != null and el.type.name() != 'TRANSFER'}">
+                    <a class="btn btn-sm btn-outline-primary"
+                       th:href="@{/transactions/{id}(id=${el.id}, returnUrl=${transactionsReturnUrl})}"
+                       onclick="event.stopPropagation();">
+                        <i class="bi bi-pencil-square"></i>
+                        <span class="visually-hidden">Edit</span>
+                    </a>
+                    <form th:action="@{/transactions/{id}(id=${el.id})}" th:method="delete" class="d-inline"
+                          data-confirm-delete
+                          onclick="event.stopPropagation();">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <input type="hidden" name="returnUrl" th:value="${transactionsReturnUrl}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                            <span class="visually-hidden">Delete</span>
+                        </button>
+                    </form>
+                </div>
+                <span th:if="${el.type != null and el.type.name() == 'TRANSFER'}" class="text-muted">&mdash;</span>
+            </td>
+        </tr>
+        </tbody>
+        </table>
+    </div>
+
+    <nav th:if="${totalPages != null and totalPages > 1}" th:attr="aria-label=#{transactions.pagination.aria}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                <a class="page-link" th:attr="aria-label=#{pagination.previous}"
+                   th:href="@{/transactions(page=${currentPage - 1}, startDate=${startDate}, endDate=${endDate}, type=${selectedTransactionType}, accountId=${selectedAccountId})}"
+                   th:text="#{pagination.previous}">Previous</a>
+            </li>
+            <li class="page-item" th:each="pageNum : ${#numbers.sequence(1, totalPages)}"
+                th:classappend="${pageNum == currentPage} ? 'active'">
+                <a class="page-link"
+                   th:href="@{/transactions(page=${pageNum}, startDate=${startDate}, endDate=${endDate}, type=${selectedTransactionType}, accountId=${selectedAccountId})}"
+                   th:text="${pageNum}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                <a class="page-link" th:attr="aria-label=#{pagination.next}"
+                   th:href="@{/transactions(page=${currentPage + 1}, startDate=${startDate}, endDate=${endDate}, type=${selectedTransactionType}, accountId=${selectedAccountId})}"
+                   th:text="#{pagination.next}">Next</a>
+            </li>
+        </ul>
+    </nav>
+
+
+</main>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js" type="text/javascript"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js" type="text/javascript"></script>
+<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="Stylesheet"
+      type="text/css"/>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+<script defer th:src="@{/js/confirm-delete.js}"></script>
+<script defer th:src="@{/js/transactions.js}"></script>
+</body>
+</html>

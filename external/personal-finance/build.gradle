@@ -1,0 +1,109 @@
+plugins {
+    id 'org.springframework.boot' version '3.2.7'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '2.0.0'
+    id 'org.flywaydb.flyway' version "9.16.3"
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+var testcontainersVersion = '1.20.1'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
+    maven { url 'https://github.com/liqpay/sdk-java/raw/repository' }
+}
+
+
+dependencyManagement {
+    imports {
+        mavenBom("org.testcontainers:testcontainers-bom:$testcontainersVersion")
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.flywaydb:flyway-core'
+    implementation group: 'org.hibernate', name: 'hibernate-validator', version: '8.0.0.Final'
+    implementation 'org.hibernate:hibernate-core:6.5.2.Final'
+
+    implementation group: 'nz.net.ultraq.thymeleaf', name: 'thymeleaf-layout-dialect', version: '2.5.3'
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
+    implementation 'jakarta.validation:jakarta.validation-api:3.1.0'
+    implementation("org.springframework.boot:spring-boot-starter-mail:3.4.4")
+
+
+
+    implementation group: 'org.projectlombok', name: 'lombok', version: '1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+    implementation group: 'org.mapstruct', name: 'mapstruct', version: '1.5.5.Final'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation 'org.webjars:bootstrap:4.0.0-2'
+    implementation 'org.webjars.npm:chart.js:4.4.0'
+    implementation 'org.webjars:webjars-locator:0.30'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.2'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.5'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
+    implementation 'com.liqpay:liqpay-sdk:0.8-SNAPSHOT'
+
+
+    implementation group: 'org.telegram', name: 'telegrambots-spring-boot-starter', version: '6.7.0'
+    implementation group: 'org.telegram', name: 'telegrambots-abilities', version: '6.7.0'
+
+    implementation 'io.jsonwebtoken:jjwt:0.12.3'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+    implementation 'io.springfox:springfox-swagger2:3.0.0'
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
+    implementation 'io.springfox:springfox-swagger-ui:3.0.0'
+    implementation 'com.bucket4j:bucket4j-core:8.10.1'
+
+}
+
+bootJar {
+    archiveClassifier.set('boot')
+}
+
+jar {
+    archiveClassifier.set('')
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+

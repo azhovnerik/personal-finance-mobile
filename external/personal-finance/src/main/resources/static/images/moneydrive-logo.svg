@@ -1,0 +1,15 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="moneydrive-gradient" x1="28" y1="14" x2="92" y2="106" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#5BE2C8"/>
+            <stop offset="0.52" stop-color="#37C6B0"/>
+            <stop offset="1" stop-color="#1B8F8B"/>
+        </linearGradient>
+    </defs>
+    <path
+        d="M90 28C82.5 20.5 71.6 16 60 16C40.9 16 26 28 26 44C26 58 36.3 66.4 54.6 70.3L68.8 73.5C81.1 76.1 90 82.1 90 94C90 106.5 77.4 112 62 112C48 112 36.1 107.1 27 98"
+        stroke="url(#moneydrive-gradient)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+        d="M30 92C37.5 99.5 48.4 104 60 104C79.1 104 94 92 94 76C94 62 83.7 53.6 65.4 49.7L51.2 46.5C38.9 43.9 30 37.9 30 26C30 13.5 42.6 8 58 8C72 8 83.9 12.9 93 22"
+        stroke="url(#moneydrive-gradient)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

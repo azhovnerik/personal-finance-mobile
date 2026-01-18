@@ -1,0 +1,7 @@
+id,email,name,password,role,status,telegram_name
+"1","aa@gmail.com","aa","$2a$12$CJjOA90oOEL3y2J35JmEjODRUCOlC6ZSBBXDEIWLwow33/hQPhZTG","USER","ACTIVE",
+"12","azhovnerik@gmail.com","andreyzh","$2a$12$csqbfoe4gvOeDzNhj6iwP.OAtRldaWD2QH8eM72THGj6L1Y8PDAkm","USER","ACTIVE","azhovneryk"
+"66","kpzhovnerik@gmaii.com","konstantin","$2a$12$lmUJ7KyILPJq19Fve7kckOb42WM76icSKHYFZ.YFGL9UTs.QyRlEa","USER","ACTIVE",
+"81","elinakitaygora@gmail.com","Elina","$2a$12$DLRhV7gXXri6ggolMYELRuhgheQNWcnIb9b4lIiNDwaoOnDw4R0QO","USER","ACTIVE",
+"294","u.bidnenko@gmail.com","Yulya","$2a$12$idqK7xtgP4ka7kTT5E1lae3AUvGqUP5vnqlVqMNPwpukwhgndjdMm","USER","ACTIVE",
+"1095","test@gmail.com","test","$2a$12$38f/2istbkKyLhAFiNerMuo..EMxDNU4dN39MSZc0sSkx1jeqAtAe","USER","ACTIVE",

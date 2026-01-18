@@ -1,0 +1,70 @@
+<header th:fragment="menu" class="mb-3">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/navbar.css}">
+    <nav class="navbar navbar-expand-md navbar-light bg-light app-navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                 <img src="/images/my-logo.png" th:src="@{/images/my-logo.png}" alt="MoneyDrive.me logo" class="md-navbar-logo">
+                <span class="md-navbar-brand-text" th:text="#{app.name}">MoneyDrive.me</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
+                    aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-item nav-link" href="/" th:text="#{nav.dashboard}">Main</a>
+                    <a class="nav-item nav-link" href="/categories" th:text="#{nav.categories}">Categories</a>
+                    <a class="nav-item nav-link" href="/budgets" th:text="#{nav.budgets}">Budgets</a>
+                    <a class="nav-item nav-link" href="/accounts" th:text="#{nav.accounts}">Accounts</a>
+                    <a class="nav-item nav-link" href="/transactions" th:text="#{nav.transactions}">Transactions</a>
+                    <a class="nav-item nav-link" href="/reports" th:text="#{nav.reports}">Reports</a>
+                    <a class="nav-item nav-link" href="/support" th:text="#{nav.support}">Support</a>
+                    <a class="nav-item nav-link" href="/settings" th:text="#{nav.settings}">Settings</a>
+                </div>
+                <div class="ms-md-auto mt-3 mt-md-0 d-flex flex-column flex-md-row align-items-md-center gap-3 md-navbar-meta">
+                    <form class="d-flex align-items-center gap-2" th:action="@{/language}" method="post">
+                        <label for="language-switcher" class="form-label mb-0 small text-muted" th:text="#{header.language}">
+                            Language
+                        </label>
+                        <select id="language-switcher" class="form-select form-select-sm" name="lang"
+                                onchange="this.form.submit()">
+                            <option th:each="lang : ${supportedLanguages}" th:value="${lang.code}"
+                                    th:text="${lang.displayName}" th:selected="${lang.code == currentLanguage}"></option>
+                        </select>
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    </form>
+                    <div class="d-flex align-items-center gap-2 flex-wrap" th:if="${headerSubscription != null}">
+                        <span class="fw-semibold text-secondary"
+                              th:if="${headerSubscription.planDisplayName != null and !#strings.isEmpty(headerSubscription.planDisplayName)}"
+                              th:text="${headerSubscription.planDisplayName}">STANDARD</span>
+                        <span class="small text-warning fw-semibold"
+                              th:if="${headerSubscription.trial and headerSubscription.trialEndsAt != null}"
+                              th:text="#{header.subscription.trialEnds(${#temporals.format(headerSubscription.trialEndsAt, 'yyyy-MM-dd')})}">Free trial ends on 2024-12-31</span>
+                        <a class="btn btn-sm md-btn md-btn-primary"
+                           th:if="${headerSubscription.trial}"
+                           th:href="@{/subscriptions}"
+                           th:text="#{header.subscription.subscribeButton}">Subscribe</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-3" th:if="${currencyConversionWarnings != null and !#lists.isEmpty(currencyConversionWarnings)}">
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading" th:text="#{currency.warning.title}">Exchange rates are missing</h4>
+            <p class="mb-2" th:text="#{currency.warning.description}">
+                We could not convert some amounts to the base currency because there are no exchange rates for:
+            </p>
+            <ul class="mb-2">
+                <li th:each="warning : ${currencyConversionWarnings}"
+                    th:text="|${warning.currency} on ${warning.rateDate}|"></li>
+            </ul>
+            <p class="mb-0">
+                <span th:text="#{currency.warning.cta}">Please add the rates manually or import them on the</span>
+                <a class="alert-link" href="/settings/currency-rates" th:text="#{currency.warning.link}">currency rates page</a>.
+            </p>
+        </div>
+    </div>
+    <script defer th:src="@{/js/navbar.js}"></script>
+</header>

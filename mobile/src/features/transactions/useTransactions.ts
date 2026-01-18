@@ -72,10 +72,9 @@ export const useTransactions = (): UseTransactionsResult => {
       }
 
       const headers = { Authorization: `Bearer ${token}` };
-      const { data, error: apiError } = await client.GET("/transactions", {
+      const { data, error: apiError } = await client.GET("/api/v2/transactions", {
         headers,
       });
-
       if (apiError || !data) {
         if (apiError?.status === 401) {
           await removeToken();

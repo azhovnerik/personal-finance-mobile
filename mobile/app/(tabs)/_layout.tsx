@@ -279,7 +279,11 @@ export default function TabsLayout() {
             <Text variant="subtitle">Добавить транзакцию</Text>
             <View style={styles.modalActionSpacer} />
           </View>
-          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.amountRow}>
               <View style={styles.currencyBadge}>
                 <Text style={styles.currencyText}>{mockUser.baseCurrency ?? "UAH"}</Text>

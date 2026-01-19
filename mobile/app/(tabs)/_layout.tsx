@@ -387,90 +387,90 @@ export default function TabsLayout() {
               <Text style={[styles.keypadKeyText, styles.keypadDoneText]}>ГОТОВО</Text>
             </Pressable>
           </View>
+
+          {isCategoryOpen ? (
+            <View style={styles.categoryOverlay}>
+              <SafeAreaView style={styles.categoryModal}>
+                <View style={styles.categoryHeader}>
+                  <Pressable onPress={handleCategoryBack}>
+                    <Text style={styles.modalAction}>Назад</Text>
+                  </Pressable>
+                  <Text variant="subtitle">Категории</Text>
+                  <Pressable>
+                    <Text style={styles.modalAction}>Редактировать</Text>
+                  </Pressable>
+                </View>
+                <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
+                  <Text style={styles.sectionTitle}>Самые частые</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topCategoryRow}>
+                    {topCategories.map((category) => (
+                      <Pressable
+                        key={category.id}
+                        style={styles.topCategoryItem}
+                        onPress={() => handleCategoryPress(category.id)}
+                      >
+                        <View style={[styles.topCategoryIcon, { backgroundColor: category.color }]}>
+                          <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
+                        </View>
+                        <Text style={styles.topCategoryLabel} numberOfLines={1}>
+                          {category.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+
+                  <Text style={styles.sectionTitle}>Все категории</Text>
+                  <View style={styles.categoryList}>
+                    {categories.map((category) => (
+                      <Pressable
+                        key={category.id}
+                        style={styles.categoryRow}
+                        onPress={() => handleCategoryPress(category.id)}
+                      >
+                        <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
+                          <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
+                        </View>
+                        <Text style={styles.categoryLabel}>{category.name}</Text>
+                        {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </SafeAreaView>
+            </View>
+          ) : null}
+
+          {isSubcategoryOpen ? (
+            <View style={styles.categoryOverlay}>
+              <SafeAreaView style={styles.categoryModal}>
+                <View style={styles.categoryHeader}>
+                  <Pressable onPress={handleSubcategoryBack}>
+                    <Text style={styles.modalAction}>Назад</Text>
+                  </Pressable>
+                  <Text variant="subtitle">{activeCategory?.name ?? "Подкатегории"}</Text>
+                  <View style={styles.modalActionSpacer} />
+                </View>
+                <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
+                  <View style={styles.categoryList}>
+                    {activeCategory?.subcategories?.map((subcategory) => (
+                      <Pressable
+                        key={subcategory.id}
+                        style={styles.categoryRow}
+                        onPress={() => handleSubcategoryPress(subcategory.id)}
+                      >
+                        <View style={[styles.categoryIcon, { backgroundColor: subcategory.color }]}>
+                          <Text style={styles.categoryIconText}>{iconForCategory(subcategory.icon)}</Text>
+                        </View>
+                        <Text style={styles.categoryLabel}>{subcategory.name}</Text>
+                      </Pressable>
+                    )) ?? null}
+                  </View>
+                </ScrollView>
+              </SafeAreaView>
+            </View>
+          ) : null}
         </View>
       </Modal>
-
-      {isCategoryOpen ? (
-        <View style={styles.categoryOverlay}>
-          <SafeAreaView style={styles.categoryModal}>
-          <View style={styles.categoryHeader}>
-            <Pressable onPress={handleCategoryBack}>
-              <Text style={styles.modalAction}>Назад</Text>
-            </Pressable>
-            <Text variant="subtitle">Категории</Text>
-            <Pressable>
-              <Text style={styles.modalAction}>Редактировать</Text>
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionTitle}>Самые частые</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topCategoryRow}>
-              {topCategories.map((category) => (
-                <Pressable
-                  key={category.id}
-                  style={styles.topCategoryItem}
-                  onPress={() => handleCategoryPress(category.id)}
-                >
-                  <View style={[styles.topCategoryIcon, { backgroundColor: category.color }]}>
-                    <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
-                  </View>
-                  <Text style={styles.topCategoryLabel} numberOfLines={1}>
-                    {category.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-
-            <Text style={styles.sectionTitle}>Все категории</Text>
-            <View style={styles.categoryList}>
-              {categories.map((category) => (
-                <Pressable
-                  key={category.id}
-                  style={styles.categoryRow}
-                  onPress={() => handleCategoryPress(category.id)}
-                >
-                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                    <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
-                  </View>
-                  <Text style={styles.categoryLabel}>{category.name}</Text>
-                  {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
-          </SafeAreaView>
-        </View>
-      ) : null}
-
-      {isSubcategoryOpen ? (
-        <View style={styles.categoryOverlay}>
-          <SafeAreaView style={styles.categoryModal}>
-          <View style={styles.categoryHeader}>
-            <Pressable onPress={handleSubcategoryBack}>
-              <Text style={styles.modalAction}>Назад</Text>
-            </Pressable>
-            <Text variant="subtitle">{activeCategory?.name ?? "Подкатегории"}</Text>
-            <View style={styles.modalActionSpacer} />
-          </View>
-          <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.categoryList}>
-              {activeCategory?.subcategories?.map((subcategory) => (
-                <Pressable
-                  key={subcategory.id}
-                  style={styles.categoryRow}
-                  onPress={() => handleSubcategoryPress(subcategory.id)}
-                >
-                  <View style={[styles.categoryIcon, { backgroundColor: subcategory.color }]}>
-                    <Text style={styles.categoryIconText}>{iconForCategory(subcategory.icon)}</Text>
-                  </View>
-                  <Text style={styles.categoryLabel}>{subcategory.name}</Text>
-                </Pressable>
-              )) ?? null}
-            </View>
-          </ScrollView>
-          </SafeAreaView>
-        </View>
-      ) : null}
     </>
   );
 }

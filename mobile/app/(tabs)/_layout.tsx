@@ -37,33 +37,27 @@ export default function TabsLayout() {
 
   return (
     <>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textSecondary,
-        }}
-      >
-        <Tabs.Screen name="index" options={{ title: "Главная" }} />
-        <Tabs.Screen name="transactions" options={{ title: "Транзакции" }} />
-        <Tabs.Screen
-          name="add"
-          options={{
-            title: "",
-            tabBarLabel: "",
-            tabBarButton: () => (
-              <Pressable style={styles.addButtonWrapper} onPress={() => setIsAddOpen(true)}>
-                <View style={styles.addButton}>
-                  <Text style={styles.addButtonLabel}>+</Text>
-                </View>
-              </Pressable>
-            ),
+      <View style={styles.container}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: styles.tabBar,
+            tabBarActiveTintColor: colors.primary,
+            tabBarInactiveTintColor: colors.textSecondary,
           }}
-        />
-        <Tabs.Screen name="budgets" options={{ title: "Бюджеты" }} />
-        <Tabs.Screen name="more" options={{ title: "Ещё" }} />
-      </Tabs>
+        >
+          <Tabs.Screen name="index" options={{ title: "Главная" }} />
+          <Tabs.Screen name="transactions" options={{ title: "Транзакции" }} />
+          <Tabs.Screen name="budgets" options={{ title: "Бюджеты" }} />
+          <Tabs.Screen name="accounts" options={{ title: "Счета" }} />
+          <Tabs.Screen name="more" options={{ title: "Ещё" }} />
+        </Tabs>
+        <Pressable style={styles.addButtonWrapper} onPress={() => setIsAddOpen(true)}>
+          <View style={styles.addButton}>
+            <Text style={styles.addButtonLabel}>+</Text>
+          </View>
+        </Pressable>
+      </View>
 
       <Modal animationType="slide" transparent={false} visible={isAddOpen} onRequestClose={() => setIsAddOpen(false)}>
         <View style={styles.modalContainer}>
@@ -130,6 +124,9 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   tabBar: {
     backgroundColor: colors.card,
     borderTopColor: colors.border,
@@ -139,8 +136,9 @@ const styles = StyleSheet.create({
   },
   addButtonWrapper: {
     position: "absolute",
-    top: -24,
     alignSelf: "center",
+    bottom: 28,
+    zIndex: 10,
   },
   addButton: {
     width: 64,

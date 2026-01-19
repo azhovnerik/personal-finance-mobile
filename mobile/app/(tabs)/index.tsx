@@ -1,12 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Path, Svg } from "react-native-svg";
 
 import { removeToken } from "../../src/storage/auth";
 import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
 import { mockDashboardSummary } from "../../src/shared/mocks";
+
+const CHART_SIZE = 160;
+const CHART_RADIUS = CHART_SIZE / 2;
 
 const CHART_COLORS = [
   colors.danger,
@@ -19,36 +21,60 @@ const CHART_COLORS = [
   "#14b8a6",
 ];
 
-const polarToCartesian = (cx: number, cy: number, radius: number, angle: number) => {
-  const angleInRadians = ((angle - 90) * Math.PI) / 180.0;
-  return {
-    x: cx + radius * Math.cos(angleInRadians),
-    y: cy + radius * Math.sin(angleInRadians),
-  };
-};
+const PieSlice = ({
+  size,
+  startAngle,
+  sweepAngle,
+  color,
+}: {
+  size: number;
+  startAngle: number;
+  sweepAngle: number;
+  color: string;
+}) => {
+  if (sweepAngle <= 0) {
+    return null;
+  }
 
-const describeArc = (cx: number, cy: number, radius: number, startAngle: number, endAngle: number) => {
-  const start = polarToCartesian(cx, cy, radius, endAngle);
-  const end = polarToCartesian(cx, cy, radius, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  const radius = size / 2;
+  const angle = Math.min(sweepAngle, 180);
 
-  return [
-    "M",
-    cx,
-    cy,
-    "L",
-    start.x,
-    start.y,
-    "A",
-    radius,
-    radius,
-    0,
-    largeArcFlag,
-    0,
-    end.x,
-    end.y,
-    "Z",
-  ].join(" ");
+  return (
+    <View style={[styles.sliceContainer, { width: size, height: size, transform: [{ rotate: `${startAngle}deg` }] }]}>
+      <View style={[styles.halfCircleContainer, styles.rightHalf, { width: radius, height: size }]}>
+        <View
+          style={[
+            styles.halfCircle,
+            styles.halfCircleRight,
+            {
+              width: size,
+              height: size,
+              borderRadius: radius,
+              backgroundColor: color,
+              transform: [{ rotate: `${angle}deg` }],
+            },
+          ]}
+        />
+      </View>
+      {sweepAngle > 180 ? (
+        <View style={[styles.halfCircleContainer, styles.leftHalf, { width: radius, height: size }]}>
+          <View
+            style={[
+              styles.halfCircle,
+              styles.halfCircleLeft,
+              {
+                width: size,
+                height: size,
+                borderRadius: radius,
+                backgroundColor: color,
+                transform: [{ rotate: `${sweepAngle - 180}deg` }],
+              },
+            ]}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
 };
 
 export default function DashboardScreen() {
@@ -126,15 +152,17 @@ export default function DashboardScreen() {
           <Text variant="caption">Сегменты показывают суммы по категориям.</Text>
           <View style={styles.pieRow}>
             <View style={styles.pieChartWrapper}>
-              <Svg width={160} height={160} viewBox="0 0 160 160">
+              <View style={styles.pieChart}>
                 {categorySegments.map((segment) => (
-                  <Path
+                  <PieSlice
                     key={segment.categoryId}
-                    d={describeArc(80, 80, 70, segment.startAngle, segment.endAngle)}
-                    fill={segment.color}
+                    size={CHART_SIZE}
+                    startAngle={segment.startAngle}
+                    sweepAngle={segment.endAngle - segment.startAngle}
+                    color={segment.color}
                   />
                 ))}
-              </Svg>
+              </View>
               <View style={styles.pieCenter}>
                 <Text variant="caption">Всего</Text>
                 <Text style={styles.pieTotal}>
@@ -348,10 +376,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pieChartWrapper: {
-    width: 160,
-    height: 160,
+    width: CHART_SIZE,
+    height: CHART_SIZE,
     alignItems: "center",
     justifyContent: "center",
+  },
+  pieChart: {
+    width: CHART_SIZE,
+    height: CHART_SIZE,
+    borderRadius: CHART_RADIUS,
+    overflow: "hidden",
+    position: "relative",
   },
   pieCenter: {
     position: "absolute",
@@ -369,6 +404,30 @@ const styles = StyleSheet.create({
   chartLegend: {
     flex: 1,
     gap: spacing.md,
+  },
+  sliceContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+  },
+  halfCircleContainer: {
+    position: "absolute",
+    overflow: "hidden",
+  },
+  rightHalf: {
+    right: 0,
+  },
+  leftHalf: {
+    left: 0,
+  },
+  halfCircle: {
+    position: "absolute",
+  },
+  halfCircleRight: {
+    right: 0,
+  },
+  halfCircleLeft: {
+    left: 0,
   },
   legendRow: {
     flexDirection: "row",

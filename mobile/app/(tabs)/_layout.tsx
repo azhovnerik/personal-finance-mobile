@@ -192,24 +192,20 @@ export default function TabsLayout() {
       setFormState((prev) => ({ ...prev, categoryId: fallbackCategory.id }));
     }
     setIsCategoryOpen(false);
-    setIsAddOpen(true);
   };
 
   const handleSubcategoryPress = (subcategoryId: string) => {
     setFormState((prev) => ({ ...prev, categoryId: subcategoryId }));
     setIsSubcategoryOpen(false);
-    setIsAddOpen(true);
   };
 
   const openCategoryPicker = () => {
     Keyboard.dismiss();
-    setIsAddOpen(false);
     setIsCategoryOpen(true);
   };
 
   const handleCategoryBack = () => {
     setIsCategoryOpen(false);
-    setIsAddOpen(true);
   };
 
   const handleSubcategoryBack = () => {
@@ -394,14 +390,9 @@ export default function TabsLayout() {
         </View>
       </Modal>
 
-      <Modal
-        animationType="slide"
-        presentationStyle="overFullScreen"
-        transparent={false}
-        visible={isCategoryOpen}
-        onRequestClose={handleCategoryBack}
-      >
-        <SafeAreaView style={styles.categoryModal}>
+      {isCategoryOpen ? (
+        <View style={styles.categoryOverlay}>
+          <SafeAreaView style={styles.categoryModal}>
           <View style={styles.categoryHeader}>
             <Pressable onPress={handleCategoryBack}>
               <Text style={styles.modalAction}>Назад</Text>
@@ -447,17 +438,13 @@ export default function TabsLayout() {
               ))}
             </View>
           </ScrollView>
-        </SafeAreaView>
-      </Modal>
+          </SafeAreaView>
+        </View>
+      ) : null}
 
-      <Modal
-        animationType="slide"
-        presentationStyle="overFullScreen"
-        transparent={false}
-        visible={isSubcategoryOpen}
-        onRequestClose={handleSubcategoryBack}
-      >
-        <SafeAreaView style={styles.categoryModal}>
+      {isSubcategoryOpen ? (
+        <View style={styles.categoryOverlay}>
+          <SafeAreaView style={styles.categoryModal}>
           <View style={styles.categoryHeader}>
             <Pressable onPress={handleSubcategoryBack}>
               <Text style={styles.modalAction}>Назад</Text>
@@ -481,8 +468,9 @@ export default function TabsLayout() {
               )) ?? null}
             </View>
           </ScrollView>
-        </SafeAreaView>
-      </Modal>
+          </SafeAreaView>
+        </View>
+      ) : null}
     </>
   );
 }
@@ -679,6 +667,11 @@ const styles = StyleSheet.create({
   keypadDoneText: {
     color: colors.surface,
     fontWeight: "700",
+  },
+  categoryOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.surfaceMuted,
+    zIndex: 10,
   },
   categoryModal: {
     flex: 1,

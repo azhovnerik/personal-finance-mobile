@@ -183,6 +183,7 @@ export default function TabsLayout() {
     const category = categories.find((item) => item.id === categoryId);
     if (category?.subcategories?.length) {
       setActiveCategoryId(categoryId);
+      setIsCategoryOpen(false);
       setIsSubcategoryOpen(true);
       return;
     }
@@ -191,16 +192,28 @@ export default function TabsLayout() {
       setFormState((prev) => ({ ...prev, categoryId: fallbackCategory.id }));
     }
     setIsCategoryOpen(false);
+    setIsAddOpen(true);
   };
 
   const handleSubcategoryPress = (subcategoryId: string) => {
     setFormState((prev) => ({ ...prev, categoryId: subcategoryId }));
     setIsSubcategoryOpen(false);
-    setIsCategoryOpen(false);
+    setIsAddOpen(true);
   };
 
   const openCategoryPicker = () => {
     Keyboard.dismiss();
+    setIsAddOpen(false);
+    setIsCategoryOpen(true);
+  };
+
+  const handleCategoryBack = () => {
+    setIsCategoryOpen(false);
+    setIsAddOpen(true);
+  };
+
+  const handleSubcategoryBack = () => {
+    setIsSubcategoryOpen(false);
     setIsCategoryOpen(true);
   };
 
@@ -386,11 +399,11 @@ export default function TabsLayout() {
         presentationStyle="overFullScreen"
         transparent={false}
         visible={isCategoryOpen}
-        onRequestClose={() => setIsCategoryOpen(false)}
+        onRequestClose={handleCategoryBack}
       >
         <SafeAreaView style={styles.categoryModal}>
           <View style={styles.categoryHeader}>
-            <Pressable onPress={() => setIsCategoryOpen(false)}>
+            <Pressable onPress={handleCategoryBack}>
               <Text style={styles.modalAction}>Назад</Text>
             </Pressable>
             <Text variant="subtitle">Категории</Text>
@@ -442,11 +455,11 @@ export default function TabsLayout() {
         presentationStyle="overFullScreen"
         transparent={false}
         visible={isSubcategoryOpen}
-        onRequestClose={() => setIsSubcategoryOpen(false)}
+        onRequestClose={handleSubcategoryBack}
       >
         <SafeAreaView style={styles.categoryModal}>
           <View style={styles.categoryHeader}>
-            <Pressable onPress={() => setIsSubcategoryOpen(false)}>
+            <Pressable onPress={handleSubcategoryBack}>
               <Text style={styles.modalAction}>Назад</Text>
             </Pressable>
             <Text variant="subtitle">{activeCategory?.name ?? "Подкатегории"}</Text>

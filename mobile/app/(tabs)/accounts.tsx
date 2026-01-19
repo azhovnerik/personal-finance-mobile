@@ -1,71 +1,81 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 
-import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency } from "../../src/shared/utils/format";
 import { mockAccountDtos, mockUser } from "../../src/shared/mocks";
 
 export default function AccountsScreen() {
+  const baseCurrency = mockUser.baseCurrency ?? "UAH";
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text variant="title">Счета</Text>
-            <Text variant="caption">Управление балансами и переводами</Text>
+            <Text variant="title">Accounts</Text>
+            <Text variant="caption">Keep an eye on all of your balances.</Text>
           </View>
-          <Button title="Новый" variant="outline" tone="primary" size="sm" />
+          <View style={styles.headerActions}>
+            <Chip label={baseCurrency} isActive />
+            <Button title="Add new account" size="sm" />
+            <Button title="Add transfer" variant="outline" tone="primary" size="sm" />
+          </View>
         </View>
 
-        <Card style={styles.formCard}>
-          <Text variant="subtitle">Добавить счет</Text>
-          <Input placeholder="Название счета" />
-          <Input placeholder="Тип счета" />
-          <Input placeholder="Начальный баланс, ₴" keyboardType="numeric" />
-          <Button title="Создать счет" />
-        </Card>
-
-        <View style={styles.sectionHeader}>
-          <Text variant="subtitle">Мои счета</Text>
-          <Text variant="caption">Редактирование, баланс и трансферы</Text>
-        </View>
-
-        <View style={styles.list}>
-          {mockAccountDtos.map((account) => (
-            <Card key={account.id} style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountInfo}>
+        <Card style={styles.tableCard}>
+          <View style={styles.tableHeader}>
+            <Text variant="caption">Name</Text>
+            <Text variant="caption">Type</Text>
+            <Text variant="caption">Balance</Text>
+          </View>
+          <View style={styles.list}>
+            {mockAccountDtos.map((account) => (
+              <View key={account.id} style={styles.rowCard}>
+                <View>
                   <Text>{account.name}</Text>
                   <Text variant="caption">{account.type}</Text>
                 </View>
                 <View style={styles.accountBalance}>
-                  <Text style={styles.balanceValue}>
-                    {formatCurrency(account.balance ?? 0, account.currency ?? mockUser.baseCurrency ?? "UAH")}
+                  <Text
+                    style={
+                      (account.balance ?? 0) < 0 ? styles.negativeValue : styles.positiveValue
+                    }
+                  >
+                    {formatCurrency(account.balance ?? 0, account.currency ?? baseCurrency)}
                   </Text>
-                  {account.currency && account.currency !== mockUser.baseCurrency ? (
-                    <Text variant="caption">
-                      ≈ {formatCurrency(account.balanceInBase ?? 0, mockUser.baseCurrency ?? "UAH")}
-                    </Text>
-                  ) : null}
+                  <Text variant="caption">
+                    {formatCurrency(account.balanceInBase ?? 0, baseCurrency)}
+                  </Text>
+                </View>
+                <View style={styles.actionRow}>
+                  <Button title="Edit" variant="outline" tone="primary" size="sm" />
+                  <Button title="Delete" variant="ghost" size="sm" />
                 </View>
               </View>
-              <View style={styles.actionRow}>
-                <Button title="Изменить" variant="secondary" size="sm" />
-                <Button title="Баланс" variant="secondary" size="sm" />
-              </View>
-              <View style={styles.actionRow}>
-                <Button title="Трансфер" variant="secondary" size="sm" />
-                <Button title="Удалить" variant="ghost" size="sm" />
-              </View>
-            </Card>
-          ))}
-        </View>
+            ))}
+          </View>
+        </Card>
 
-        <Card style={styles.transferCard}>
-          <Text variant="subtitle">Трансфер между счетами</Text>
-          <Input placeholder="Счет отправителя" />
-          <Input placeholder="Счет получателя" />
-          <Input placeholder="Сумма, ₴" keyboardType="numeric" />
-          <Button title="Перевести" />
+        <Card style={styles.formCard}>
+          <Text variant="subtitle">Add account</Text>
+          <Input placeholder="Account name" />
+          <Input placeholder="Account type" />
+          <Input placeholder="Currency" />
+          <Input placeholder="Opening balance" keyboardType="numeric" />
+          <Button title="Create account" />
+        </Card>
+
+        <Card style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text variant="subtitle">Transfers</Text>
+              <Text variant="caption">Latest account transfers.</Text>
+            </View>
+            <Button title="Add transfer" variant="outline" tone="primary" size="sm" />
+          </View>
+          <View style={styles.emptyRow}>
+            <Text variant="caption">No transfers yet.</Text>
+          </View>
         </Card>
       </ScrollView>
     </ScreenContainer>
@@ -78,42 +88,61 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  formCard: {
     gap: spacing.sm,
   },
-  sectionHeader: {
-    gap: 4,
+  headerActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    alignItems: "center",
+  },
+  tableCard: {
+    gap: spacing.sm,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   list: {
     gap: spacing.sm,
   },
-  accountCard: {
+  rowCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: spacing.sm,
     gap: spacing.sm,
   },
-  accountHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  accountInfo: {
-    gap: 2,
-  },
   accountBalance: {
-    alignItems: "flex-end",
-  },
-  balanceValue: {
-    fontWeight: "600",
-    color: colors.primaryDark,
+    gap: 4,
   },
   actionRow: {
     flexDirection: "row",
     gap: spacing.sm,
   },
-  transferCard: {
+  formCard: {
     gap: spacing.sm,
+  },
+  sectionCard: {
+    gap: spacing.sm,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  emptyRow: {
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  positiveValue: {
+    color: colors.success,
+    fontWeight: "600",
+  },
+  negativeValue: {
+    color: colors.danger,
+    fontWeight: "600",
   },
 });

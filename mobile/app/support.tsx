@@ -11,24 +11,18 @@ export default function SupportScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text variant="title">Поддержка</Text>
-            <Text variant="caption">Напишите нам, и мы ответим в течение дня</Text>
+            <Text variant="title">Contact support</Text>
+            <Text variant="caption">We usually respond within one business day.</Text>
           </View>
-          <Button title="Назад" variant="secondary" onPress={() => router.back()} />
+          <Button title="Back" variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
         </View>
 
         <Card style={styles.card}>
-          <Text variant="subtitle">Сообщение в поддержку</Text>
-          <Input placeholder="Тема" />
-          <Input placeholder="Email для ответа" keyboardType="email-address" />
-          <Input placeholder="Сообщение" isMultiline />
-          <Button title="Отправить" />
-        </Card>
-
-        <Card style={styles.card}>
-          <Text variant="subtitle">Контактные данные</Text>
-          <Text>support@personal-finance.app</Text>
-          <Text variant="caption">Рабочее время: 09:00 - 20:00 (GMT+2)</Text>
+          <Text variant="subtitle">Send a request</Text>
+          <Input placeholder="Email" keyboardType="email-address" />
+          <Input placeholder="Subject" />
+          <Input placeholder="Message" multiline />
+          <Button title="Send request" />
         </Card>
       </ScrollView>
     </ScreenContainer>

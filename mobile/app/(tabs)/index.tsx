@@ -2,15 +2,15 @@ import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
-import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
-import { mockDashboardSummary, mockUser } from "../../src/shared/mocks";
+import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { formatCurrency } from "../../src/shared/utils/format";
+import { mockDashboardSummary } from "../../src/shared/mocks";
 
 const QUICK_ACTIONS = [
-  { label: "Добавить транзакцию", route: "/(tabs)/transactions", tone: "primary" as const },
-  { label: "Добавить бюджет", route: "/(tabs)/budgets", tone: "secondary" as const },
-  { label: "Добавить категорию", route: "/categories", tone: "success" as const },
-  { label: "Добавить счет", route: "/(tabs)/accounts", tone: "info" as const },
+  { label: "Add transaction", route: "/(tabs)/transactions", tone: "primary" as const },
+  { label: "Manage budgets", route: "/(tabs)/budgets", tone: "secondary" as const },
+  { label: "Add account", route: "/(tabs)/accounts", tone: "success" as const },
+  { label: "Browse categories", route: "/categories", tone: "info" as const },
 ];
 
 export default function DashboardScreen() {
@@ -28,16 +28,25 @@ export default function DashboardScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text variant="title">С возвращением, {mockUser.name}</Text>
-            <Text variant="caption">{formatDateRange(mockDashboardSummary.startDate, mockDashboardSummary.endDate)}</Text>
+            <Text variant="title">Welcome back, 10</Text>
+            <Text variant="caption">Showing data for Jan 1, 2026 – Jan 31, 2026</Text>
           </View>
-          <Button title="Выйти" variant="outline" tone="danger" size="sm" />
+          <Button title="Logout" variant="outline" tone="danger" size="sm" />
         </View>
+
+        <Card style={styles.filterCard}>
+          <Text variant="subtitle">Filters</Text>
+          <View style={styles.filterRow}>
+            <Input placeholder="Start date" />
+            <Input placeholder="End date" />
+          </View>
+          <Button title="Apply" size="sm" style={styles.filterButton} />
+        </Card>
 
         <Card style={styles.quickActionsCard}>
           <View style={styles.quickHeader}>
-            <Text variant="subtitle">Швидкі дії</Text>
-            <Text variant="caption">Часто используемые операции</Text>
+            <Text variant="subtitle">Quick actions</Text>
+            <Text variant="caption">Keep important flows one tap away.</Text>
           </View>
           <View style={styles.quickActions}>
             {QUICK_ACTIONS.map((action) => (
@@ -56,39 +65,39 @@ export default function DashboardScreen() {
 
         <View style={styles.summaryGrid}>
           <Card style={styles.summaryCard}>
-            <Text variant="caption">Общий баланс</Text>
+            <Text variant="caption">Total balance</Text>
             <Text variant="heading">
               {formatCurrency(mockDashboardSummary.totalBalance, mockDashboardSummary.baseCurrency)}
             </Text>
-            <Text variant="caption">По всем счетам</Text>
+            <Text variant="caption">Across all accounts</Text>
           </Card>
           <Card style={styles.summaryCard}>
-            <Text variant="caption">Доходы за период</Text>
+            <Text variant="caption">Income this period</Text>
             <Text style={[styles.summaryValue, styles.positiveValue]}>
               {formatCurrency(mockDashboardSummary.totalIncome, mockDashboardSummary.baseCurrency)}
             </Text>
-            <Text variant="caption">Все категории доходов</Text>
+            <Text variant="caption">All recorded income categories</Text>
           </Card>
           <Card style={styles.summaryCard}>
-            <Text variant="caption">Расходы за период</Text>
+            <Text variant="caption">Expenses this period</Text>
             <Text style={[styles.summaryValue, styles.negativeValue]}>
               {formatCurrency(mockDashboardSummary.totalExpenses, mockDashboardSummary.baseCurrency)}
             </Text>
-            <Text variant="caption">Совокупные траты</Text>
+            <Text variant="caption">Spending across all accounts</Text>
           </Card>
         </View>
 
         <Card style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text variant="subtitle">Счета</Text>
-            <Button title="Добавить" variant="outline" tone="primary" size="sm" />
+            <Text variant="subtitle">Accounts</Text>
+            <Button title="Add account" variant="outline" tone="primary" size="sm" />
           </View>
           <View style={styles.accountList}>
             {mockDashboardSummary.accounts.map((account) => (
               <View key={account.id} style={styles.accountRow}>
                 <View>
-                  <Text>{account.name}</Text>
                   <Text variant="caption">{account.type}</Text>
+                  <Text>{account.name}</Text>
                 </View>
                 <View style={styles.accountAmount}>
                   <Text style={styles.summaryValue}>
@@ -107,23 +116,21 @@ export default function DashboardScreen() {
 
         <Card style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text variant="subtitle">Структура доходов и расходов</Text>
+            <Text variant="subtitle">Spending & income breakdown</Text>
             <View style={styles.toggleRow}>
               <Chip
-                label="Расходы"
+                label="Expenses"
                 isActive={breakdownType === "expenses"}
                 onPress={() => setBreakdownType("expenses")}
               />
               <Chip
-                label="Доходы"
+                label="Income"
                 isActive={breakdownType === "income"}
                 onPress={() => setBreakdownType("income")}
               />
             </View>
           </View>
-          <Text variant="caption">
-            Все суммы в {mockDashboardSummary.baseCurrency}.
-          </Text>
+          <Text variant="caption">All amounts in {mockDashboardSummary.baseCurrency}.</Text>
           <View style={styles.breakdownList}>
             {breakdownList.map((item) => (
               <View key={item.categoryId} style={styles.breakdownRow}>
@@ -137,9 +144,9 @@ export default function DashboardScreen() {
         </Card>
 
         <Card style={styles.sectionCard}>
-          <Text variant="subtitle">Популярные категории</Text>
+          <Text variant="subtitle">Popular categories</Text>
           <Text variant="caption">
-            Топ расходов за период ({mockDashboardSummary.baseCurrency})
+            Top categories by spending ({mockDashboardSummary.baseCurrency})
           </Text>
           <View style={styles.breakdownList}>
             {mockDashboardSummary.topExpenseCategories.map((item, index) => (
@@ -155,8 +162,8 @@ export default function DashboardScreen() {
 
         <Card style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text variant="subtitle">Прогресс бюджетов</Text>
-            <Button title="Все бюджеты" variant="outline" tone="primary" size="sm" />
+            <Text variant="subtitle">Budget progress</Text>
+            <Button title="View budgets" variant="outline" tone="primary" size="sm" />
           </View>
           <View style={styles.progressList}>
             {mockDashboardSummary.budgetProgress.map((budget) => (
@@ -177,8 +184,10 @@ export default function DashboardScreen() {
         </Card>
 
         <Card style={styles.sectionCard}>
-          <Text variant="subtitle">Последние транзакции</Text>
-          <Text variant="caption">Обновлено 5 минут назад</Text>
+          <View style={styles.sectionHeader}>
+            <Text variant="subtitle">Recent transactions</Text>
+            <Button title="View all" variant="outline" tone="primary" size="sm" />
+          </View>
           <View style={styles.transactionList}>
             {mockDashboardSummary.recentTransactions.map((transaction) => (
               <View key={transaction.id} style={styles.transactionRow}>
@@ -220,6 +229,16 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
     gap: 4,
+  },
+  filterCard: {
+    gap: spacing.sm,
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  filterButton: {
+    alignSelf: "flex-start",
   },
   quickActionsCard: {
     gap: spacing.sm,

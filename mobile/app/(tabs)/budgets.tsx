@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 
-import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency } from "../../src/shared/utils/format";
 import { mockBudgets, mockUser } from "../../src/shared/mocks";
 
@@ -12,99 +12,68 @@ export default function BudgetsScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text variant="title">Бюджеты</Text>
-            <Text variant="caption">Планирование и контроль расходов</Text>
+            <Text variant="title">Budgets</Text>
+            <Text variant="caption">Monthly income and expense targets</Text>
           </View>
-          <Button title="Новый" variant="outline" tone="primary" size="sm" />
+          <Button title="Add new budget" size="sm" />
         </View>
 
         <Card style={styles.formCard}>
-          <Text variant="subtitle">Добавить бюджет</Text>
-          <Input placeholder="Название бюджета" />
-          <Input placeholder="Лимит, ₴" keyboardType="numeric" />
-          <Input placeholder="Период (например, март)" />
-          <Button title="Создать бюджет" />
+          <Text variant="subtitle">Add budget</Text>
+          <Input placeholder="Month" />
+          <Input placeholder="Total income" keyboardType="numeric" />
+          <Input placeholder="Total expenses" keyboardType="numeric" />
+          <Button title="Create budget" />
         </Card>
 
-        <View style={styles.sectionHeader}>
-          <Text variant="subtitle">Активные бюджеты</Text>
-          <Text variant="caption">Добавляйте или удаляйте категории</Text>
-        </View>
-
-        <View style={styles.list}>
-          {mockBudgets.map((budget) => (
-            <Card key={budget.id} style={styles.budgetCard}>
-              <View style={styles.budgetHeader}>
+        <Card style={styles.sectionCard}>
+          <View style={styles.tableHeader}>
+            <Text variant="caption">Month</Text>
+            <Text variant="caption">Total income</Text>
+            <Text variant="caption">Total expenses</Text>
+          </View>
+          <View style={styles.list}>
+            {mockBudgets.map((budget) => (
+              <View key={budget.id} style={styles.rowCard}>
                 <View>
                   <Text>{budget.month}</Text>
                   <Text variant="caption">
-                    Лимит {formatCurrency(budget.totalExpense ?? 0, budget.baseCurrency ?? baseCurrency)}
+                    {formatCurrency(budget.totalIncome ?? 0, budget.baseCurrency ?? baseCurrency)} income
                   </Text>
                 </View>
-                <Text style={styles.spentValue}>
-                  {formatCurrency(budget.totalExpenseFact ?? 0, budget.baseCurrency ?? baseCurrency)}
-                </Text>
+                <View style={styles.rowAmounts}>
+                  <Text style={styles.positiveValue}>
+                    {formatCurrency(budget.totalIncomeFact ?? 0, budget.baseCurrency ?? baseCurrency)}
+                  </Text>
+                  <Text style={styles.negativeValue}>
+                    {formatCurrency(budget.totalExpenseFact ?? 0, budget.baseCurrency ?? baseCurrency)}
+                  </Text>
+                </View>
+                <View style={styles.actionRow}>
+                  <Button title="Details" variant="outline" tone="primary" size="sm" />
+                  <Button title="Delete" variant="ghost" size="sm" />
+                </View>
               </View>
-              <View style={styles.categoryRow}>
-                {(budget.expenseBudgetCategories ?? []).map((category) => (
-                  <Chip
-                    key={category.id}
-                    label={category.category.name}
-                  />
-                ))}
-                <Chip label="+ Категория" isActive />
-              </View>
-              <View style={styles.summaryRow}>
-                <Text variant="caption">План</Text>
-                <Text style={styles.summaryValue}>
-                  {formatCurrency(budget.totalExpense ?? 0, budget.baseCurrency ?? baseCurrency)}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text variant="caption">Факт</Text>
-                <Text style={[styles.summaryValue, styles.negativeValue]}>
-                  {formatCurrency(budget.totalExpenseFact ?? 0, budget.baseCurrency ?? baseCurrency)}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text variant="caption">Остаток</Text>
-                <Text style={[styles.summaryValue, styles.positiveValue]}>
-                  {formatCurrency(budget.totalExpenseLeftover ?? 0, budget.baseCurrency ?? baseCurrency)}
-                </Text>
-              </View>
-              <View style={styles.actionRow}>
-                <Button title="Изменить" variant="secondary" size="sm" />
-                <Button title="Удалить" variant="ghost" size="sm" />
-              </View>
-            </Card>
-          ))}
-        </View>
+            ))}
+          </View>
+        </Card>
 
         <Card>
-          <Text variant="subtitle">Сводка бюджета</Text>
+          <Text variant="subtitle">Budget summary</Text>
           <View style={styles.summaryRow}>
-            <Text>Всего запланировано</Text>
-            <Text style={styles.summaryValue}>
+            <Text>Total income</Text>
+            <Text style={styles.positiveValue}>
               {formatCurrency(
-                mockBudgets.reduce((sum, budget) => sum + (budget.totalExpense ?? 0), 0),
+                mockBudgets.reduce((sum, budget) => sum + (budget.totalIncomeFact ?? 0), 0),
                 baseCurrency,
               )}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text>Потрачено</Text>
-            <Text style={[styles.summaryValue, styles.negativeValue]}>
+            <Text>Total expenses</Text>
+            <Text style={styles.negativeValue}>
               {formatCurrency(
                 mockBudgets.reduce((sum, budget) => sum + (budget.totalExpenseFact ?? 0), 0),
-                baseCurrency,
-              )}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text>Остаток</Text>
-            <Text style={[styles.summaryValue, styles.positiveValue]}>
-              {formatCurrency(
-                mockBudgets.reduce((sum, budget) => sum + (budget.totalExpenseLeftover ?? 0), 0),
                 baseCurrency,
               )}
             </Text>
@@ -128,28 +97,26 @@ const styles = StyleSheet.create({
   formCard: {
     gap: spacing.sm,
   },
-  sectionHeader: {
-    gap: 4,
+  sectionCard: {
+    gap: spacing.sm,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   list: {
     gap: spacing.sm,
   },
-  budgetCard: {
+  rowCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: spacing.sm,
     gap: spacing.sm,
   },
-  budgetHeader: {
+  rowAmounts: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-  },
-  spentValue: {
-    color: colors.accent,
-    fontWeight: "600",
-  },
-  categoryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
   },
   actionRow: {
     flexDirection: "row",
@@ -162,13 +129,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  summaryValue: {
+  positiveValue: {
+    color: colors.success,
     fontWeight: "600",
   },
   negativeValue: {
     color: colors.danger,
-  },
-  positiveValue: {
-    color: colors.success,
+    fontWeight: "600",
   },
 });

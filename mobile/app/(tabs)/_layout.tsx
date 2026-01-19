@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Tabs } from "expo-router";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   Button,
@@ -14,7 +15,11 @@ import {
 import { mockAccounts, mockTransactions, mockUser } from "../../src/shared/mocks";
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [formState, setFormState] = useState({
     amount: "0",
     categoryId: null as string | null,
@@ -23,17 +28,176 @@ export default function TabsLayout() {
     accountId: null as string | null,
   });
 
-  const categoryOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    mockTransactions.forEach((transaction) => {
-      map.set(transaction.category.id, transaction.category.name);
-    });
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
-  }, []);
-
   const accountOptions = useMemo(() => {
     return mockAccounts.map((account) => ({ value: account.id, label: account.name }));
   }, []);
+
+  const categories = useMemo(
+    () => [
+      {
+        id: "cat-food",
+        name: "Еда и напитки",
+        icon: "food",
+        color: "#f4543a",
+        subcategories: [
+          { id: "cat-food-cafe", name: "Кафе и рестораны", icon: "food", color: "#f4543a" },
+          { id: "cat-food-groceries", name: "Продукты", icon: "basket", color: "#f4543a" },
+        ],
+      },
+      {
+        id: "cat-shopping",
+        name: "Покупки",
+        icon: "bag",
+        color: "#4aa8ff",
+        subcategories: [
+          { id: "cat-shopping-home", name: "Дом и быт", icon: "home", color: "#4aa8ff" },
+          { id: "cat-shopping-clothes", name: "Одежда", icon: "shirt", color: "#4aa8ff" },
+        ],
+      },
+      {
+        id: "cat-home",
+        name: "Жильё",
+        icon: "home",
+        color: "#f5a524",
+        subcategories: [
+          { id: "cat-home-rent", name: "Аренда", icon: "home", color: "#f5a524" },
+          { id: "cat-home-utility", name: "Коммунальные", icon: "home", color: "#f5a524" },
+        ],
+      },
+      {
+        id: "cat-transport",
+        name: "Транспорт",
+        icon: "car",
+        color: "#9aa3b2",
+        subcategories: [
+          { id: "cat-transport-taxi", name: "Такси", icon: "car", color: "#9aa3b2" },
+          { id: "cat-transport-fuel", name: "Топливо", icon: "fuel", color: "#9aa3b2" },
+        ],
+      },
+      {
+        id: "cat-income",
+        name: "Доходы",
+        icon: "finance",
+        color: "#22c55e",
+        subcategories: [
+          { id: "cat-income-salary", name: "Зарплата", icon: "finance", color: "#22c55e" },
+          { id: "cat-income-freelance", name: "Фриланс", icon: "finance", color: "#22c55e" },
+        ],
+      },
+      {
+        id: "cat-auto",
+        name: "Автомобиль",
+        icon: "auto",
+        color: "#a855f7",
+        subcategories: [
+          { id: "cat-auto-service", name: "Сервис", icon: "auto", color: "#a855f7" },
+          { id: "cat-auto-insurance", name: "Страховка", icon: "auto", color: "#a855f7" },
+        ],
+      },
+      {
+        id: "cat-fun",
+        name: "Жизнь и развлечения",
+        icon: "party",
+        color: "#84cc16",
+      },
+      {
+        id: "cat-communication",
+        name: "Связь, ПК",
+        icon: "tech",
+        color: "#6366f1",
+      },
+      {
+        id: "cat-finance",
+        name: "Финансовые расходы",
+        icon: "finance",
+        color: "#14b8a6",
+      },
+    ],
+    [],
+  );
+
+  const flatCategories = useMemo(() => {
+    return categories.flatMap((category) => {
+      if (!category.subcategories) {
+        return [category];
+      }
+      return [category, ...category.subcategories];
+    });
+  }, [categories]);
+
+  const categoryFrequency = useMemo(() => {
+    const counts = new Map<string, number>();
+    mockTransactions.forEach((transaction) => {
+      counts.set(transaction.category.name, (counts.get(transaction.category.name) ?? 0) + 1);
+    });
+    return counts;
+  }, []);
+
+  const topCategories = useMemo(() => {
+    const sorted = [...flatCategories].sort((a, b) => {
+      const countA = categoryFrequency.get(a.name) ?? 0;
+      const countB = categoryFrequency.get(b.name) ?? 0;
+      return countB - countA;
+    });
+    return sorted.slice(0, 5);
+  }, [categoryFrequency, flatCategories]);
+
+  const selectedCategory = useMemo(() => {
+    return flatCategories.find((category) => category.id === formState.categoryId) ?? null;
+  }, [flatCategories, formState.categoryId]);
+
+  const activeCategory = useMemo(() => {
+    return categories.find((category) => category.id === activeCategoryId) ?? null;
+  }, [activeCategoryId, categories]);
+
+  const iconForCategory = (icon: string) => {
+    switch (icon) {
+      case "basket":
+        return "🛒";
+      case "food":
+        return "🍽️";
+      case "bag":
+        return "🛍️";
+      case "home":
+        return "🏠";
+      case "car":
+        return "🚕";
+      case "fuel":
+        return "⛽";
+      case "auto":
+        return "🚗";
+      case "party":
+        return "🎉";
+      case "tech":
+        return "💻";
+      case "finance":
+        return "💸";
+      case "shirt":
+        return "👕";
+      default:
+        return "💰";
+    }
+  };
+
+  const handleCategoryPress = (categoryId: string) => {
+    const category = categories.find((item) => item.id === categoryId);
+    if (category?.subcategories?.length) {
+      setActiveCategoryId(categoryId);
+      setIsSubcategoryOpen(true);
+      return;
+    }
+    const fallbackCategory = flatCategories.find((item) => item.id === categoryId);
+    if (fallbackCategory) {
+      setFormState((prev) => ({ ...prev, categoryId: fallbackCategory.id }));
+    }
+    setIsCategoryOpen(false);
+  };
+
+  const handleSubcategoryPress = (subcategoryId: string) => {
+    setFormState((prev) => ({ ...prev, categoryId: subcategoryId }));
+    setIsSubcategoryOpen(false);
+    setIsCategoryOpen(false);
+  };
 
   const updateAmount = (value: string) => {
     setFormState((prev) => ({ ...prev, amount: value }));
@@ -108,11 +272,11 @@ export default function TabsLayout() {
 
       <Modal animationType="slide" transparent={false} visible={isAddOpen} onRequestClose={() => setIsAddOpen(false)}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }]}>
             <Pressable onPress={() => setIsAddOpen(false)}>
               <Text style={styles.modalAction}>Отмена</Text>
             </Pressable>
-            <Text variant="subtitle">Добавить операцию</Text>
+            <Text variant="subtitle">Добавить транзакцию</Text>
             <View style={styles.modalActionSpacer} />
           </View>
           <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -130,12 +294,19 @@ export default function TabsLayout() {
               </View>
             </View>
 
-            <Select
-              placeholder="Категория"
-              value={formState.categoryId}
-              options={categoryOptions}
-              onChange={(value) => setFormState((prev) => ({ ...prev, categoryId: value }))}
-            />
+            <Pressable style={styles.categoryField} onPress={() => setIsCategoryOpen(true)}>
+              <View style={[styles.categoryIcon, { backgroundColor: selectedCategory?.color ?? colors.border }]}>
+                <Text style={styles.categoryIconText}>
+                  {iconForCategory(selectedCategory?.icon ?? "default")}
+                </Text>
+              </View>
+              <View style={styles.categoryLabelWrapper}>
+                <Text style={selectedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
+                  {selectedCategory?.name ?? "Выберите категорию"}
+                </Text>
+              </View>
+              <Text style={styles.categoryChevron}>›</Text>
+            </Pressable>
 
             <Input
               placeholder="Примечание"
@@ -200,6 +371,94 @@ export default function TabsLayout() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={isCategoryOpen}
+        onRequestClose={() => setIsCategoryOpen(false)}
+      >
+        <SafeAreaView style={styles.categoryModal}>
+          <View style={styles.categoryHeader}>
+            <Pressable onPress={() => setIsCategoryOpen(false)}>
+              <Text style={styles.modalAction}>Назад</Text>
+            </Pressable>
+            <Text variant="subtitle">Категории</Text>
+            <Pressable>
+              <Text style={styles.modalAction}>Редактировать</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Самые частые</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topCategoryRow}>
+              {topCategories.map((category) => (
+                <Pressable
+                  key={category.id}
+                  style={styles.topCategoryItem}
+                  onPress={() => handleCategoryPress(category.id)}
+                >
+                  <View style={[styles.topCategoryIcon, { backgroundColor: category.color }]}>
+                    <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
+                  </View>
+                  <Text style={styles.topCategoryLabel} numberOfLines={1}>
+                    {category.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.sectionTitle}>Все категории</Text>
+            <View style={styles.categoryList}>
+              {categories.map((category) => (
+                <Pressable
+                  key={category.id}
+                  style={styles.categoryRow}
+                  onPress={() => handleCategoryPress(category.id)}
+                >
+                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
+                    <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
+                  </View>
+                  <Text style={styles.categoryLabel}>{category.name}</Text>
+                  {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={isSubcategoryOpen}
+        onRequestClose={() => setIsSubcategoryOpen(false)}
+      >
+        <SafeAreaView style={styles.categoryModal}>
+          <View style={styles.categoryHeader}>
+            <Pressable onPress={() => setIsSubcategoryOpen(false)}>
+              <Text style={styles.modalAction}>Назад</Text>
+            </Pressable>
+            <Text variant="subtitle">{activeCategory?.name ?? "Подкатегории"}</Text>
+            <View style={styles.modalActionSpacer} />
+          </View>
+          <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.categoryList}>
+              {activeCategory?.subcategories?.map((subcategory) => (
+                <Pressable
+                  key={subcategory.id}
+                  style={styles.categoryRow}
+                  onPress={() => handleSubcategoryPress(subcategory.id)}
+                >
+                  <View style={[styles.categoryIcon, { backgroundColor: subcategory.color }]}>
+                    <Text style={styles.categoryIconText}>{iconForCategory(subcategory.icon)}</Text>
+                  </View>
+                  <Text style={styles.categoryLabel}>{subcategory.name}</Text>
+                </Pressable>
+              )) ?? null}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </>
   );
 }
@@ -216,6 +475,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   addButtonWrapper: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -247,7 +507,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
@@ -290,6 +550,42 @@ const styles = StyleSheet.create({
   detailsText: {
     color: "#2ecc71",
     fontWeight: "600",
+  },
+  categoryField: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  categoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryIconText: {
+    fontSize: 16,
+  },
+  categoryLabelWrapper: {
+    flex: 1,
+  },
+  categoryLabel: {
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  categoryPlaceholder: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  categoryChevron: {
+    fontSize: 20,
+    color: colors.textSecondary,
   },
   modalFooter: {
     padding: spacing.lg,
@@ -359,5 +655,61 @@ const styles = StyleSheet.create({
   keypadDoneText: {
     color: colors.surface,
     fontWeight: "700",
+  },
+  categoryModal: {
+    flex: 1,
+    backgroundColor: colors.surfaceMuted,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  categoryContent: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    letterSpacing: 1,
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+  },
+  topCategoryRow: {
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  topCategoryItem: {
+    width: 72,
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  topCategoryIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topCategoryLabel: {
+    fontSize: 12,
+    textAlign: "center",
+    color: colors.textPrimary,
+  },
+  categoryList: {
+    gap: spacing.sm,
+  },
+  categoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
 });

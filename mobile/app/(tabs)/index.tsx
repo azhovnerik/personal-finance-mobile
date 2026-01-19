@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import Svg, { Circle } from "react-native-svg";
 
 import { removeToken } from "../../src/storage/auth";
 import { Button, Card, Chip, DateInput, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
@@ -45,10 +44,7 @@ export default function DashboardScreen() {
   const totalFlow = mockDashboardSummary.totalIncome + mockDashboardSummary.totalExpenses;
   const expensePercent = totalFlow > 0 ? (mockDashboardSummary.totalExpenses / totalFlow) * 100 : 0;
   const incomePercent = 100 - expensePercent;
-  const radius = 48;
-  const circumference = 2 * Math.PI * radius;
-  const expenseDash = (expensePercent / 100) * circumference;
-  const incomeDash = (incomePercent / 100) * circumference;
+  const expenseAngle = Math.min(Math.max(expensePercent, 0), 100) * 3.6;
 
   return (
     <ScreenContainer>
@@ -160,40 +156,36 @@ export default function DashboardScreen() {
           <Text variant="caption">All amounts in {mockDashboardSummary.baseCurrency}.</Text>
           <View style={styles.chartRow}>
             <View style={styles.chartCard}>
-              <Svg width={120} height={120} viewBox="0 0 120 120">
-                <Circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  stroke={colors.border}
-                  strokeWidth={16}
-                  fill="none"
-                />
-                <Circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  stroke={colors.danger}
-                  strokeWidth={16}
-                  fill="none"
-                  strokeDasharray={`${expenseDash} ${circumference - expenseDash}`}
-                  rotation={-90}
-                  origin="60, 60"
-                  strokeLinecap="round"
-                />
-                <Circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  stroke={colors.success}
-                  strokeWidth={16}
-                  fill="none"
-                  strokeDasharray={`${incomeDash} ${circumference - incomeDash}`}
-                  rotation={-90 + expensePercent * 3.6}
-                  origin="60, 60"
-                  strokeLinecap="round"
-                />
-              </Svg>
+              <View style={styles.donutContainer}>
+                <View style={[styles.donutRing, { borderColor: colors.success }]} />
+                <View style={[styles.halfCircleContainer, styles.rightHalf]}>
+                  <View
+                    style={[
+                      styles.halfCircle,
+                      styles.halfCircleRight,
+                      {
+                        borderColor: colors.danger,
+                        transform: [{ rotate: `${Math.min(expenseAngle, 180)}deg` }],
+                      },
+                    ]}
+                  />
+                </View>
+                {expenseAngle > 180 ? (
+                  <View style={[styles.halfCircleContainer, styles.leftHalf]}>
+                    <View
+                      style={[
+                        styles.halfCircle,
+                        styles.halfCircleLeft,
+                        {
+                          borderColor: colors.danger,
+                          transform: [{ rotate: `${expenseAngle - 180}deg` }],
+                        },
+                      ]}
+                    />
+                  </View>
+                ) : null}
+                <View style={styles.donutHole} />
+              </View>
               <View style={styles.chartCenter}>
                 <Text variant="caption">Income</Text>
                 <Text style={styles.chartValue}>{Math.round(incomePercent)}%</Text>
@@ -397,6 +389,51 @@ const styles = StyleSheet.create({
     height: 120,
     alignItems: "center",
     justifyContent: "center",
+  },
+  donutContainer: {
+    width: 120,
+    height: 120,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  donutRing: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 16,
+  },
+  halfCircleContainer: {
+    position: "absolute",
+    width: 60,
+    height: 120,
+    overflow: "hidden",
+  },
+  rightHalf: {
+    right: 0,
+  },
+  leftHalf: {
+    left: 0,
+  },
+  halfCircle: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 16,
+  },
+  halfCircleRight: {
+    right: 0,
+  },
+  halfCircleLeft: {
+    left: 0,
+  },
+  donutHole: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.surface,
   },
   chartCenter: {
     position: "absolute",

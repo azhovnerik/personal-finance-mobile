@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Tabs } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -199,6 +199,11 @@ export default function TabsLayout() {
     setIsCategoryOpen(false);
   };
 
+  const openCategoryPicker = () => {
+    Keyboard.dismiss();
+    setIsCategoryOpen(true);
+  };
+
   const updateAmount = (value: string) => {
     setFormState((prev) => ({ ...prev, amount: value }));
   };
@@ -282,7 +287,7 @@ export default function TabsLayout() {
           <ScrollView
             contentContainerStyle={styles.modalContent}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
           >
             <View style={styles.amountRow}>
               <View style={styles.currencyBadge}>
@@ -298,7 +303,7 @@ export default function TabsLayout() {
               </View>
             </View>
 
-            <Pressable style={styles.categoryField} onPress={() => setIsCategoryOpen(true)}>
+            <Pressable style={styles.categoryField} onPress={openCategoryPicker}>
               <View style={[styles.categoryIcon, { backgroundColor: selectedCategory?.color ?? colors.border }]}>
                 <Text style={styles.categoryIconText}>
                   {iconForCategory(selectedCategory?.icon ?? "default")}

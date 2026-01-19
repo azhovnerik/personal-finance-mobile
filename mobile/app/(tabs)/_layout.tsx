@@ -383,6 +383,7 @@ export default function TabsLayout() {
 
       <Modal
         animationType="slide"
+        presentationStyle="overFullScreen"
         transparent={false}
         visible={isCategoryOpen}
         onRequestClose={() => setIsCategoryOpen(false)}
@@ -438,6 +439,7 @@ export default function TabsLayout() {
 
       <Modal
         animationType="slide"
+        presentationStyle="overFullScreen"
         transparent={false}
         visible={isSubcategoryOpen}
         onRequestClose={() => setIsSubcategoryOpen(false)}

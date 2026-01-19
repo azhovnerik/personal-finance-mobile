@@ -1,30 +1,88 @@
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Path, Svg } from "react-native-svg";
 
 import { removeToken } from "../../src/storage/auth";
-import { Button, Card, Chip, DateInput, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
 import { mockDashboardSummary } from "../../src/shared/mocks";
 
-const QUICK_ACTIONS = [
-  { label: "Add transaction", route: "/(tabs)/transactions", tone: "primary" as const },
-  { label: "Manage budgets", route: "/(tabs)/budgets", tone: "secondary" as const },
-  { label: "Add account", route: "/(tabs)/accounts", tone: "success" as const },
-  { label: "Browse categories", route: "/categories", tone: "info" as const },
+const CHART_COLORS = [
+  colors.danger,
+  colors.warning,
+  colors.info,
+  colors.success,
+  colors.accent,
+  colors.primary,
+  "#9b51e0",
+  "#14b8a6",
 ];
+
+const polarToCartesian = (cx: number, cy: number, radius: number, angle: number) => {
+  const angleInRadians = ((angle - 90) * Math.PI) / 180.0;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+};
+
+const describeArc = (cx: number, cy: number, radius: number, startAngle: number, endAngle: number) => {
+  const start = polarToCartesian(cx, cy, radius, endAngle);
+  const end = polarToCartesian(cx, cy, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return [
+    "M",
+    cx,
+    cy,
+    "L",
+    start.x,
+    start.y,
+    "A",
+    radius,
+    radius,
+    0,
+    largeArcFlag,
+    0,
+    end.x,
+    end.y,
+    "Z",
+  ].join(" ");
+};
 
 export default function DashboardScreen() {
   const router = useRouter();
   const [breakdownType, setBreakdownType] = useState<"expenses" | "income">("expenses");
-  const [startDate, setStartDate] = useState<string | null>(mockDashboardSummary.startDate);
-  const [endDate, setEndDate] = useState<string | null>(mockDashboardSummary.endDate);
 
   const breakdownList = useMemo(() => {
     return breakdownType === "expenses"
       ? mockDashboardSummary.expenseBreakdown
       : mockDashboardSummary.incomeBreakdown;
   }, [breakdownType]);
+
+  const categorySegments = useMemo(() => {
+    const total = breakdownList.reduce((sum, item) => sum + item.amount, 0);
+    let currentAngle = 0;
+
+    return breakdownList.map((item, index) => {
+      const ratio = total > 0 ? item.amount / total : 0;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + ratio * 360;
+      currentAngle = endAngle;
+
+      return {
+        ...item,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+        startAngle,
+        endAngle,
+      };
+    });
+  }, [breakdownList]);
+
+  const totalAmount = useMemo(() => {
+    return breakdownList.reduce((sum, item) => sum + item.amount, 0);
+  }, [breakdownList]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -35,16 +93,8 @@ export default function DashboardScreen() {
   }, [router]);
 
   const dateRangeLabel = useMemo(() => {
-    if (startDate && endDate) {
-      return formatDateRange(startDate, endDate);
-    }
-    return "Выберите период";
-  }, [startDate, endDate]);
-
-  const totalFlow = mockDashboardSummary.totalIncome + mockDashboardSummary.totalExpenses;
-  const expensePercent = totalFlow > 0 ? (mockDashboardSummary.totalExpenses / totalFlow) * 100 : 0;
-  const incomePercent = 100 - expensePercent;
-  const expenseAngle = Math.min(Math.max(expensePercent, 0), 100) * 3.6;
+    return formatDateRange(mockDashboardSummary.startDate, mockDashboardSummary.endDate);
+  }, []);
 
   return (
     <ScreenContainer>
@@ -57,32 +107,54 @@ export default function DashboardScreen() {
           <Button title="Logout" variant="outline" tone="danger" size="sm" onPress={handleLogout} />
         </View>
 
-        <Card style={styles.filterCard}>
-          <Text variant="subtitle">Filters</Text>
-          <View style={styles.filterRow}>
-            <DateInput placeholder="Start date" value={startDate} onChange={setStartDate} />
-            <DateInput placeholder="End date" value={endDate} onChange={setEndDate} />
-          </View>
-          <Button title="Apply" size="sm" style={styles.filterButton} />
-        </Card>
-
-        <Card style={styles.quickActionsCard}>
-          <View style={styles.quickHeader}>
-            <Text variant="subtitle">Quick actions</Text>
-            <Text variant="caption">Keep important flows one tap away.</Text>
-          </View>
-          <View style={styles.quickActions}>
-            {QUICK_ACTIONS.map((action) => (
-              <Button
-                key={action.label}
-                title={action.label}
-                variant="outline"
-                tone={action.tone}
-                size="sm"
-                onPress={() => router.push(action.route)}
-                style={styles.quickActionButton}
+        <Card style={styles.chartCardWrapper}>
+          <View style={styles.sectionHeader}>
+            <Text variant="subtitle">Расходы и доходы</Text>
+            <View style={styles.toggleRow}>
+              <Chip
+                label="Расходы"
+                isActive={breakdownType === "expenses"}
+                onPress={() => setBreakdownType("expenses")}
               />
-            ))}
+              <Chip
+                label="Доходы"
+                isActive={breakdownType === "income"}
+                onPress={() => setBreakdownType("income")}
+              />
+            </View>
+          </View>
+          <Text variant="caption">Сегменты показывают суммы по категориям.</Text>
+          <View style={styles.pieRow}>
+            <View style={styles.pieChartWrapper}>
+              <Svg width={160} height={160} viewBox="0 0 160 160">
+                {categorySegments.map((segment) => (
+                  <Path
+                    key={segment.categoryId}
+                    d={describeArc(80, 80, 70, segment.startAngle, segment.endAngle)}
+                    fill={segment.color}
+                  />
+                ))}
+              </Svg>
+              <View style={styles.pieCenter}>
+                <Text variant="caption">Всего</Text>
+                <Text style={styles.pieTotal}>
+                  {formatCurrency(totalAmount, mockDashboardSummary.baseCurrency)}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.chartLegend}>
+              {categorySegments.map((segment) => (
+                <View key={segment.categoryId} style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: segment.color }]} />
+                  <View>
+                    <Text>{segment.name}</Text>
+                    <Text variant="caption">
+                      {formatCurrency(segment.amount, mockDashboardSummary.baseCurrency)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
         </Card>
 
@@ -132,93 +204,6 @@ export default function DashboardScreen() {
                     </Text>
                   ) : null}
                 </View>
-              </View>
-            ))}
-          </View>
-        </Card>
-
-        <Card style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text variant="subtitle">Spending & income breakdown</Text>
-            <View style={styles.toggleRow}>
-              <Chip
-                label="Expenses"
-                isActive={breakdownType === "expenses"}
-                onPress={() => setBreakdownType("expenses")}
-              />
-              <Chip
-                label="Income"
-                isActive={breakdownType === "income"}
-                onPress={() => setBreakdownType("income")}
-              />
-            </View>
-          </View>
-          <Text variant="caption">All amounts in {mockDashboardSummary.baseCurrency}.</Text>
-          <View style={styles.chartRow}>
-            <View style={styles.chartCard}>
-              <View style={styles.donutContainer}>
-                <View style={[styles.donutRing, { borderColor: colors.success }]} />
-                <View style={[styles.halfCircleContainer, styles.rightHalf]}>
-                  <View
-                    style={[
-                      styles.halfCircle,
-                      styles.halfCircleRight,
-                      {
-                        borderColor: colors.danger,
-                        transform: [{ rotate: `${Math.min(expenseAngle, 180)}deg` }],
-                      },
-                    ]}
-                  />
-                </View>
-                {expenseAngle > 180 ? (
-                  <View style={[styles.halfCircleContainer, styles.leftHalf]}>
-                    <View
-                      style={[
-                        styles.halfCircle,
-                        styles.halfCircleLeft,
-                        {
-                          borderColor: colors.danger,
-                          transform: [{ rotate: `${expenseAngle - 180}deg` }],
-                        },
-                      ]}
-                    />
-                  </View>
-                ) : null}
-                <View style={styles.donutHole} />
-              </View>
-              <View style={styles.chartCenter}>
-                <Text variant="caption">Income</Text>
-                <Text style={styles.chartValue}>{Math.round(incomePercent)}%</Text>
-              </View>
-            </View>
-            <View style={styles.chartLegend}>
-              <View style={styles.legendRow}>
-                <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-                <View>
-                  <Text variant="caption">Income</Text>
-                  <Text style={styles.summaryValue}>
-                    {formatCurrency(mockDashboardSummary.totalIncome, mockDashboardSummary.baseCurrency)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.legendRow}>
-                <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
-                <View>
-                  <Text variant="caption">Expenses</Text>
-                  <Text style={styles.summaryValue}>
-                    {formatCurrency(mockDashboardSummary.totalExpenses, mockDashboardSummary.baseCurrency)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-          <View style={styles.breakdownList}>
-            {breakdownList.map((item) => (
-              <View key={item.categoryId} style={styles.breakdownRow}>
-                <Text>{item.name}</Text>
-                <Text style={styles.summaryValue}>
-                  {formatCurrency(item.amount, mockDashboardSummary.baseCurrency)}
-                </Text>
               </View>
             ))}
           </View>
@@ -311,30 +296,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
-  filterCard: {
+  chartCardWrapper: {
     gap: spacing.sm,
-  },
-  filterRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  filterButton: {
-    alignSelf: "flex-start",
-  },
-  quickActionsCard: {
-    gap: spacing.sm,
-  },
-  quickHeader: {
-    gap: 2,
-  },
-  quickActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  quickActionButton: {
-    minWidth: 150,
-    justifyContent: "flex-start",
   },
   summaryGrid: {
     flexDirection: "row",
@@ -379,69 +342,29 @@ const styles = StyleSheet.create({
   breakdownList: {
     gap: spacing.sm,
   },
-  chartRow: {
+  pieRow: {
     flexDirection: "row",
     gap: spacing.lg,
     alignItems: "center",
   },
-  chartCard: {
-    width: 120,
-    height: 120,
+  pieChartWrapper: {
+    width: 160,
+    height: 160,
     alignItems: "center",
     justifyContent: "center",
   },
-  donutContainer: {
-    width: 120,
-    height: 120,
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  donutRing: {
+  pieCenter: {
     position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 16,
-  },
-  halfCircleContainer: {
-    position: "absolute",
-    width: 60,
-    height: 120,
-    overflow: "hidden",
-  },
-  rightHalf: {
-    right: 0,
-  },
-  leftHalf: {
-    left: 0,
-  },
-  halfCircle: {
-    position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 16,
-  },
-  halfCircleRight: {
-    right: 0,
-  },
-  halfCircleLeft: {
-    left: 0,
-  },
-  donutHole: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     backgroundColor: colors.surface,
-  },
-  chartCenter: {
-    position: "absolute",
     alignItems: "center",
+    justifyContent: "center",
   },
-  chartValue: {
+  pieTotal: {
     fontWeight: "600",
-    fontSize: 16,
+    textAlign: "center",
   },
   chartLegend: {
     flex: 1,

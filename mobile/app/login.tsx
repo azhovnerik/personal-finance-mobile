@@ -87,11 +87,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#12d2c3",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
   },
   logoBadgeText: {
     fontSize: 36,

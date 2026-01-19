@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import Svg, { Circle } from "react-native-svg";
 
-import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
-import { formatCurrency } from "../../src/shared/utils/format";
+import { removeToken } from "../../src/storage/auth";
+import { Button, Card, Chip, DateInput, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
 import { mockDashboardSummary } from "../../src/shared/mocks";
 
 const QUICK_ACTIONS = [
@@ -16,6 +18,8 @@ const QUICK_ACTIONS = [
 export default function DashboardScreen() {
   const router = useRouter();
   const [breakdownType, setBreakdownType] = useState<"expenses" | "income">("expenses");
+  const [startDate, setStartDate] = useState<string | null>(mockDashboardSummary.startDate);
+  const [endDate, setEndDate] = useState<string | null>(mockDashboardSummary.endDate);
 
   const breakdownList = useMemo(() => {
     return breakdownType === "expenses"
@@ -23,22 +27,45 @@ export default function DashboardScreen() {
       : mockDashboardSummary.incomeBreakdown;
   }, [breakdownType]);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await removeToken();
+    } finally {
+      router.replace("/login");
+    }
+  }, [router]);
+
+  const dateRangeLabel = useMemo(() => {
+    if (startDate && endDate) {
+      return formatDateRange(startDate, endDate);
+    }
+    return "Выберите период";
+  }, [startDate, endDate]);
+
+  const totalFlow = mockDashboardSummary.totalIncome + mockDashboardSummary.totalExpenses;
+  const expensePercent = totalFlow > 0 ? (mockDashboardSummary.totalExpenses / totalFlow) * 100 : 0;
+  const incomePercent = 100 - expensePercent;
+  const radius = 48;
+  const circumference = 2 * Math.PI * radius;
+  const expenseDash = (expensePercent / 100) * circumference;
+  const incomeDash = (incomePercent / 100) * circumference;
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
             <Text variant="title">Welcome back, 10</Text>
-            <Text variant="caption">Showing data for Jan 1, 2026 – Jan 31, 2026</Text>
+            <Text variant="caption">Период: {dateRangeLabel}</Text>
           </View>
-          <Button title="Logout" variant="outline" tone="danger" size="sm" />
+          <Button title="Logout" variant="outline" tone="danger" size="sm" onPress={handleLogout} />
         </View>
 
         <Card style={styles.filterCard}>
           <Text variant="subtitle">Filters</Text>
           <View style={styles.filterRow}>
-            <Input placeholder="Start date" />
-            <Input placeholder="End date" />
+            <DateInput placeholder="Start date" value={startDate} onChange={setStartDate} />
+            <DateInput placeholder="End date" value={endDate} onChange={setEndDate} />
           </View>
           <Button title="Apply" size="sm" style={styles.filterButton} />
         </Card>
@@ -131,6 +158,68 @@ export default function DashboardScreen() {
             </View>
           </View>
           <Text variant="caption">All amounts in {mockDashboardSummary.baseCurrency}.</Text>
+          <View style={styles.chartRow}>
+            <View style={styles.chartCard}>
+              <Svg width={120} height={120} viewBox="0 0 120 120">
+                <Circle
+                  cx="60"
+                  cy="60"
+                  r={radius}
+                  stroke={colors.border}
+                  strokeWidth={16}
+                  fill="none"
+                />
+                <Circle
+                  cx="60"
+                  cy="60"
+                  r={radius}
+                  stroke={colors.danger}
+                  strokeWidth={16}
+                  fill="none"
+                  strokeDasharray={`${expenseDash} ${circumference - expenseDash}`}
+                  rotation={-90}
+                  origin="60, 60"
+                  strokeLinecap="round"
+                />
+                <Circle
+                  cx="60"
+                  cy="60"
+                  r={radius}
+                  stroke={colors.success}
+                  strokeWidth={16}
+                  fill="none"
+                  strokeDasharray={`${incomeDash} ${circumference - incomeDash}`}
+                  rotation={-90 + expensePercent * 3.6}
+                  origin="60, 60"
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <View style={styles.chartCenter}>
+                <Text variant="caption">Income</Text>
+                <Text style={styles.chartValue}>{Math.round(incomePercent)}%</Text>
+              </View>
+            </View>
+            <View style={styles.chartLegend}>
+              <View style={styles.legendRow}>
+                <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
+                <View>
+                  <Text variant="caption">Income</Text>
+                  <Text style={styles.summaryValue}>
+                    {formatCurrency(mockDashboardSummary.totalIncome, mockDashboardSummary.baseCurrency)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.legendRow}>
+                <View style={[styles.legendDot, { backgroundColor: colors.danger }]} />
+                <View>
+                  <Text variant="caption">Expenses</Text>
+                  <Text style={styles.summaryValue}>
+                    {formatCurrency(mockDashboardSummary.totalExpenses, mockDashboardSummary.baseCurrency)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
           <View style={styles.breakdownList}>
             {breakdownList.map((item) => (
               <View key={item.categoryId} style={styles.breakdownRow}>
@@ -297,6 +386,39 @@ const styles = StyleSheet.create({
   },
   breakdownList: {
     gap: spacing.sm,
+  },
+  chartRow: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    alignItems: "center",
+  },
+  chartCard: {
+    width: 120,
+    height: 120,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chartCenter: {
+    position: "absolute",
+    alignItems: "center",
+  },
+  chartValue: {
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  chartLegend: {
+    flex: 1,
+    gap: spacing.md,
+  },
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   breakdownRow: {
     flexDirection: "row",

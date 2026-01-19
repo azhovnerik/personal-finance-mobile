@@ -25,7 +25,6 @@ export default function SettingsScreen() {
           </View>
           <Input placeholder="Email" defaultValue="test10@moneydrive.me" />
           <Input placeholder="Name" defaultValue="10" />
-          <Input placeholder="Telegram name" defaultValue="Kij" />
           <Input placeholder="Default interface language" defaultValue="Українська" />
           <Input placeholder="Base currency" defaultValue="UAH" />
           <Button title="Save" />

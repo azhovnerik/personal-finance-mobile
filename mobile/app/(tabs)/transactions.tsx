@@ -1,8 +1,19 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useMemo, useState } from "react";
 
-import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import {
+  Button,
+  Card,
+  Chip,
+  DateInput,
+  ScreenContainer,
+  Select,
+  Text,
+  colors,
+  spacing,
+} from "../../src/shared/ui";
 import { formatCurrency } from "../../src/shared/utils/format";
-import { mockTransactions, mockUser } from "../../src/shared/mocks";
+import { mockAccounts, mockTransactions, mockUser } from "../../src/shared/mocks";
 
 const FILTERS = [
   { label: "All types", active: true },
@@ -13,6 +24,65 @@ const FILTERS = [
 
 export default function TransactionsScreen() {
   const baseCurrency = mockUser.baseCurrency ?? "UAH";
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState({
+    startDate: null as string | null,
+    endDate: null as string | null,
+    type: null as string | null,
+    accountId: null as string | null,
+  });
+  const [appliedFilters, setAppliedFilters] = useState(draftFilters);
+  const [formState, setFormState] = useState({
+    date: null as string | null,
+    categoryId: null as string | null,
+    accountId: null as string | null,
+  });
+
+  const categoryOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    mockTransactions.forEach((transaction) => {
+      map.set(transaction.category.id, transaction.category.name);
+    });
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, []);
+
+  const accountOptions = useMemo(() => {
+    return mockAccounts.map((account) => ({ value: account.id, label: account.name }));
+  }, []);
+
+  const typeOptions = [
+    { value: "ALL", label: "Все типы" },
+    { value: "INCOME", label: "Доход" },
+    { value: "EXPENSE", label: "Расход" },
+  ];
+
+  const filteredTransactions = useMemo(() => {
+    return mockTransactions.filter((transaction) => {
+      if (appliedFilters.startDate) {
+        const start = new Date(appliedFilters.startDate).getTime();
+        const current = new Date(transaction.date).getTime();
+        if (!Number.isNaN(start) && current < start) {
+          return false;
+        }
+      }
+      if (appliedFilters.endDate) {
+        const end = new Date(appliedFilters.endDate).getTime();
+        const current = new Date(transaction.date).getTime();
+        if (!Number.isNaN(end) && current > end) {
+          return false;
+        }
+      }
+      if (appliedFilters.type && appliedFilters.type !== "ALL") {
+        if (transaction.type !== appliedFilters.type) {
+          return false;
+        }
+      }
+      if (appliedFilters.accountId && transaction.account.id !== appliedFilters.accountId) {
+        return false;
+      }
+      return true;
+    });
+  }, [appliedFilters]);
 
   return (
     <ScreenContainer>
@@ -25,25 +95,35 @@ export default function TransactionsScreen() {
           <Chip label={baseCurrency} isActive />
         </View>
 
-        <Card style={styles.infoCard}>
-          <Text variant="subtitle">Track transactions with the Telegram bot</Text>
-          <Text variant="caption">
-            Especially convenient on mobile—you do not need to open the app.
-          </Text>
-          <Text style={styles.infoLink}>@addtransactionbot</Text>
-        </Card>
-
         <Card style={styles.filterCard}>
           <Text variant="subtitle">Filters</Text>
           <View style={styles.filterRow}>
-            <Input placeholder="Start date" />
-            <Input placeholder="End date" />
+            <DateInput
+              placeholder="Start date"
+              value={draftFilters.startDate}
+              onChange={(value) => setDraftFilters((prev) => ({ ...prev, startDate: value }))}
+            />
+            <DateInput
+              placeholder="End date"
+              value={draftFilters.endDate}
+              onChange={(value) => setDraftFilters((prev) => ({ ...prev, endDate: value }))}
+            />
           </View>
           <View style={styles.filterRow}>
-            <Input placeholder="Type" />
-            <Input placeholder="Account" />
+            <Select
+              placeholder="Type"
+              value={draftFilters.type}
+              options={typeOptions}
+              onChange={(value) => setDraftFilters((prev) => ({ ...prev, type: value }))}
+            />
+            <Select
+              placeholder="Account"
+              value={draftFilters.accountId}
+              options={accountOptions}
+              onChange={(value) => setDraftFilters((prev) => ({ ...prev, accountId: value }))}
+            />
           </View>
-          <Button title="Apply" size="sm" />
+          <Button title="Apply" size="sm" onPress={() => setAppliedFilters(draftFilters)} />
         </Card>
 
         <View style={styles.filterChips}>
@@ -53,12 +133,12 @@ export default function TransactionsScreen() {
         </View>
 
         <View style={styles.actionRow}>
-          <Button title="Add new transaction" size="sm" />
+          <Button title="Add new transaction" size="sm" onPress={() => setIsFormOpen(true)} />
           <Button title="Export to xls" variant="outline" tone="primary" size="sm" />
         </View>
 
         <View style={styles.list}>
-          {mockTransactions.map((transaction) => (
+          {filteredTransactions.map((transaction) => (
             <Card key={transaction.id} style={styles.transactionCard}>
               <View style={styles.transactionHeader}>
                 <View>
@@ -88,6 +168,40 @@ export default function TransactionsScreen() {
           ))}
         </View>
       </ScrollView>
+
+      <Modal transparent animationType="fade" visible={isFormOpen} onRequestClose={() => setIsFormOpen(false)}>
+        <Pressable style={styles.formBackdrop} onPress={() => setIsFormOpen(false)}>
+          <Pressable style={styles.formCard}>
+            <Text variant="subtitle">Добавить транзакцию</Text>
+            <DateInput
+              placeholder="Date"
+              value={formState.date}
+              onChange={(value) => setFormState((prev) => ({ ...prev, date: value }))}
+            />
+            <Select
+              placeholder="Category"
+              value={formState.categoryId}
+              options={categoryOptions}
+              onChange={(value) => setFormState((prev) => ({ ...prev, categoryId: value }))}
+            />
+            <Select
+              placeholder="Account"
+              value={formState.accountId}
+              options={accountOptions}
+              onChange={(value) => setFormState((prev) => ({ ...prev, accountId: value }))}
+            />
+            <View style={styles.formActions}>
+              <Button
+                title="Cancel"
+                variant="ghost"
+                size="sm"
+                onPress={() => setIsFormOpen(false)}
+              />
+              <Button title="Save" size="sm" onPress={() => setIsFormOpen(false)} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -102,14 +216,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     gap: spacing.sm,
-  },
-  infoCard: {
-    gap: spacing.sm,
-    backgroundColor: "#d9f5ff",
-  },
-  infoLink: {
-    color: colors.info,
-    fontWeight: "600",
   },
   filterCard: {
     gap: spacing.sm,
@@ -145,6 +251,24 @@ const styles = StyleSheet.create({
   actionRowInline: {
     flexDirection: "row",
     gap: spacing.sm,
+  },
+  formBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  formActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   negativeValue: {
     color: colors.danger,

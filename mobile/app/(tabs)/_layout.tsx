@@ -16,7 +16,7 @@ import { mockAccounts, mockTransactions, mockUser } from "../../src/shared/mocks
 export default function TabsLayout() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formState, setFormState] = useState({
-    amount: "555",
+    amount: "0",
     categoryId: null as string | null,
     note: "",
     date: "2026-01-19",
@@ -35,6 +35,44 @@ export default function TabsLayout() {
     return mockAccounts.map((account) => ({ value: account.id, label: account.name }));
   }, []);
 
+  const updateAmount = (value: string) => {
+    setFormState((prev) => ({ ...prev, amount: value }));
+  };
+
+  const appendDigit = (value: string) => {
+    setFormState((prev) => {
+      const next = prev.amount === "0" ? value : `${prev.amount}${value}`;
+      return { ...prev, amount: next };
+    });
+  };
+
+  const appendDecimal = () => {
+    setFormState((prev) => {
+      if (prev.amount.includes(".")) {
+        return prev;
+      }
+      return { ...prev, amount: `${prev.amount}.` };
+    });
+  };
+
+  const clearAmount = () => {
+    updateAmount("0");
+  };
+
+  const deleteLast = () => {
+    setFormState((prev) => {
+      const next = prev.amount.length > 1 ? prev.amount.slice(0, -1) : "0";
+      return { ...prev, amount: next };
+    });
+  };
+
+  const keypadRows = [
+    ["7", "8", "9"],
+    ["4", "5", "6"],
+    ["1", "2", "3"],
+    ["0", "000", "."],
+  ];
+
   return (
     <>
       <View style={styles.container}>
@@ -48,15 +86,24 @@ export default function TabsLayout() {
         >
           <Tabs.Screen name="index" options={{ title: "Главная" }} />
           <Tabs.Screen name="transactions" options={{ title: "Транзакции" }} />
+          <Tabs.Screen
+            name="add"
+            options={{
+              title: "",
+              tabBarLabel: "",
+              tabBarButton: () => (
+                <Pressable style={styles.addButtonWrapper} onPress={() => setIsAddOpen(true)}>
+                  <View style={styles.addButton}>
+                    <Text style={styles.addButtonLabel}>+</Text>
+                  </View>
+                </Pressable>
+              ),
+            }}
+          />
           <Tabs.Screen name="budgets" options={{ title: "Бюджеты" }} />
           <Tabs.Screen name="accounts" options={{ title: "Счета" }} />
           <Tabs.Screen name="more" options={{ title: "Ещё" }} />
         </Tabs>
-        <Pressable style={styles.addButtonWrapper} onPress={() => setIsAddOpen(true)}>
-          <View style={styles.addButton}>
-            <Text style={styles.addButtonLabel}>+</Text>
-          </View>
-        </Pressable>
       </View>
 
       <Modal animationType="slide" transparent={false} visible={isAddOpen} onRequestClose={() => setIsAddOpen(false)}>
@@ -78,7 +125,7 @@ export default function TabsLayout() {
                 <Input
                   keyboardType="numeric"
                   value={formState.amount}
-                  onChangeText={(value) => setFormState((prev) => ({ ...prev, amount: value }))}
+                  onChangeText={updateAmount}
                 />
               </View>
             </View>
@@ -117,6 +164,40 @@ export default function TabsLayout() {
           <View style={styles.modalFooter}>
             <Button title="Сохранить" size="lg" onPress={() => setIsAddOpen(false)} />
           </View>
+
+          <View style={styles.keypad}>
+            <View style={styles.keypadTopRow}>
+              <Text style={styles.keypadPreview}>{formState.amount}</Text>
+              <View style={styles.keypadTopActions}>
+                <Pressable style={[styles.keypadAction, styles.keypadClear]} onPress={clearAmount}>
+                  <Text style={styles.keypadActionText}>C</Text>
+                </Pressable>
+                <Pressable style={[styles.keypadAction, styles.keypadDelete]} onPress={deleteLast}>
+                  <Text style={styles.keypadActionText}>⌫</Text>
+                </Pressable>
+              </View>
+            </View>
+            {keypadRows.map((row) => (
+              <View key={row.join("-")} style={styles.keypadRow}>
+                {row.map((key) => {
+                  const onPress =
+                    key === "."
+                      ? appendDecimal
+                      : () => {
+                          appendDigit(key);
+                        };
+                  return (
+                    <Pressable key={key} style={styles.keypadKey} onPress={onPress}>
+                      <Text style={styles.keypadKeyText}>{key}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
+            <Pressable style={[styles.keypadKey, styles.keypadDone]} onPress={() => setIsAddOpen(false)}>
+              <Text style={[styles.keypadKeyText, styles.keypadDoneText]}>ГОТОВО</Text>
+            </Pressable>
+          </View>
         </View>
       </Modal>
     </>
@@ -135,10 +216,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   addButtonWrapper: {
-    position: "absolute",
-    alignSelf: "center",
-    bottom: 28,
-    zIndex: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   addButton: {
     width: 64,
@@ -217,5 +296,68 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.card,
+  },
+  keypad: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: "#1f1f1f",
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  keypadTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  keypadTopActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  keypadPreview: {
+    color: colors.surface,
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  keypadAction: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    backgroundColor: "#2a2a2a",
+  },
+  keypadClear: {
+    backgroundColor: "#2a2a2a",
+  },
+  keypadDelete: {
+    backgroundColor: "#2f2f2f",
+  },
+  keypadActionText: {
+    color: "#38d169",
+    fontWeight: "700",
+  },
+  keypadRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  keypadKey: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 10,
+    backgroundColor: "#2a2a2a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keypadKeyText: {
+    color: "#38d169",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  keypadDone: {
+    marginTop: spacing.sm,
+    backgroundColor: "#38d169",
+  },
+  keypadDoneText: {
+    color: colors.surface,
+    fontWeight: "700",
   },
 });

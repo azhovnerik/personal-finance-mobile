@@ -5,11 +5,12 @@ import client from "../../shared/lib/api/client";
 import type { components } from "../../shared/lib/api/sdk";
 
 import { getToken, removeToken } from "../../storage/auth";
+import {TransactionDto} from "../../shared/api/dto";
 
 type Transaction = components["schemas"]["Transaction"];
 
 type UseTransactionsResult = {
-  transactions: Transaction[];
+  transactions: TransactionDto[];
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -49,7 +50,7 @@ export const useTransactions = (): UseTransactionsResult => {
   const useMocks =
     __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
   const router = useRouter();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<TransactionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -97,13 +97,10 @@ export interface TransactionDto {
   account: Account;
   direction: TransactionDirection;
   type: TransactionType;
-  changeBalanceId?: UUID | null;
   amount: number;
   amountInBase?: number | null;
   currency?: CurrencyCode | null;
-  user?: UserApp | null;
   comment?: string | null;
-  transfer?: TransferDto | null;
 }
 
 export interface ChangeBalanceDto {

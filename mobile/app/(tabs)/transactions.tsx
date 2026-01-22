@@ -12,9 +12,8 @@ import {
     colors,
     spacing,
 } from "../../src/shared/ui";
-import {formatCurrency} from "../../src/shared/utils/format";
-import {mockAccounts, mockTransactions, mockUser} from "../../src/shared/mocks";
-import {useTransactions} from "../../src/features/transactions/useTransactions";
+import {mockUser} from "../../src/shared/mocks";
+import {TransactionFilters, useTransactions} from "../../src/features/transactions/useTransactions";
 import {useAccounts} from "../../src/features/accounts/useAccounts";
 
 const FILTERS = [
@@ -44,18 +43,15 @@ const getDefaultPeriod = () => {
 export default function TransactionsScreen() {
     const defaultPeriod = useMemo(() => getDefaultPeriod(), []);
     const baseCurrency = mockUser.baseCurrency ?? "UAH";
-    const { transactions, isLoading: isLoadingTx, error: errorTx, refresh: refreshTx } = useTransactions();
-    const { accounts, isLoading: isLoadingAcc, error: errorAcc, refresh: refreshAcc } = useAccounts();
-    console.log(transactions)
-    console.log(accounts)
-    console.log("errorAcc " + errorAcc)
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [draftFilters, setDraftFilters] = useState({
+    const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>({
         ...defaultPeriod,
-        type: null as string | null,
-        accountId: null as string | null,
+        type: "ALL",
+        accountId: null,
     });
-    const [appliedFilters, setAppliedFilters] = useState(draftFilters);
+    const { transactions } = useTransactions(appliedFilters);
+    const { accounts } = useAccounts();
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [draftFilters, setDraftFilters] = useState(appliedFilters);
     const [formState, setFormState] = useState({
         date: null as string | null,
         categoryId: null as string | null,
@@ -68,7 +64,7 @@ export default function TransactionsScreen() {
             map.set(transaction.category.id, transaction.category.name);
         });
         return Array.from(map.entries()).map(([value, label]) => ({value, label}));
-    }, []);
+    }, [transactions]);
 
     const accountOptions = useMemo(() => {
         return accounts.map((account) => ({value: account.id, label: account.name}));
@@ -81,37 +77,18 @@ export default function TransactionsScreen() {
         {value: "EXPENSE", label: "Расход"},
     ];
 
-    const filteredTransactions = useMemo(() => {
-        // return mockTransactions.filter((transaction) => {
-        // console.log(transactions)
-        return transactions.filter((transaction) => {
-            if (appliedFilters.startDate) {
-                const start = new Date(appliedFilters.startDate).getTime();
-                const current = new Date(transaction.date).getTime();
-                if (!Number.isNaN(start) && current < start) {
-                    return false;
-                }
-            }
-            if (appliedFilters.endDate) {
-                const endDate = new Date(appliedFilters.endDate)
-                endDate.setHours(23, 59, 59, 999)
-                const end = endDate.getTime();
-                const current = new Date(transaction.date).getTime();
-                if (!Number.isNaN(end) && current > end) {
-                    return false;
-                }
-            }
-            if (appliedFilters.type && appliedFilters.type !== "ALL") {
-                if (transaction.type !== appliedFilters.type) {
-                    return false;
-                }
-            }
-            if (appliedFilters.accountId && transaction.account.id !== appliedFilters.accountId) {
-                return false;
-            }
-            return true;
-        });
-    }, [transactions, appliedFilters]);
+    const periodLabel = useMemo(() => {
+        if (appliedFilters.startDate && appliedFilters.endDate) {
+            return `${appliedFilters.startDate} – ${appliedFilters.endDate}`;
+        }
+        if (appliedFilters.startDate) {
+            return `From ${appliedFilters.startDate}`;
+        }
+        if (appliedFilters.endDate) {
+            return `Until ${appliedFilters.endDate}`;
+        }
+        return "All time";
+    }, [appliedFilters.endDate, appliedFilters.startDate]);
 
     return (
         <ScreenContainer>
@@ -119,7 +96,7 @@ export default function TransactionsScreen() {
                 <View style={styles.header}>
                     <View>
                         <Text variant="title">Transactions</Text>
-                        <Text variant="caption">Period: 2026-01-01 – 2026-01-31</Text>
+                        <Text variant="caption">Period: {periodLabel}</Text>
                     </View>
                     <Chip label={baseCurrency} isActive/>
                 </View>
@@ -152,7 +129,11 @@ export default function TransactionsScreen() {
                             onChange={(value) => setDraftFilters((prev) => ({...prev, accountId: value}))}
                         />
                     </View>
-                    <Button title="Apply" size="sm" onPress={() => setAppliedFilters(draftFilters)}/>
+                    <Button
+                        title="Apply"
+                        size="sm"
+                        onPress={() => setAppliedFilters(draftFilters)}
+                    />
                 </Card>
 
                 <View style={styles.filterChips}>
@@ -167,7 +148,7 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.list}>
-                    {filteredTransactions.map((transaction) => (
+                    {transactions.map((transaction) => (
                         <Card key={transaction.id} style={styles.transactionCard}>
                             <View style={styles.transactionHeader}>
                                 <View>

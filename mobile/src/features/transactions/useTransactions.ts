@@ -5,7 +5,7 @@ import client from "../../shared/lib/api/client";
 import type { components } from "../../shared/lib/api/sdk";
 
 import { getToken, removeToken } from "../../storage/auth";
-import {TransactionDto} from "../../shared/api/dto";
+import { TransactionDto, TransactionType, UUID } from "../../shared/api/dto";
 
 type Transaction = components["schemas"]["Transaction"];
 
@@ -13,7 +13,7 @@ type UseTransactionsResult = {
   transactions: TransactionDto[];
   isLoading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: (filters?: TransactionFilters) => Promise<void>;
 };
 
 const MOCK_TRANSACTIONS: Transaction[] = [
@@ -46,7 +46,39 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   },
 ];
 
-export const useTransactions = (): UseTransactionsResult => {
+export type TransactionFilters = {
+  startDate?: string | null;
+  endDate?: string | null;
+  accountId?: UUID | null;
+  type?: TransactionType | "ALL" | null;
+};
+
+const toQueryFilters = (filters?: TransactionFilters) => {
+  if (!filters) {
+    return undefined;
+  }
+
+  const query: Record<string, string> = {};
+
+  if (filters.startDate) {
+    query.startDate = filters.startDate;
+  }
+  if (filters.endDate) {
+    query.endDate = filters.endDate;
+  }
+  if (filters.accountId) {
+    query.accountId = filters.accountId;
+  }
+  if (filters.type && filters.type !== "ALL") {
+    query.type = filters.type;
+  }
+
+  return Object.keys(query).length > 0 ? query : undefined;
+};
+
+export const useTransactions = (
+  filters?: TransactionFilters,
+): UseTransactionsResult => {
   const useMocks =
     __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
   const router = useRouter();
@@ -54,7 +86,7 @@ export const useTransactions = (): UseTransactionsResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (nextFilters?: TransactionFilters) => {
     setIsLoading(true);
     setError(null);
 
@@ -73,8 +105,10 @@ export const useTransactions = (): UseTransactionsResult => {
       }
 
       const headers = { Authorization: `Bearer ${token}` };
+      const query = toQueryFilters(nextFilters ?? filters);
       const { data, error: apiError } = await client.GET("/api/v2/transactions", {
         headers,
+        params: query ? { query } : undefined,
       });
       if (apiError || !data) {
         if (apiError?.status === 401) {
@@ -94,11 +128,11 @@ export const useTransactions = (): UseTransactionsResult => {
     } finally {
       setIsLoading(false);
     }
-  }, [router, useMocks]);
+  }, [filters, router, useMocks]);
 
   useEffect(() => {
     void loadTransactions();
-  }, [loadTransactions]);
+  }, [loadTransactions, filters]);
 
   const refresh = useMemo(() => loadTransactions, [loadTransactions]);
 

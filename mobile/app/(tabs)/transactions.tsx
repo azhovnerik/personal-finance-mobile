@@ -159,7 +159,9 @@ export default function TransactionsScreen() {
                             <View style={styles.transactionHeader}>
                                 <View>
                                     <Text>{transaction.date}</Text>
-                                    <Text variant="caption">{transaction.account.name}</Text>
+                                    <Text variant="caption">
+                                        {transaction.account?.name ?? "Unknown account"}
+                                    </Text>
                                 </View>
                                 {/*<Text*/}
                                 {/*    style={*/}

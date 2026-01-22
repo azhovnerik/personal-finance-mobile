@@ -15,6 +15,7 @@ import {
 import {formatCurrency} from "../../src/shared/utils/format";
 import {mockAccounts, mockTransactions, mockUser} from "../../src/shared/mocks";
 import {useTransactions} from "../../src/features/transactions/useTransactions";
+import {useAccounts} from "../../src/features/accounts/useAccounts";
 
 const FILTERS = [
     {label: "All types", active: true},
@@ -23,13 +24,34 @@ const FILTERS = [
     {label: "All accounts", active: false},
 ];
 
+const toYmd = (d: Date) => {
+    // локальная дата в YYYY-MM-DD без UTC-сдвига
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
+
+const getDefaultPeriod = () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return {
+        startDate: toYmd(startOfMonth),
+        endDate: toYmd(now), // “включительно” для UI — просто сегодня
+    };
+};
+
 export default function TransactionsScreen() {
+    const defaultPeriod = useMemo(() => getDefaultPeriod(), []);
     const baseCurrency = mockUser.baseCurrency ?? "UAH";
-    const { transactions, isLoading, error, refresh } = useTransactions();
+    const { transactions, isLoading: isLoadingTx, error: errorTx, refresh: refreshTx } = useTransactions();
+    const { accounts, isLoading: isLoadingAcc, error: errorAcc, refresh: refreshAcc } = useAccounts();
+    console.log(transactions)
+    console.log(accounts)
+    console.log("errorAcc " + errorAcc)
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [draftFilters, setDraftFilters] = useState({
-        startDate: null as string | null,
-        endDate: null as string | null,
+        ...defaultPeriod,
         type: null as string | null,
         accountId: null as string | null,
     });
@@ -42,15 +64,16 @@ export default function TransactionsScreen() {
 
     const categoryOptions = useMemo(() => {
         const map = new Map<string, string>();
-        mockTransactions.forEach((transaction) => {
+        transactions.forEach((transaction) => {
             map.set(transaction.category.id, transaction.category.name);
         });
         return Array.from(map.entries()).map(([value, label]) => ({value, label}));
     }, []);
 
     const accountOptions = useMemo(() => {
-        return mockAccounts.map((account) => ({value: account.id, label: account.name}));
-    }, []);
+        return accounts.map((account) => ({value: account.id, label: account.name}));
+
+    }, [accounts]);
 
     const typeOptions = [
         {value: "ALL", label: "Все типы"},
@@ -60,7 +83,7 @@ export default function TransactionsScreen() {
 
     const filteredTransactions = useMemo(() => {
         // return mockTransactions.filter((transaction) => {
-        console.log(transactions)
+        // console.log(transactions)
         return transactions.filter((transaction) => {
             if (appliedFilters.startDate) {
                 const start = new Date(appliedFilters.startDate).getTime();
@@ -70,7 +93,9 @@ export default function TransactionsScreen() {
                 }
             }
             if (appliedFilters.endDate) {
-                const end = new Date(appliedFilters.endDate).getTime();
+                const endDate = new Date(appliedFilters.endDate)
+                endDate.setHours(23, 59, 59, 999)
+                const end = endDate.getTime();
                 const current = new Date(transaction.date).getTime();
                 if (!Number.isNaN(end) && current > end) {
                     return false;
@@ -86,7 +111,7 @@ export default function TransactionsScreen() {
             }
             return true;
         });
-    }, [appliedFilters]);
+    }, [transactions, appliedFilters]);
 
     return (
         <ScreenContainer>

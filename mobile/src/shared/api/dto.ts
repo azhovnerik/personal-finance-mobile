@@ -41,7 +41,6 @@ export interface Account {
   id: UUID;
   name: string;
   description?: string | null;
-  userId?: UUID | null;
   type: AccountType;
   currency?: CurrencyCode | null;
 }

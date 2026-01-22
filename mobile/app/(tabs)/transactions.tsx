@@ -12,7 +12,7 @@ import {
     colors,
     spacing,
 } from "../../src/shared/ui";
-import {mockUser} from "../../src/shared/mocks";
+import {mockCategoryTree, mockUser} from "../../src/shared/mocks";
 import {TransactionFilters, useTransactions} from "../../src/features/transactions/useTransactions";
 import {useAccounts} from "../../src/features/accounts/useAccounts";
 
@@ -59,12 +59,18 @@ export default function TransactionsScreen() {
     });
 
     const categoryOptions = useMemo(() => {
-        const map = new Map<string, string>();
-        transactions.forEach((transaction) => {
-            map.set(transaction.category.id, transaction.category.name);
+        const options: Array<{value: string; label: string}> = [];
+        mockCategoryTree.forEach((category) => {
+            if (category.subcategories?.length) {
+                category.subcategories.forEach((subcategory) => {
+                    options.push({value: subcategory.id, label: subcategory.name});
+                });
+            } else {
+                options.push({value: category.id, label: category.name});
+            }
         });
-        return Array.from(map.entries()).map(([value, label]) => ({value, label}));
-    }, [transactions]);
+        return options;
+    }, []);
 
     const accountOptions = useMemo(() => {
         return accounts.map((account) => ({value: account.id, label: account.name}));

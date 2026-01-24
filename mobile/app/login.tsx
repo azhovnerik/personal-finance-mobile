@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useLogin } from "../src/features/auth/useLogin";
-import { Button, ScreenContainer, Text } from "../src/shared/ui";
+import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -14,58 +14,99 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     const isSuccess = await login(email.trim(), password);
     if (isSuccess) {
-      router.replace("/home");
+      router.replace("/(tabs)");
     }
   };
 
   return (
-    <ScreenContainer>
-      <View style={styles.content}>
-        <Text variant="title">Войти</Text>
-        <TextInput
-          placeholder="Email"
+    <ScreenContainer style={styles.screen}>
+      <View style={styles.logoWrapper}>
+        <View style={styles.logoBadge}>
+          <Text style={styles.logoBadgeText}>S</Text>
+        </View>
+        <Text variant="subtitle" style={styles.logoText}>MoneyDrive.me</Text>
+      </View>
+
+      <Card style={styles.card}>
+        <Text variant="heading" style={styles.title}>Log in</Text>
+        <Input
+          placeholder="Username"
           autoCapitalize="none"
           keyboardType="email-address"
-          textContentType="emailAddress"
+          textContentType="username"
           value={email}
           onChangeText={setEmail}
           editable={!isLoading}
-          style={styles.input}
         />
-        <TextInput
-          placeholder="Пароль"
+        <Input
+          placeholder="Password"
           secureTextEntry
           textContentType="password"
           value={password}
           onChangeText={setPassword}
           editable={!isLoading}
-          style={styles.input}
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
-          title={isLoading ? "Входим..." : "Войти"}
+          title={isLoading ? "Logging in..." : "Log in"}
           onPress={handleLogin}
           disabled={isLoading || !email.trim() || !password}
+          size="lg"
         />
-      </View>
+        <Button
+          title="Create an account"
+          variant="outline"
+          tone="primary"
+          size="lg"
+        />
+        <Button
+          title="Login with Google"
+          variant="outline"
+          tone="secondary"
+          size="lg"
+        />
+      </Card>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    gap: 16,
+  screen: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.lg,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: "#111827",
+  logoWrapper: {
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  logoBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#12d2c3",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoBadgeText: {
+    fontSize: 36,
+    fontWeight: "700",
+    color: colors.surface,
+  },
+  logoText: {
+    color: colors.secondary,
+    fontWeight: "600",
+  },
+  card: {
+    width: "100%",
+    maxWidth: 360,
+    gap: spacing.sm,
+    alignItems: "stretch",
+  },
+  title: {
+    textAlign: "center",
   },
   error: {
-    color: "#dc2626",
+    color: colors.danger,
   },
 });

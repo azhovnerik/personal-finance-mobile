@@ -13,6 +13,10 @@ export type CategoriesFilters = {
     type?: CategoryType | null;
 };
 
+export type UseCategoriesOptions = {
+    enabled?: boolean;
+};
+
 const toQueryFilters = (filters?: CategoriesFilters) => {
     if (!filters) return undefined;
 
@@ -29,16 +33,21 @@ type UseCategoriesResult = {
     refresh: () => Promise<void>;
 };
 
-export const useCategories = (filters?: CategoriesFilters): UseCategoriesResult => {
+export const useCategories = (filters?: CategoriesFilters, options?: UseCategoriesOptions): UseCategoriesResult => {
     const router = useRouter();
     const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
+    const enabled = options?.enabled ?? true;
 
     const queryParams = useMemo(() => toQueryFilters(filters), [filters]);
 
     const query = useQuery({
         queryKey: [...CATEGORIES_QUERY_KEY, queryParams ?? {}],
+        enabled,
         queryFn: async () => {
-            if (useMocks) return mockCategories;
+            if (useMocks) {
+                if (!filters?.type) return mockCategories;
+                return mockCategories.filter((category) => category.type === filters.type);
+            }
 
             const token = await getToken();
             if (!token) {

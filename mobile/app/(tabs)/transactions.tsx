@@ -1,11 +1,12 @@
 import {Modal, Pressable, ScrollView, StyleSheet, View} from "react-native";
-import {useMemo, useState} from "react";
+import {useCallback, useMemo, useState} from "react";
 
 import {
     Button,
     Card,
     Chip,
     DateInput,
+    Input,
     ScreenContainer,
     Select,
     Text,
@@ -13,8 +14,13 @@ import {
     spacing,
 } from "../../src/shared/ui";
 import {mockCategoryTree, mockUser} from "../../src/shared/mocks";
-import {TransactionFilters, useTransactions} from "../../src/features/transactions/useTransactions";
+import {
+    TransactionAddPayload,
+    TransactionFilters,
+    useTransactions,
+} from "../../src/features/transactions/useTransactions";
 import {useAccounts} from "../../src/features/accounts/useAccounts";
+import {Category, TransactionDirection, TransactionType} from "../../src/shared/api/dto";
 
 const FILTERS = [
     {label: "All types", active: true},
@@ -40,6 +46,20 @@ const getDefaultPeriod = () => {
     };
 };
 
+const formatTimePart = (value: number) => String(value).padStart(2, "0");
+
+const toTransactionDateTime = (date: string) => {
+    const now = new Date();
+    const hours = formatTimePart(now.getHours());
+    const minutes = formatTimePart(now.getMinutes());
+    const seconds = formatTimePart(now.getSeconds());
+    return `${date} ${hours}:${minutes}:${seconds}`;
+};
+
+const DEFAULT_TYPE: TransactionType = "EXPENSE";
+const DEFAULT_DIRECTION: TransactionDirection = "DECREASE";
+const DEFAULT_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+
 export default function TransactionsScreen() {
     const defaultPeriod = useMemo(() => getDefaultPeriod(), []);
     const baseCurrency = mockUser.baseCurrency ?? "UAH";
@@ -48,28 +68,53 @@ export default function TransactionsScreen() {
         type: "ALL",
         accountId: null,
     });
-    const { transactions } = useTransactions(appliedFilters);
+    const { transactions, createTransaction } = useTransactions(appliedFilters);
     const { accounts } = useAccounts();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [draftFilters, setDraftFilters] = useState(appliedFilters);
     const [formState, setFormState] = useState({
-        date: null as string | null,
+        date: defaultPeriod.endDate,
         categoryId: null as string | null,
         accountId: null as string | null,
+        amount: "",
+        type: DEFAULT_TYPE as TransactionType,
+        direction: DEFAULT_DIRECTION as TransactionDirection,
+        comment: "",
+        timezone: DEFAULT_TIMEZONE,
     });
+    const [formError, setFormError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const categoryOptions = useMemo(() => {
+    const { categoryOptions, categoryLookup } = useMemo(() => {
         const options: Array<{value: string; label: string}> = [];
+        const lookup = new Map<string, Category>();
         mockCategoryTree.forEach((category) => {
             if (category.subcategories?.length) {
                 category.subcategories.forEach((subcategory) => {
                     options.push({value: subcategory.id, label: subcategory.name});
+                    lookup.set(subcategory.id, {
+                        id: subcategory.id,
+                        name: subcategory.name,
+                        type: subcategory.type,
+                        disabled: subcategory.disabled,
+                        parentId: category.id,
+                        icon: subcategory.icon ?? null,
+                        categoryTemplateId: subcategory.categoryTemplateId ?? null,
+                    });
                 });
             } else {
                 options.push({value: category.id, label: category.name});
+                lookup.set(category.id, {
+                    id: category.id,
+                    name: category.name,
+                    type: category.type,
+                    disabled: category.disabled,
+                    icon: category.icon ?? null,
+                    categoryTemplateId: category.categoryTemplateId ?? null,
+                });
             }
         });
-        return options;
+        return {categoryOptions: options, categoryLookup: lookup};
     }, []);
 
     const accountOptions = useMemo(() => {
@@ -77,10 +122,26 @@ export default function TransactionsScreen() {
 
     }, [accounts]);
 
+    const accountLookup = useMemo(() => {
+        return new Map(accounts.map((account) => [account.id, account] as const));
+    }, [accounts]);
+
     const typeOptions = [
         {value: "ALL", label: "Все типы"},
         {value: "INCOME", label: "Доход"},
         {value: "EXPENSE", label: "Расход"},
+    ];
+
+    const transactionTypeOptions: Array<{value: TransactionType; label: string}> = [
+        {value: "EXPENSE", label: "Расход"},
+        {value: "INCOME", label: "Доход"},
+        {value: "CHANGE_BALANCE", label: "Корректировка"},
+        {value: "TRANSFER", label: "Перевод"},
+    ];
+
+    const directionOptions: Array<{value: TransactionDirection; label: string}> = [
+        {value: "DECREASE", label: "Списание"},
+        {value: "INCREASE", label: "Пополнение"},
     ];
 
     const periodLabel = useMemo(() => {
@@ -95,6 +156,84 @@ export default function TransactionsScreen() {
         }
         return "All time";
     }, [appliedFilters.endDate, appliedFilters.startDate]);
+
+    const resetFormState = useCallback(() => {
+        setFormState({
+            date: defaultPeriod.endDate,
+            categoryId: null,
+            accountId: null,
+            amount: "",
+            type: DEFAULT_TYPE,
+            direction: DEFAULT_DIRECTION,
+            comment: "",
+            timezone: DEFAULT_TIMEZONE,
+        });
+    }, [defaultPeriod.endDate]);
+
+    const closeForm = useCallback(() => {
+        setIsFormOpen(false);
+        setFormError(null);
+        setIsSubmitting(false);
+        resetFormState();
+    }, [resetFormState]);
+
+    const handleOpenForm = useCallback(() => {
+        setFormError(null);
+        setIsFormOpen(true);
+    }, []);
+
+    const handleSave = useCallback(async () => {
+        if (isSubmitting) {
+            return;
+        }
+
+        const parsedAmount = Number(formState.amount.replace(",", "."));
+        if (!formState.date || !formState.categoryId || !formState.accountId || !parsedAmount || parsedAmount <= 0) {
+            setFormError("Заполните дату, категорию, счет и сумму больше нуля.");
+            return;
+        }
+
+        const account = accountLookup.get(formState.accountId);
+        const category = categoryLookup.get(formState.categoryId);
+        const payload: TransactionAddPayload = {
+            date: toTransactionDateTime(formState.date),
+            timezone: formState.timezone,
+            categoryId: formState.categoryId,
+            accountId: formState.accountId,
+            direction: formState.direction,
+            type: formState.type,
+            amount: parsedAmount,
+            amountInBase: parsedAmount,
+            currency: account?.currency ?? baseCurrency,
+            comment: formState.comment.trim() ? formState.comment.trim() : null,
+        };
+
+        setIsSubmitting(true);
+        const result = await createTransaction(payload, {category, account});
+        setIsSubmitting(false);
+
+        if (!result.success) {
+            setFormError(result.error ?? "Не удалось создать транзакцию.");
+            return;
+        }
+
+        closeForm();
+    }, [
+        accountLookup,
+        baseCurrency,
+        categoryLookup,
+        closeForm,
+        createTransaction,
+        formState.accountId,
+        formState.amount,
+        formState.categoryId,
+        formState.comment,
+        formState.date,
+        formState.direction,
+        formState.timezone,
+        formState.type,
+        isSubmitting,
+    ]);
 
     return (
         <ScreenContainer>
@@ -126,7 +265,9 @@ export default function TransactionsScreen() {
                             placeholder="Type"
                             value={draftFilters.type}
                             options={typeOptions}
-                            onChange={(value) => setDraftFilters((prev) => ({...prev, type: value}))}
+                            onChange={(value) =>
+                                setDraftFilters((prev) => ({...prev, type: value as TransactionFilters["type"]}))
+                            }
                         />
                         <Select
                             placeholder="Account"
@@ -149,7 +290,7 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.actionRow}>
-                    <Button title="Add new transaction" size="sm" onPress={() => setIsFormOpen(true)}/>
+                    <Button title="Add new transaction" size="sm" onPress={handleOpenForm}/>
                     <Button title="Export to xls" variant="outline" tone="primary" size="sm"/>
                 </View>
 
@@ -187,14 +328,23 @@ export default function TransactionsScreen() {
                 </View>
             </ScrollView>
 
-            <Modal transparent animationType="fade" visible={isFormOpen} onRequestClose={() => setIsFormOpen(false)}>
-                <Pressable style={styles.formBackdrop} onPress={() => setIsFormOpen(false)}>
+            <Modal transparent animationType="fade" visible={isFormOpen} onRequestClose={closeForm}>
+                <Pressable style={styles.formBackdrop} onPress={closeForm}>
                     <Pressable style={styles.formCard}>
                         <Text variant="subtitle">Добавить транзакцию</Text>
+                        <Text variant="caption" style={styles.helperText}>
+                            Часовой пояс: {formState.timezone}
+                        </Text>
                         <DateInput
                             placeholder="Date"
                             value={formState.date}
                             onChange={(value) => setFormState((prev) => ({...prev, date: value}))}
+                        />
+                        <Input
+                            placeholder="Amount"
+                            value={formState.amount}
+                            keyboardType="decimal-pad"
+                            onChangeText={(value) => setFormState((prev) => ({...prev, amount: value}))}
                         />
                         <Select
                             placeholder="Category"
@@ -208,14 +358,40 @@ export default function TransactionsScreen() {
                             options={accountOptions}
                             onChange={(value) => setFormState((prev) => ({...prev, accountId: value}))}
                         />
+                        <View style={styles.formRow}>
+                            <Select
+                                placeholder="Type"
+                                value={formState.type}
+                                options={transactionTypeOptions}
+                                onChange={(value) => setFormState((prev) => ({...prev, type: value as TransactionType}))}
+                            />
+                            <Select
+                                placeholder="Direction"
+                                value={formState.direction}
+                                options={directionOptions}
+                                onChange={(value) =>
+                                    setFormState((prev) => ({...prev, direction: value as TransactionDirection}))
+                                }
+                            />
+                        </View>
+                        <Input
+                            placeholder="Comment"
+                            value={formState.comment}
+                            onChangeText={(value) => setFormState((prev) => ({...prev, comment: value}))}
+                        />
+                        {formError ? (
+                            <Text variant="caption" style={styles.errorText}>
+                                {formError}
+                            </Text>
+                        ) : null}
                         <View style={styles.formActions}>
                             <Button
                                 title="Cancel"
                                 variant="ghost"
                                 size="sm"
-                                onPress={() => setIsFormOpen(false)}
+                                onPress={closeForm}
                             />
-                            <Button title="Save" size="sm" onPress={() => setIsFormOpen(false)}/>
+                            <Button title={isSubmitting ? "Saving..." : "Save"} size="sm" onPress={handleSave}/>
                         </View>
                     </Pressable>
                 </Pressable>
@@ -282,11 +458,21 @@ const styles = StyleSheet.create({
         padding: spacing.lg,
         gap: spacing.sm,
     },
+    formRow: {
+        flexDirection: "row",
+        gap: spacing.sm,
+    },
     formActions: {
         flexDirection: "row",
         justifyContent: "flex-end",
         gap: spacing.sm,
         marginTop: spacing.sm,
+    },
+    helperText: {
+        color: colors.textSecondary,
+    },
+    errorText: {
+        color: colors.danger,
     },
     negativeValue: {
         color: colors.danger,

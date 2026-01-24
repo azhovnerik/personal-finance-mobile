@@ -20,8 +20,8 @@ export const useLogin = () => {
 
       if (apiError || !data) {
         const apiMessage =
-          typeof apiError?.data?.message === "string"
-            ? apiError.data.message
+          typeof apiError?.message === "string"
+            ? apiError.message
             : null;
         setError(apiMessage ?? "Не удалось войти. Проверьте данные.");
         return false;

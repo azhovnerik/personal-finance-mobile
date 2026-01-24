@@ -1,50 +1,51 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 
-import client from "../../shared/lib/api/client";
-import type { components } from "../../shared/lib/api/sdk";
-
+import { mockTransactions } from "../../shared/mocks";
 import { getToken, removeToken } from "../../storage/auth";
-import { TransactionDto, TransactionType, UUID } from "../../shared/api/dto";
+import {
+  Account,
+  Category,
+  CurrencyCode,
+  TransactionDirection,
+  TransactionDto,
+  TransactionType,
+  UUID,
+} from "../../shared/api/dto";
 
-type Transaction = components["schemas"]["Transaction"];
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
+
+export type TransactionAddPayload = {
+  date: string;
+  timezone?: string | null;
+  categoryId: UUID;
+  accountId: UUID;
+  direction: TransactionDirection;
+  type: TransactionType;
+  changeBalanceId?: UUID | null;
+  amount: number;
+  amountInBase?: number | null;
+  currency?: CurrencyCode | null;
+  comment?: string | null;
+  transfer?: unknown | null;
+};
+
+type CreateTransactionOptions = {
+  category?: Category;
+  account?: Account;
+};
 
 type UseTransactionsResult = {
   transactions: TransactionDto[];
   isLoading: boolean;
   error: string | null;
+  createTransaction: (
+    payload: TransactionAddPayload,
+    options?: CreateTransactionOptions,
+  ) => Promise<{ success: boolean; error: string | null }>;
   refresh: (filters?: TransactionFilters) => Promise<void>;
 };
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: "1",
-    userId: "mock-user",
-    amount: -1250,
-    currency: "RUB",
-    category: "Продукты",
-    description: "Покупка в супермаркете",
-    occurredAt: "2024-06-01T10:15:00.000Z",
-  },
-  {
-    id: "2",
-    userId: "mock-user",
-    amount: -3200,
-    currency: "RUB",
-    category: "Транспорт",
-    description: "Абонемент на метро",
-    occurredAt: "2024-06-03T07:45:00.000Z",
-  },
-  {
-    id: "3",
-    userId: "mock-user",
-    amount: 55000,
-    currency: "RUB",
-    category: "Доход",
-    description: "Зарплата",
-    occurredAt: "2024-06-05T08:00:00.000Z",
-  },
-];
 
 export type TransactionFilters = {
   startDate?: string | null;
@@ -76,15 +77,53 @@ const toQueryFilters = (filters?: TransactionFilters) => {
   return Object.keys(query).length > 0 ? query : undefined;
 };
 
+const extractDatePart = (value: string) => value.slice(0, 10);
+
+const applyFilters = (
+  list: TransactionDto[],
+  filters?: TransactionFilters,
+): TransactionDto[] => {
+  if (!filters) {
+    return list;
+  }
+
+  return list.filter((transaction) => {
+    const transactionDate = extractDatePart(transaction.date);
+    if (filters.startDate && transactionDate < filters.startDate) {
+      return false;
+    }
+    if (filters.endDate && transactionDate > filters.endDate) {
+      return false;
+    }
+    if (filters.accountId && transaction.account?.id !== filters.accountId) {
+      return false;
+    }
+    if (filters.type && filters.type !== "ALL" && transaction.type !== filters.type) {
+      return false;
+    }
+    return true;
+  });
+};
+
+const generateMockId = () =>
+  globalThis.crypto?.randomUUID?.() ??
+  `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
 export const useTransactions = (
   filters?: TransactionFilters,
 ): UseTransactionsResult => {
   const useMocks =
     __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
   const router = useRouter();
+  const mockTransactionsRef = useRef<TransactionDto[]>(mockTransactions);
   const [transactions, setTransactions] = useState<TransactionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleUnauthorized = useCallback(async () => {
+    await removeToken();
+    router.replace("/login");
+  }, [router]);
 
   const loadTransactions = useCallback(async (nextFilters?: TransactionFilters) => {
     setIsLoading(true);
@@ -100,35 +139,120 @@ export const useTransactions = (
       }
 
       if (useMocks) {
-        setTransactions(MOCK_TRANSACTIONS);
+        setTransactions(applyFilters(mockTransactionsRef.current, nextFilters ?? filters));
         return;
       }
 
-      const headers = { Authorization: `Bearer ${token}` };
       const query = toQueryFilters(nextFilters ?? filters);
-      const { data, error: apiError } = await client.GET("/api/v2/transactions", {
-        headers,
-        params: query ? { query } : undefined,
+      const searchParams = new URLSearchParams(query);
+      const url = searchParams.size
+        ? `${API_BASE_URL}/api/v2/transactions?${searchParams.toString()}`
+        : `${API_BASE_URL}/api/v2/transactions`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (apiError || !data) {
-        if (apiError?.status === 401) {
-          await removeToken();
-          setError("Сессия истекла. Войдите снова.");
-          router.replace("/login");
-          return;
-        }
+
+      if (response.status === 401) {
+        await handleUnauthorized();
+        setTransactions([]);
+        setError("Сессия истекла. Войдите снова.");
+        return;
+      }
+
+      if (!response.ok) {
         setTransactions([]);
         setError("Не удалось загрузить транзакции.");
-      } else {
-        setTransactions(data);
+        return;
       }
+
+      const data = (await response.json()) as TransactionDto[];
+      setTransactions(data);
     } catch {
       setTransactions([]);
       setError("Не удалось загрузить транзакции.");
     } finally {
       setIsLoading(false);
     }
-  }, [filters, router, useMocks]);
+  }, [filters, handleUnauthorized, useMocks]);
+
+  const createTransaction = useCallback(
+    async (
+      payload: TransactionAddPayload,
+      options?: CreateTransactionOptions,
+    ): Promise<{ success: boolean; error: string | null }> => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          await handleUnauthorized();
+          return { success: false, error: "Сессия истекла. Войдите снова." };
+        }
+
+        if (useMocks) {
+          const category =
+            options?.category ??
+            mockTransactionsRef.current.find((item) => item.category.id === payload.categoryId)?.category;
+          const account =
+            options?.account ??
+            mockTransactionsRef.current.find((item) => item.account.id === payload.accountId)?.account;
+
+          if (!category || !account) {
+            await loadTransactions(filters);
+            return { success: false, error: "Не удалось определить категорию или счет." };
+          }
+
+          const newTransaction: TransactionDto = {
+            id: generateMockId(),
+            date: payload.date,
+            category,
+            account,
+            direction: payload.direction,
+            type: payload.type,
+            amount: payload.amount,
+            amountInBase: payload.amountInBase ?? payload.amount,
+            currency: payload.currency ?? account.currency ?? null,
+            comment: payload.comment ?? null,
+          };
+
+          mockTransactionsRef.current = [newTransaction, ...mockTransactionsRef.current];
+          setTransactions(applyFilters(mockTransactionsRef.current, filters));
+          return { success: true, error: null };
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/v2/transactions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.status === 401) {
+          await handleUnauthorized();
+          return { success: false, error: "Сессия истекла. Войдите снова." };
+        }
+
+        if (!response.ok) {
+          const errorResponse = (await response.json().catch(() => null)) as
+            | { message?: string }
+            | null;
+          return {
+            success: false,
+            error: errorResponse?.message ?? "Не удалось создать транзакцию.",
+          };
+        }
+
+        await loadTransactions(filters);
+        return { success: true, error: null };
+      } catch {
+        return { success: false, error: "Не удалось создать транзакцию." };
+      }
+    },
+    [filters, handleUnauthorized, loadTransactions, useMocks],
+  );
 
   useEffect(() => {
     void loadTransactions();
@@ -140,6 +264,7 @@ export const useTransactions = (
     transactions,
     isLoading,
     error,
+    createTransaction,
     refresh,
   };
 };

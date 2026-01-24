@@ -39,6 +39,7 @@ export interface Category {
 
 export interface Account {
   id: UUID;
+  userId?: UUID | null;
   name: string;
   description?: string | null;
   type: AccountType;
@@ -94,6 +95,7 @@ export interface TransactionDto {
   date: string;
   category: Category;
   account: Account;
+  user?: UserApp | null;
   direction: TransactionDirection;
   type: TransactionType;
   amount: number;

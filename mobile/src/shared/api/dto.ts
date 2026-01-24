@@ -67,6 +67,7 @@ export interface CategoryReactDto {
   subcategories?: CategoryReactDto[];
   icon?: string | null;
   categoryTemplateId?: UUID | null;
+  color?: string | null;
 }
 
 export interface AccountDto {

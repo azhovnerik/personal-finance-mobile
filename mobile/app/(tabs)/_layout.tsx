@@ -13,6 +13,8 @@ import {
   spacing,
 } from "../../src/shared/ui";
 import { mockAccounts, mockTransactions, mockUser } from "../../src/shared/mocks";
+import {useAccounts} from "../../src/features/accounts/useAccounts";
+import {useCategories} from "../../src/features/categories/useCategories";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -28,93 +30,17 @@ export default function TabsLayout() {
     accountId: null as string | null,
   });
 
+  // const accountOptions = useMemo(() => {
+  //   return mockAccounts.map((account) => ({ value: account.id, label: account.name }));
+  // }, []);
+  const { accounts } = useAccounts();
+  const { categories } = useCategories();
   const accountOptions = useMemo(() => {
-    return mockAccounts.map((account) => ({ value: account.id, label: account.name }));
-  }, []);
+    return accounts.map((account) => ({value: account.id, label: account.name}));
 
-  const categories = useMemo(
-    () => [
-      {
-        id: "cat-food",
-        name: "Еда и напитки",
-        icon: "food",
-        color: "#f4543a",
-        subcategories: [
-          { id: "cat-food-cafe", name: "Кафе и рестораны", icon: "food", color: "#f4543a" },
-          { id: "cat-food-groceries", name: "Продукты", icon: "basket", color: "#f4543a" },
-        ],
-      },
-      {
-        id: "cat-shopping",
-        name: "Покупки",
-        icon: "bag",
-        color: "#4aa8ff",
-        subcategories: [
-          { id: "cat-shopping-home", name: "Дом и быт", icon: "home", color: "#4aa8ff" },
-          { id: "cat-shopping-clothes", name: "Одежда", icon: "shirt", color: "#4aa8ff" },
-        ],
-      },
-      {
-        id: "cat-home",
-        name: "Жильё",
-        icon: "home",
-        color: "#f5a524",
-        subcategories: [
-          { id: "cat-home-rent", name: "Аренда", icon: "home", color: "#f5a524" },
-          { id: "cat-home-utility", name: "Коммунальные", icon: "home", color: "#f5a524" },
-        ],
-      },
-      {
-        id: "cat-transport",
-        name: "Транспорт",
-        icon: "car",
-        color: "#9aa3b2",
-        subcategories: [
-          { id: "cat-transport-taxi", name: "Такси", icon: "car", color: "#9aa3b2" },
-          { id: "cat-transport-fuel", name: "Топливо", icon: "fuel", color: "#9aa3b2" },
-        ],
-      },
-      {
-        id: "cat-income",
-        name: "Доходы",
-        icon: "finance",
-        color: "#22c55e",
-        subcategories: [
-          { id: "cat-income-salary", name: "Зарплата", icon: "finance", color: "#22c55e" },
-          { id: "cat-income-freelance", name: "Фриланс", icon: "finance", color: "#22c55e" },
-        ],
-      },
-      {
-        id: "cat-auto",
-        name: "Автомобиль",
-        icon: "auto",
-        color: "#a855f7",
-        subcategories: [
-          { id: "cat-auto-service", name: "Сервис", icon: "auto", color: "#a855f7" },
-          { id: "cat-auto-insurance", name: "Страховка", icon: "auto", color: "#a855f7" },
-        ],
-      },
-      {
-        id: "cat-fun",
-        name: "Жизнь и развлечения",
-        icon: "party",
-        color: "#84cc16",
-      },
-      {
-        id: "cat-communication",
-        name: "Связь, ПК",
-        icon: "tech",
-        color: "#6366f1",
-      },
-      {
-        id: "cat-finance",
-        name: "Финансовые расходы",
-        icon: "finance",
-        color: "#14b8a6",
-      },
-    ],
-    [],
-  );
+  }, [accounts]);
+
+
 
   const flatCategories = useMemo(() => {
     return categories.flatMap((category) => {
@@ -284,7 +210,7 @@ export default function TabsLayout() {
         </Tabs>
       </View>
 
-      <Modal animationType="slide" transparent={false} visible={isAddOpen} onRequestClose={() => setIsAddOpen(false)}>
+      <Modal animationType="slide" transparent={true} visible={isAddOpen} onRequestClose={() => setIsAddOpen(false)}>
         <View style={styles.modalContainer}>
           <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }]}>
             <Pressable onPress={() => setIsAddOpen(false)}>
@@ -409,8 +335,8 @@ export default function TabsLayout() {
                         style={styles.topCategoryItem}
                         onPress={() => handleCategoryPress(category.id)}
                       >
-                        <View style={[styles.topCategoryIcon, { backgroundColor: category.color }]}>
-                          <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
+                        <View style={[styles.topCategoryIcon, { backgroundColor: category.color ?? colors.border }]}>
+                          <Text style={styles.categoryIconText}>{iconForCategory(category.icon ?? "default")}</Text>
                         </View>
                         <Text style={styles.topCategoryLabel} numberOfLines={1}>
                           {category.name}
@@ -427,8 +353,8 @@ export default function TabsLayout() {
                         style={styles.categoryRow}
                         onPress={() => handleCategoryPress(category.id)}
                       >
-                        <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                          <Text style={styles.categoryIconText}>{iconForCategory(category.icon)}</Text>
+                        <View style={[styles.categoryIcon, { backgroundColor: category.color ?? colors.border }]}>
+                          <Text style={styles.categoryIconText}>{iconForCategory(category.icon ?? "default")}</Text>
                         </View>
                         <Text style={styles.categoryLabel}>{category.name}</Text>
                         {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
@@ -458,8 +384,8 @@ export default function TabsLayout() {
                         style={styles.categoryRow}
                         onPress={() => handleSubcategoryPress(subcategory.id)}
                       >
-                        <View style={[styles.categoryIcon, { backgroundColor: subcategory.color }]}>
-                          <Text style={styles.categoryIconText}>{iconForCategory(subcategory.icon)}</Text>
+                        <View style={[styles.categoryIcon, { backgroundColor: subcategory.color ?? colors.border }]}>
+                          <Text style={styles.categoryIconText}>{iconForCategory(subcategory.icon ?? "default")}</Text>
                         </View>
                         <Text style={styles.categoryLabel}>{subcategory.name}</Text>
                       </Pressable>

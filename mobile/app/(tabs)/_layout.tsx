@@ -34,7 +34,7 @@ export default function TabsLayout() {
   //   return mockAccounts.map((account) => ({ value: account.id, label: account.name }));
   // }, []);
   const { accounts } = useAccounts();
-  const { categories } = useCategories();
+  const { categories, refresh } = useCategories({ type: "EXPENSES" }, { enabled: isCategoryOpen });
   const accountOptions = useMemo(() => {
     return accounts.map((account) => ({value: account.id, label: account.name}));
 
@@ -128,6 +128,7 @@ export default function TabsLayout() {
   const openCategoryPicker = () => {
     Keyboard.dismiss();
     setIsCategoryOpen(true);
+    void refresh();
   };
 
   const handleCategoryBack = () => {

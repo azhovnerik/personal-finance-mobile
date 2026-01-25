@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 
 import client from "../../shared/lib/api/client";
 import type { components } from "../../shared/lib/api/sdk";
+import { subscribeTransactionsChanged } from "../../shared/lib/events/transactions";
 
 import { getToken, removeToken } from "../../storage/auth";
 import { TransactionDto, TransactionType, UUID } from "../../shared/api/dto";
@@ -100,18 +101,19 @@ export const useTransactions = (
       }
 
       if (useMocks) {
-        setTransactions(MOCK_TRANSACTIONS);
+        setTransactions(MOCK_TRANSACTIONS as unknown as TransactionDto[]);
         return;
       }
 
       const headers = { Authorization: `Bearer ${token}` };
       const query = toQueryFilters(nextFilters ?? filters);
-      const { data, error: apiError } = await client.GET("/api/v2/transactions", {
+      const { data, error: apiError } = await client.GET("/api/v2/transactions" as any, {
         headers,
         params: query ? { query } : undefined,
       });
       if (apiError || !data) {
-        if (apiError?.status === 401) {
+        const status = (apiError as { status?: number } | undefined)?.status;
+        if (status === 401) {
           await removeToken();
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
@@ -120,7 +122,7 @@ export const useTransactions = (
         setTransactions([]);
         setError("Не удалось загрузить транзакции.");
       } else {
-        setTransactions(data);
+        setTransactions(data as TransactionDto[]);
       }
     } catch {
       setTransactions([]);
@@ -133,6 +135,14 @@ export const useTransactions = (
   useEffect(() => {
     void loadTransactions();
   }, [loadTransactions, filters]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeTransactionsChanged(() => {
+      void loadTransactions();
+    });
+
+    return unsubscribe;
+  }, [loadTransactions]);
 
   const refresh = useMemo(() => loadTransactions, [loadTransactions]);
 

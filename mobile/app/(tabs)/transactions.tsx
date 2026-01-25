@@ -126,7 +126,12 @@ export default function TransactionsScreen() {
                             placeholder="Type"
                             value={draftFilters.type}
                             options={typeOptions}
-                            onChange={(value) => setDraftFilters((prev) => ({...prev, type: value}))}
+                            onChange={(value) =>
+                                setDraftFilters((prev) => ({
+                                    ...prev,
+                                    type: value as TransactionFilters["type"],
+                                }))
+                            }
                         />
                         <Select
                             placeholder="Account"

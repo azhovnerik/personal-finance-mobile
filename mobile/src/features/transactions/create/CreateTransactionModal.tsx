@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -6,7 +7,17 @@ import { Button, DateInput, Input, Select, Text, colors, spacing } from "../../.
 import { mockTransactions, mockUser } from "../../../shared/mocks";
 import { useAccounts } from "../../accounts/useAccounts";
 import { useCategories } from "../../categories/useCategories";
-import { CategoryReactDto } from "../../../shared/api/dto";
+import {
+  CategoryReactDto,
+  CategoryType,
+  CurrencyCode,
+  TransactionDirection,
+  TransactionDto,
+  TransactionType,
+} from "../../../shared/api/dto";
+import client from "../../../shared/lib/api/client";
+import { notifyTransactionsChanged } from "../../../shared/lib/events/transactions";
+import { getToken, removeToken } from "../../../storage/auth";
 
 import { CategoryPickerModal } from "./CategoryPickerModal";
 
@@ -23,20 +34,53 @@ type TransactionFormState = {
   accountId: string | null;
 };
 
-const INITIAL_FORM_STATE: TransactionFormState = {
-  amount: "0",
-  categoryId: null,
-  note: "",
-  date: "2026-01-19",
-  accountId: null,
-};
-
 const KEYPAD_ROWS = [
   ["7", "8", "9"],
   ["4", "5", "6"],
   ["1", "2", "3"],
   ["0", "000", "."],
 ];
+
+const toYmd = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateTime = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+const toBackendDateTime = (date: string) => {
+  const [year, month, day] = date.split("-").map(Number);
+  const now = new Date();
+  const localDate = new Date(
+    year,
+    month - 1,
+    day,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+  );
+
+  return formatDateTime(localDate);
+};
+
+const getInitialFormState = (): TransactionFormState => ({
+  amount: "0",
+  categoryId: null,
+  note: "",
+  date: toYmd(new Date()),
+  accountId: null,
+});
 
 const iconForCategory = (icon: string) => {
   switch (icon) {
@@ -71,9 +115,14 @@ const flattenCategories = (categories: CategoryReactDto[]) =>
   categories.flatMap((category) => (category.subcategories ? [category, ...category.subcategories] : [category]));
 
 export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionModalProps) => {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [formState, setFormState] = useState<TransactionFormState>(INITIAL_FORM_STATE);
+  const [formState, setFormState] = useState<TransactionFormState>(() => getInitialFormState());
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
 
   const { accounts } = useAccounts();
   const { categories, refresh } = useCategories({ type: "EXPENSES" }, { enabled: isCategoryPickerOpen });
@@ -105,6 +154,11 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
   const selectedCategory = useMemo(
     () => flatCategories.find((category) => category.id === formState.categoryId) ?? null,
     [flatCategories, formState.categoryId]
+  );
+
+  const selectedAccount = useMemo(
+    () => accounts.find((account) => account.id === formState.accountId) ?? null,
+    [accounts, formState.accountId],
   );
 
   const updateAmount = (value: string) => {
@@ -150,6 +204,139 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
 
   const handleCategorySelect = (categoryId: string) => {
     setFormState((prev) => ({ ...prev, categoryId }));
+  };
+
+  const resetForm = () => {
+    setFormState(getInitialFormState());
+    setIsCategoryPickerOpen(false);
+    setErrorMessage(null);
+  };
+
+  const directionForCategoryType = (type: CategoryType): TransactionDirection =>
+    type === "INCOME" ? "INCREASE" : "DECREASE";
+
+  const transactionTypeForCategoryType = (type: CategoryType): TransactionType =>
+    type === "INCOME" ? "INCOME" : "EXPENSE";
+
+  const generateId = () => {
+    if (globalThis.crypto?.randomUUID) {
+      return globalThis.crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random()}`;
+  };
+
+  const handleUnauthorized = async () => {
+    await removeToken();
+    router.replace("/login");
+  };
+
+  const handleSave = async () => {
+    if (isSaving) {
+      return;
+    }
+
+    setErrorMessage(null);
+
+    if (!formState.categoryId || !formState.accountId) {
+      setErrorMessage("Выберите категорию и счет.");
+      return;
+    }
+
+    if (!selectedCategory || selectedCategory.disabled) {
+      setErrorMessage("Категория недоступна.");
+      return;
+    }
+
+    if (!selectedAccount) {
+      setErrorMessage("Счет недоступен.");
+      return;
+    }
+
+    const normalizedAmount = formState.amount.replace(",", ".");
+    const amountValue = Number(normalizedAmount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setErrorMessage("Введите корректную сумму.");
+      return;
+    }
+
+    const direction = directionForCategoryType(selectedCategory.type);
+    const type = transactionTypeForCategoryType(selectedCategory.type);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+    const currency: CurrencyCode = selectedAccount.currency ?? mockUser.baseCurrency ?? "UAH";
+    const comment = formState.note.trim();
+
+    if (useMocks) {
+      const mockTransaction: TransactionDto = {
+        id: generateId(),
+        date: formState.date,
+        category: selectedCategory,
+        account: selectedAccount,
+        direction,
+        type,
+        amount: amountValue,
+        amountInBase: amountValue,
+        currency,
+        comment: comment.length > 0 ? comment : null,
+      };
+      mockTransactions.unshift(mockTransaction);
+      notifyTransactionsChanged();
+      resetForm();
+      onClose();
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        await handleUnauthorized();
+        setErrorMessage("Сессия истекла. Войдите снова.");
+        return;
+      }
+
+      const payload = {
+        date: toBackendDateTime(formState.date),
+        timezone,
+        categoryId: formState.categoryId,
+        accountId: formState.accountId,
+        direction,
+        type,
+        changeBalanceId: null,
+        amount: amountValue,
+        amountInBase: amountValue,
+        currency,
+        comment: comment.length > 0 ? comment : undefined,
+        transfer: null,
+      };
+
+      const { data, error: apiError } = await client.POST("/api/v2/transactions" as any, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: payload,
+      });
+
+      const status = (apiError as { status?: number } | undefined)?.status;
+      if (status === 401) {
+        await handleUnauthorized();
+        setErrorMessage("Сессия истекла. Войдите снова.");
+        return;
+      }
+
+      if (apiError || !data) {
+        const apiMessage = (apiError as { data?: { message?: string } } | undefined)?.data?.message;
+        setErrorMessage(apiMessage ?? "Не удалось сохранить транзакцию.");
+        return;
+      }
+
+      notifyTransactionsChanged();
+      resetForm();
+      onClose();
+    } catch {
+      setErrorMessage("Не удалось сохранить транзакцию.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -214,7 +401,14 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
         </ScrollView>
 
         <View style={styles.modalFooter}>
-          <Button title="Сохранить" size="lg" onPress={onClose} />
+          {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+          <Button
+            title={isSaving ? "Сохраняем..." : "Сохранить"}
+            size="lg"
+            disabled={isSaving}
+            onPress={handleSave}
+            style={isSaving ? styles.buttonDisabled : undefined}
+          />
         </View>
 
         <View style={styles.keypad}>
@@ -355,6 +549,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.card,
+    gap: spacing.sm,
+  },
+  errorText: {
+    color: colors.danger,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   keypad: {
     borderTopWidth: 1,

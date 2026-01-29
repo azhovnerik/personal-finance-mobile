@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
-import type { Account } from "../../shared/api/dto";
+import type {Account, AccountDto} from "../../shared/api/dto";
 import { mockAccounts } from "../../shared/mocks";
 import { getToken, removeToken } from "../../storage/auth";
 
@@ -11,7 +11,7 @@ const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
 type UseAccountsResult = {
-  accounts: Account[];
+  accounts: AccountDto[];
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;

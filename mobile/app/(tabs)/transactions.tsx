@@ -48,7 +48,7 @@ export default function TransactionsScreen() {
         type: "ALL",
         accountId: null,
     });
-    const { transactions } = useTransactions(appliedFilters);
+    const { transactions, deleteTransaction } = useTransactions(appliedFilters);
     const { accounts } = useAccounts();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [draftFilters, setDraftFilters] = useState(appliedFilters);
@@ -74,10 +74,6 @@ export default function TransactionsScreen() {
 
     const accountOptions = useMemo(() => {
         return accounts.map((account) => ({value: account.id, label: account.name}));
-
-    }, [accounts]);   const accountOptions = useMemo(() => {
-        return accounts.map((account) => ({value: account.id, label: account.name}));
-
     }, [accounts]);
 
     const typeOptions = [
@@ -182,7 +178,12 @@ export default function TransactionsScreen() {
                             <Text variant="caption">{transaction.currency}</Text>
                             <View style={styles.actionRowInline}>
                                 <Button title="Edit" variant="outline" tone="primary" size="sm"/>
-                                <Button title="Delete" variant="ghost" size="sm" onPress={() => deleteTransaction()}/>
+                                <Button
+                                    title="Delete"
+                                    variant="ghost"
+                                    size="sm"
+                                    onPress={() => deleteTransaction(transaction.id)}
+                                />
                             </View>
                         </Card>
                     ))}

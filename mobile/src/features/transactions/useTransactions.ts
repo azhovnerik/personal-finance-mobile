@@ -2,50 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 
 import client from "../../shared/lib/api/client";
-import type { components } from "../../shared/lib/api/sdk";
-import { subscribeTransactionsChanged } from "../../shared/lib/events/transactions";
+import { notifyTransactionsChanged, subscribeTransactionsChanged } from "../../shared/lib/events/transactions";
 
 import { getToken, removeToken } from "../../storage/auth";
 import { TransactionDto, TransactionType, UUID } from "../../shared/api/dto";
-
-type Transaction = components["schemas"]["Transaction"];
+import { mockTransactions } from "../../shared/mocks";
 
 type UseTransactionsResult = {
   transactions: TransactionDto[];
   isLoading: boolean;
   error: string | null;
   refresh: (filters?: TransactionFilters) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
 };
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: "1",
-    userId: "mock-user",
-    amount: -1250,
-    currency: "RUB",
-    category: "Продукты",
-    description: "Покупка в супермаркете",
-    occurredAt: "2024-06-01T10:15:00.000Z",
-  },
-  {
-    id: "2",
-    userId: "mock-user",
-    amount: -3200,
-    currency: "RUB",
-    category: "Транспорт",
-    description: "Абонемент на метро",
-    occurredAt: "2024-06-03T07:45:00.000Z",
-  },
-  {
-    id: "3",
-    userId: "mock-user",
-    amount: 55000,
-    currency: "RUB",
-    category: "Доход",
-    description: "Зарплата",
-    occurredAt: "2024-06-05T08:00:00.000Z",
-  },
-];
 
 export type TransactionFilters = {
   startDate?: string | null;
@@ -101,7 +70,7 @@ export const useTransactions = (
       }
 
       if (useMocks) {
-        setTransactions(MOCK_TRANSACTIONS as unknown as TransactionDto[]);
+        setTransactions([...mockTransactions]);
         return;
       }
 
@@ -146,10 +115,61 @@ export const useTransactions = (
 
   const refresh = useMemo(() => loadTransactions, [loadTransactions]);
 
+  const deleteTransaction = useCallback(
+    async (id: string) => {
+      setError(null);
+
+      try {
+        const token = await getToken();
+        if (!token) {
+          setError("Сессия истекла. Войдите снова.");
+          router.replace("/login");
+          return;
+        }
+
+        if (useMocks) {
+          const nextTransactions = mockTransactions.filter((transaction) => transaction.id !== id);
+          mockTransactions.splice(0, mockTransactions.length, ...nextTransactions);
+          setTransactions([...nextTransactions]);
+          notifyTransactionsChanged();
+          return;
+        }
+
+        const { error: apiError } = await client.DELETE(
+          "/api/v2/transactions/{id}/delete" as any,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { path: { id } },
+          },
+        );
+
+        const status = (apiError as { status?: number } | undefined)?.status;
+        if (status === 401) {
+          await removeToken();
+          setError("Сессия истекла. Войдите снова.");
+          router.replace("/login");
+          return;
+        }
+
+        if (apiError) {
+          setError("Не удалось удалить транзакцию.");
+          return;
+        }
+
+        setTransactions((prev) => prev.filter((transaction) => transaction.id !== id));
+        notifyTransactionsChanged();
+      } catch {
+        setError("Не удалось удалить транзакцию.");
+      }
+    },
+    [router, useMocks],
+  );
+
   return {
     transactions,
     isLoading,
     error,
     refresh,
+    deleteTransaction,
   };
 };

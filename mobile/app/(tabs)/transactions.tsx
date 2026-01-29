@@ -75,6 +75,9 @@ export default function TransactionsScreen() {
     const accountOptions = useMemo(() => {
         return accounts.map((account) => ({value: account.id, label: account.name}));
 
+    }, [accounts]);   const accountOptions = useMemo(() => {
+        return accounts.map((account) => ({value: account.id, label: account.name}));
+
     }, [accounts]);
 
     const typeOptions = [
@@ -154,7 +157,7 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.actionRow}>
-                    <Button title="Add new transaction" size="sm" onPress={() => setIsFormOpen(true)}/>
+                    {/*<Button title="Add new transaction" size="sm" onPress={() => setIsFormOpen(true)}/>*/}
                     <Button title="Export to xls" variant="outline" tone="primary" size="sm"/>
                 </View>
 
@@ -168,24 +171,18 @@ export default function TransactionsScreen() {
                                         {transaction.account?.name ?? "Unknown account"}
                                     </Text>
                                 </View>
-                                {/*<Text*/}
-                                {/*    style={*/}
-                                {/*        transaction.direction === "DECREASE" ? styles.negativeValue : styles.positiveValue*/}
-                                {/*    }*/}
-                                {/*>*/}
-                                {/*    {transaction.direction === "DECREASE" ? "-" : "+"}*/}
-                                {/*    {formatCurrency(transaction.amount, transaction.currency ?? baseCurrency)}*/}
-                                {/*</Text>*/}
+                                <Text style={styles.amountText}>
+                                    {transaction.amount}
+                                </Text>
                             </View>
                             <View style={styles.transactionMeta}>
                                 <Chip label={transaction.type} isActive/>
-                                <Chip label={transaction.direction}/>
                             </View>
-                            <Text variant="caption">{transaction.category?.name}</Text>
-                            <Text variant="caption">{transaction.comment}</Text>
+                            <Text variant="caption">{transaction.category?.name + "(" + transaction.comment + ")"}</Text>
+                            <Text variant="caption">{transaction.currency}</Text>
                             <View style={styles.actionRowInline}>
                                 <Button title="Edit" variant="outline" tone="primary" size="sm"/>
-                                <Button title="Delete" variant="ghost" size="sm"/>
+                                <Button title="Delete" variant="ghost" size="sm" onPress={() => deleteTransaction()}/>
                             </View>
                         </Card>
                     ))}
@@ -266,6 +263,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+    },
+    amountText: {
+        marginLeft: 12,
+        textAlign: "right",
     },
     transactionMeta: {
         flexDirection: "row",

@@ -3,9 +3,11 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency } from "../../src/shared/utils/format";
 import { mockAccountDtos, mockUser } from "../../src/shared/mocks";
+import {useAccounts} from "../../src/features/accounts/useAccounts";
 
 export default function AccountsScreen() {
   const baseCurrency = mockUser.baseCurrency ?? "UAH";
+  const accounts = useAccounts()
 
   return (
     <ScreenContainer>
@@ -29,7 +31,7 @@ export default function AccountsScreen() {
             <Text variant="caption">Balance</Text>
           </View>
           <View style={styles.list}>
-            {mockAccountDtos.map((account) => (
+            {accounts.accounts.map((account) => (
               <View key={account.id} style={styles.rowCard}>
                 <View>
                   <Text>{account.name}</Text>

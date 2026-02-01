@@ -14,7 +14,7 @@ type UseTransactionsResult = {
   error: string | null;
   refresh: (filters?: TransactionFilters) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  editTransaction: (id: string, transactionDto: TransactionDto) => Promise<void>;
+  editTransaction: (id: string, transactionDto: TransactionDto) => Promise<boolean>;
 };
 
 export type TransactionFilters = {
@@ -175,7 +175,7 @@ export const useTransactions = (
         if (!token) {
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
-          return;
+          return false;
         }
 
         if (useMocks) {
@@ -185,7 +185,7 @@ export const useTransactions = (
           mockTransactions.splice(0, mockTransactions.length, ...nextTransactions);
           setTransactions([...nextTransactions]);
           notifyTransactionsChanged();
-          return;
+          return true;
         }
 
         const { error: apiError } = await client.PUT(
@@ -202,12 +202,12 @@ export const useTransactions = (
           await removeToken();
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
-          return;
+          return false;
         }
 
         if (apiError) {
           setError("Не удалось сохранить транзакцию.");
-          return;
+          return false;
         }
 
         setTransactions((prev) =>
@@ -216,8 +216,10 @@ export const useTransactions = (
           ),
         );
         notifyTransactionsChanged();
+        return true;
       } catch {
         setError("Не удалось сохранить транзакцию.");
+        return false;
       }
     },
     [router, useMocks],

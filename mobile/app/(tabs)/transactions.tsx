@@ -1,22 +1,21 @@
-import {Modal, Pressable, ScrollView, StyleSheet, View} from "react-native";
-import {useMemo, useState} from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 
 import {
     Button,
     Card,
     Chip,
     DateInput,
-    Input,
     ScreenContainer,
     Select,
     Text,
     colors,
     spacing,
 } from "../../src/shared/ui";
-import {mockCategoryTree, mockUser} from "../../src/shared/mocks";
-import {Category, TransactionDto} from "../../src/shared/api/dto";
-import {TransactionFilters, useTransactions} from "../../src/features/transactions/useTransactions";
-import {useAccounts} from "../../src/features/accounts/useAccounts";
+import { mockUser } from "../../src/shared/mocks";
+import { TransactionFilters, useTransactions } from "../../src/features/transactions/useTransactions";
+import { useAccounts } from "../../src/features/accounts/useAccounts";
 
 const FILTERS = [
     {label: "All types", active: true},
@@ -43,6 +42,7 @@ const getDefaultPeriod = () => {
 };
 
 export default function TransactionsScreen() {
+    const router = useRouter();
     const defaultPeriod = useMemo(() => getDefaultPeriod(), []);
     const baseCurrency = mockUser.baseCurrency ?? "UAH";
     const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>({
@@ -50,32 +50,9 @@ export default function TransactionsScreen() {
         type: "ALL",
         accountId: null,
     });
-    const { transactions, deleteTransaction, editTransaction } = useTransactions(appliedFilters);
+    const { transactions, deleteTransaction } = useTransactions(appliedFilters);
     const { accounts } = useAccounts();
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState<TransactionDto | null>(null);
     const [draftFilters, setDraftFilters] = useState(appliedFilters);
-    const [formState, setFormState] = useState({
-        date: null as string | null,
-        categoryId: null as string | null,
-        accountId: null as string | null,
-        amount: "",
-        comment: "",
-    });
-
-    const categoryOptions = useMemo(() => {
-        const options: Array<{value: string; label: string}> = [];
-        mockCategoryTree.forEach((category) => {
-            if (category.subcategories?.length) {
-                category.subcategories.forEach((subcategory) => {
-                    options.push({value: subcategory.id, label: subcategory.name});
-                });
-            } else {
-                options.push({value: category.id, label: category.name});
-            }
-        });
-        return options;
-    }, []);
 
     const accountOptions = useMemo(() => {
         return accounts.map((account) => ({value: account.id, label: account.name}));
@@ -100,79 +77,9 @@ export default function TransactionsScreen() {
         return "All time";
     }, [appliedFilters.endDate, appliedFilters.startDate]);
 
-    const findCategoryById = (id: string | null) => {
-        if (!id) {
-            return null;
-        }
-
-        for (const category of mockCategoryTree) {
-            if (category.id === id) {
-                return category;
-            }
-            if (category.subcategories?.length) {
-                const match = category.subcategories.find((subcategory) => subcategory.id === id);
-                if (match) {
-                    return match;
-                }
-            }
-        }
-
-        return null;
-    };
-
-    const toCategory = (category: {id: string; name: string; type: Category["type"]; disabled: boolean}): Category => ({
-        id: category.id,
-        name: category.name,
-        type: category.type,
-        disabled: category.disabled,
-    });
-
-    const openEditForm = (transaction: TransactionDto) => {
-        setEditingTransaction(transaction);
-        setFormState({
-            date: transaction.date ?? null,
-            categoryId: transaction.category?.id ?? null,
-            accountId: transaction.account?.id ?? null,
-            amount: String(transaction.amount ?? ""),
-            comment: transaction.comment ?? "",
-        });
-        setIsFormOpen(true);
-    };
-
-    const closeForm = () => {
-        setIsFormOpen(false);
-        setEditingTransaction(null);
-    };
-
-    const handleSave = async () => {
-        if (!editingTransaction || !editingTransaction.id) {
-            closeForm();
-            return;
-        }
-
-        const categoryMatch = findCategoryById(formState.categoryId);
-        const nextCategory = categoryMatch
-            ? toCategory(categoryMatch)
-            : editingTransaction.category;
-        const nextAccount =
-            accounts.find((account) => account.id === formState.accountId) ??
-            editingTransaction.account;
-        const parsedAmount = Number.parseFloat(formState.amount.replace(",", "."));
-        const nextAmount = Number.isNaN(parsedAmount)
-            ? editingTransaction.amount
-            : parsedAmount;
-
-        const nextTransaction: TransactionDto = {
-            ...editingTransaction,
-            date: formState.date ?? editingTransaction.date,
-            category: nextCategory,
-            account: nextAccount,
-            amount: nextAmount,
-            comment: formState.comment || null,
-        };
-
-        await editTransaction(editingTransaction.id, nextTransaction);
-        closeForm();
+    const openEditScreen = (transaction: unknown) => {
+        const payload = encodeURIComponent(JSON.stringify(transaction));
+        router.push({ pathname: "/transactions/edit", params: { transaction: payload } });
     };
 
     return (
@@ -262,7 +169,7 @@ export default function TransactionsScreen() {
                                     variant="outline"
                                     tone="primary"
                                     size="sm"
-                                    onPress={() => openEditForm(transaction)}
+                                    onPress={() => openEditScreen(transaction)}
                                 />
                                 <Button
                                     title="Delete"
@@ -275,51 +182,6 @@ export default function TransactionsScreen() {
                     ))}
                 </View>
             </ScrollView>
-
-            <Modal transparent animationType="fade" visible={isFormOpen} onRequestClose={closeForm}>
-                <Pressable style={styles.formBackdrop} onPress={closeForm}>
-                    <Pressable style={styles.formCard}>
-                        <Text variant="subtitle">Редактировать транзакцию</Text>
-                        <DateInput
-                            placeholder="Date"
-                            value={formState.date}
-                            onChange={(value) => setFormState((prev) => ({...prev, date: value}))}
-                        />
-                        <Input
-                            placeholder="Amount"
-                            keyboardType="numeric"
-                            value={formState.amount}
-                            onChangeText={(value) => setFormState((prev) => ({...prev, amount: value}))}
-                        />
-                        <Select
-                            placeholder="Category"
-                            value={formState.categoryId}
-                            options={categoryOptions}
-                            onChange={(value) => setFormState((prev) => ({...prev, categoryId: value}))}
-                        />
-                        <Select
-                            placeholder="Account"
-                            value={formState.accountId}
-                            options={accountOptions}
-                            onChange={(value) => setFormState((prev) => ({...prev, accountId: value}))}
-                        />
-                        <Input
-                            placeholder="Comment"
-                            value={formState.comment}
-                            onChangeText={(value) => setFormState((prev) => ({...prev, comment: value}))}
-                        />
-                        <View style={styles.formActions}>
-                            <Button
-                                title="Cancel"
-                                variant="ghost"
-                                size="sm"
-                                onPress={closeForm}
-                            />
-                            <Button title="Save" size="sm" onPress={handleSave}/>
-                        </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
         </ScreenContainer>
     );
 }
@@ -373,24 +235,6 @@ const styles = StyleSheet.create({
     actionRowInline: {
         flexDirection: "row",
         gap: spacing.sm,
-    },
-    formBackdrop: {
-        flex: 1,
-        backgroundColor: "rgba(15, 23, 42, 0.45)",
-        justifyContent: "center",
-        padding: spacing.lg,
-    },
-    formCard: {
-        backgroundColor: colors.surface,
-        borderRadius: 20,
-        padding: spacing.lg,
-        gap: spacing.sm,
-    },
-    formActions: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        gap: spacing.sm,
-        marginTop: spacing.sm,
     },
     negativeValue: {
         color: colors.danger,

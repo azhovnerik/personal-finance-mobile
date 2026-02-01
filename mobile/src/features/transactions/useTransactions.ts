@@ -14,6 +14,7 @@ type UseTransactionsResult = {
   error: string | null;
   refresh: (filters?: TransactionFilters) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  editTransaction: (id: string, transactionDto: TransactionDto) => Promise<void>;
 };
 
 export type TransactionFilters = {
@@ -136,7 +137,7 @@ export const useTransactions = (
         }
 
         const { error: apiError } = await client.DELETE(
-          "/api/v2/transactions/{id}/delete" as any,
+          "/api/v2/transactions/{id}" as any,
           {
             headers: { Authorization: `Bearer ${token}` },
             params: { path: { id } },
@@ -165,11 +166,67 @@ export const useTransactions = (
     [router, useMocks],
   );
 
+  const editTransaction = useCallback(
+      async (id: string, transactionDto: TransactionDto) => {
+        setError(null);
+
+        try {
+          const token = await getToken();
+          if (!token) {
+            setError("Сессия истекла. Войдите снова.");
+            router.replace("/login");
+            return;
+          }
+
+          if (useMocks) {
+            const nextTransactions = mockTransactions.filter((transaction) => transaction.id !== id);
+            mockTransactions.splice(0, mockTransactions.length, ...nextTransactions);
+            setTransactions([...nextTransactions]);
+            notifyTransactionsChanged();
+            return;
+          }
+
+          const payload = {
+            transactionDto
+          };
+
+          const { error: apiError } = await client.PUT(
+              "/api/v2/transactions/{id}" as any,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { path: { id } },
+                body: payload
+              },
+          );
+
+          const status = (apiError as { status?: number } | undefined)?.status;
+          if (status === 401) {
+            await removeToken();
+            setError("Сессия истекла. Войдите снова.");
+            router.replace("/login");
+            return;
+          }
+
+          if (apiError) {
+            setError("Не удалось удалить транзакцию.");
+            return;
+          }
+
+          setTransactions((prev) => prev.filter((transaction) => transaction.id !== id));
+          notifyTransactionsChanged();
+        } catch {
+          setError("Не удалось удалить транзакцию.");
+        }
+      },
+      [router, useMocks],
+  );
+
   return {
     transactions,
     isLoading,
     error,
     refresh,
     deleteTransaction,
+    editTransaction
   };
 };

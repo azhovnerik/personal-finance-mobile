@@ -167,58 +167,60 @@ export const useTransactions = (
   );
 
   const editTransaction = useCallback(
-      async (id: string, transactionDto: TransactionDto) => {
-        setError(null);
+    async (id: string, transactionDto: TransactionDto) => {
+      setError(null);
 
-        try {
-          const token = await getToken();
-          if (!token) {
-            setError("Сессия истекла. Войдите снова.");
-            router.replace("/login");
-            return;
-          }
-
-          if (useMocks) {
-            const nextTransactions = mockTransactions.filter((transaction) => transaction.id !== id);
-            mockTransactions.splice(0, mockTransactions.length, ...nextTransactions);
-            setTransactions([...nextTransactions]);
-            notifyTransactionsChanged();
-            return;
-          }
-
-          const payload = {
-            transactionDto
-          };
-
-          const { error: apiError } = await client.PUT(
-              "/api/v2/transactions/{id}" as any,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { path: { id } },
-                body: payload
-              },
-          );
-
-          const status = (apiError as { status?: number } | undefined)?.status;
-          if (status === 401) {
-            await removeToken();
-            setError("Сессия истекла. Войдите снова.");
-            router.replace("/login");
-            return;
-          }
-
-          if (apiError) {
-            setError("Не удалось удалить транзакцию.");
-            return;
-          }
-
-          setTransactions((prev) => prev.filter((transaction) => transaction.id !== id));
-          notifyTransactionsChanged();
-        } catch {
-          setError("Не удалось удалить транзакцию.");
+      try {
+        const token = await getToken();
+        if (!token) {
+          setError("Сессия истекла. Войдите снова.");
+          router.replace("/login");
+          return;
         }
-      },
-      [router, useMocks],
+
+        if (useMocks) {
+          const nextTransactions = mockTransactions.map((transaction) =>
+            transaction.id === id ? { ...transaction, ...transactionDto } : transaction,
+          );
+          mockTransactions.splice(0, mockTransactions.length, ...nextTransactions);
+          setTransactions([...nextTransactions]);
+          notifyTransactionsChanged();
+          return;
+        }
+
+        const { error: apiError } = await client.PUT(
+          "/api/v2/transactions/{id}" as any,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { path: { id } },
+            body: transactionDto,
+          },
+        );
+
+        const status = (apiError as { status?: number } | undefined)?.status;
+        if (status === 401) {
+          await removeToken();
+          setError("Сессия истекла. Войдите снова.");
+          router.replace("/login");
+          return;
+        }
+
+        if (apiError) {
+          setError("Не удалось сохранить транзакцию.");
+          return;
+        }
+
+        setTransactions((prev) =>
+          prev.map((transaction) =>
+            transaction.id === id ? { ...transaction, ...transactionDto } : transaction,
+          ),
+        );
+        notifyTransactionsChanged();
+      } catch {
+        setError("Не удалось сохранить транзакцию.");
+      }
+    },
+    [router, useMocks],
   );
 
   return {

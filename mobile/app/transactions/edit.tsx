@@ -281,8 +281,8 @@ export default function EditTransactionScreen() {
           </View>
 
           <Pressable style={styles.categoryField} onPress={handleOpenCategoryPicker}>
-            <View style={[styles.categoryIcon, { backgroundColor: selectedCategory?.color ?? colors.border }]}>
-              <Text style={styles.categoryIconText}>{iconForCategory(selectedCategory?.icon ?? "default")}</Text>
+            <View style={[styles.categoryIcon, { backgroundColor: displayedCategory?.color ?? colors.border }]}>
+              <Text style={styles.categoryIconText}>{iconForCategory(displayedCategory?.icon ?? "default")}</Text>
             </View>
             <View style={styles.categoryLabelWrapper}>
               <Text style={displayedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>

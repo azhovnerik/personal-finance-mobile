@@ -55,8 +55,23 @@ const formatDateTime = (date: Date) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
+const toInputDate = (date: string) => {
+  if (!date) {
+    return date;
+  }
+  const normalized = date.includes("T") ? date.replace("T", " ") : date;
+  return normalized.length >= 10 ? normalized.slice(0, 10) : normalized;
+};
+
 const toBackendDateTime = (date: string) => {
-  const [year, month, day] = date.split("-").map(Number);
+  if (!date) {
+    return date;
+  }
+  const normalized = date.includes("T") ? date.replace("T", " ") : date;
+  if (normalized.includes(" ")) {
+    return normalized;
+  }
+  const [year, month, day] = normalized.split("-").map(Number);
   const now = new Date();
   const localDate = new Date(
     year,
@@ -134,7 +149,7 @@ export default function EditTransactionScreen() {
       const parsed = JSON.parse(decoded) as TransactionDto;
       setInitialTransaction(parsed);
       setFormState({
-        date: parsed.date ?? null,
+        date: parsed.date ? toInputDate(parsed.date) : null,
         categoryId: parsed.category?.id ?? null,
         accountId: parsed.account?.id ?? null,
         amount: String(parsed.amount ?? ""),

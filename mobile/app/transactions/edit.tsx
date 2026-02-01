@@ -44,6 +44,32 @@ const toCategory = (category: CategoryReactDto): Category => ({
   disabled: category.disabled,
 });
 
+const formatDateTime = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+const toBackendDateTime = (date: string) => {
+  const [year, month, day] = date.split("-").map(Number);
+  const now = new Date();
+  const localDate = new Date(
+    year,
+    month - 1,
+    day,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+  );
+
+  return formatDateTime(localDate);
+};
+
 const iconForCategory = (icon: string) => {
   switch (icon) {
     case "basket":
@@ -130,6 +156,8 @@ export default function EditTransactionScreen() {
     [flatCategories, formState.categoryId],
   );
 
+  const displayedCategory = selectedCategory ?? initialTransaction?.category ?? null;
+
   const categoryFrequency = useMemo(() => {
     const counts = new Map<string, number>();
     flatCategories.forEach((category) => {
@@ -194,9 +222,27 @@ export default function EditTransactionScreen() {
       type: transactionTypeForCategoryType(nextCategoryType),
     };
 
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+    const currency = initialTransaction.currency ?? mockUser.baseCurrency ?? "UAH";
+    const comment = formState.comment.trim();
+    const payload = {
+      date: toBackendDateTime(formState.date ?? initialTransaction.date),
+      timezone,
+      categoryId: formState.categoryId ?? initialTransaction.category?.id ?? null,
+      accountId: formState.accountId ?? initialTransaction.account?.id ?? null,
+      direction: nextTransaction.direction,
+      type: nextTransaction.type,
+      changeBalanceId: null,
+      amount: parsedAmount,
+      amountInBase: parsedAmount,
+      currency,
+      comment: comment.length > 0 ? comment : undefined,
+      transfer: null,
+    };
+
     setIsSaving(true);
     setLocalError(null);
-    const success = await editTransaction(initialTransaction.id, nextTransaction);
+    const success = await editTransaction(initialTransaction.id, payload, nextTransaction);
     setIsSaving(false);
 
     if (success) {
@@ -239,8 +285,8 @@ export default function EditTransactionScreen() {
               <Text style={styles.categoryIconText}>{iconForCategory(selectedCategory?.icon ?? "default")}</Text>
             </View>
             <View style={styles.categoryLabelWrapper}>
-              <Text style={selectedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
-                {selectedCategory?.name ?? "Выберите категорию"}
+              <Text style={displayedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
+                {displayedCategory?.name ?? "Выберите категорию"}
               </Text>
             </View>
             <Text style={styles.categoryChevron}>›</Text>

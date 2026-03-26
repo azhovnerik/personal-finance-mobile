@@ -1,8 +1,0 @@
-ALTER TABLE budget
-ALTER COLUMN total_expense TYPE NUMERIC(19, 2),
-ALTER COLUMN total_income TYPE NUMERIC(19, 2);
-
-ALTER TABLE budget_categories
-ALTER COLUMN amount TYPE NUMERIC(19, 2);
-
-

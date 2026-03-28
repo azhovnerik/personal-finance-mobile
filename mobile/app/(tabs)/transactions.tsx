@@ -1,5 +1,6 @@
-import {Modal, Pressable, ScrollView, StyleSheet, View} from "react-native";
-import {useMemo, useState} from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 
 import {
     Button,
@@ -12,9 +13,9 @@ import {
     colors,
     spacing,
 } from "../../src/shared/ui";
-import {mockCategoryTree, mockUser} from "../../src/shared/mocks";
-import {TransactionFilters, useTransactions} from "../../src/features/transactions/useTransactions";
-import {useAccounts} from "../../src/features/accounts/useAccounts";
+import { mockUser } from "../../src/shared/mocks";
+import { TransactionFilters, useTransactions } from "../../src/features/transactions/useTransactions";
+import { useAccounts } from "../../src/features/accounts/useAccounts";
 
 const FILTERS = [
     {label: "All types", active: true},
@@ -41,6 +42,7 @@ const getDefaultPeriod = () => {
 };
 
 export default function TransactionsScreen() {
+    const router = useRouter();
     const defaultPeriod = useMemo(() => getDefaultPeriod(), []);
     const baseCurrency = mockUser.baseCurrency ?? "UAH";
     const [appliedFilters, setAppliedFilters] = useState<TransactionFilters>({
@@ -50,27 +52,7 @@ export default function TransactionsScreen() {
     });
     const { transactions, deleteTransaction } = useTransactions(appliedFilters);
     const { accounts } = useAccounts();
-    const [isFormOpen, setIsFormOpen] = useState(false);
     const [draftFilters, setDraftFilters] = useState(appliedFilters);
-    const [formState, setFormState] = useState({
-        date: null as string | null,
-        categoryId: null as string | null,
-        accountId: null as string | null,
-    });
-
-    const categoryOptions = useMemo(() => {
-        const options: Array<{value: string; label: string}> = [];
-        mockCategoryTree.forEach((category) => {
-            if (category.subcategories?.length) {
-                category.subcategories.forEach((subcategory) => {
-                    options.push({value: subcategory.id, label: subcategory.name});
-                });
-            } else {
-                options.push({value: category.id, label: category.name});
-            }
-        });
-        return options;
-    }, []);
 
     const accountOptions = useMemo(() => {
         return accounts.map((account) => ({value: account.id, label: account.name}));
@@ -94,6 +76,11 @@ export default function TransactionsScreen() {
         }
         return "All time";
     }, [appliedFilters.endDate, appliedFilters.startDate]);
+
+    const openEditScreen = (transaction: unknown) => {
+        const payload = encodeURIComponent(JSON.stringify(transaction));
+        router.push({ pathname: "/transactions/edit", params: { transaction: payload } });
+    };
 
     return (
         <ScreenContainer>
@@ -177,7 +164,13 @@ export default function TransactionsScreen() {
                             <Text variant="caption">{transaction.category?.name + "(" + transaction.comment + ")"}</Text>
                             <Text variant="caption">{transaction.currency}</Text>
                             <View style={styles.actionRowInline}>
-                                <Button title="Edit" variant="outline" tone="primary" size="sm"/>
+                                <Button
+                                    title="Edit"
+                                    variant="outline"
+                                    tone="primary"
+                                    size="sm"
+                                    onPress={() => openEditScreen(transaction)}
+                                />
                                 <Button
                                     title="Delete"
                                     variant="ghost"
@@ -189,40 +182,6 @@ export default function TransactionsScreen() {
                     ))}
                 </View>
             </ScrollView>
-
-            <Modal transparent animationType="fade" visible={isFormOpen} onRequestClose={() => setIsFormOpen(false)}>
-                <Pressable style={styles.formBackdrop} onPress={() => setIsFormOpen(false)}>
-                    <Pressable style={styles.formCard}>
-                        <Text variant="subtitle">Добавить транзакцию</Text>
-                        <DateInput
-                            placeholder="Date"
-                            value={formState.date}
-                            onChange={(value) => setFormState((prev) => ({...prev, date: value}))}
-                        />
-                        <Select
-                            placeholder="Category"
-                            value={formState.categoryId}
-                            options={categoryOptions}
-                            onChange={(value) => setFormState((prev) => ({...prev, categoryId: value}))}
-                        />
-                        <Select
-                            placeholder="Account"
-                            value={formState.accountId}
-                            options={accountOptions}
-                            onChange={(value) => setFormState((prev) => ({...prev, accountId: value}))}
-                        />
-                        <View style={styles.formActions}>
-                            <Button
-                                title="Cancel"
-                                variant="ghost"
-                                size="sm"
-                                onPress={() => setIsFormOpen(false)}
-                            />
-                            <Button title="Save" size="sm" onPress={() => setIsFormOpen(false)}/>
-                        </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
         </ScreenContainer>
     );
 }
@@ -276,24 +235,6 @@ const styles = StyleSheet.create({
     actionRowInline: {
         flexDirection: "row",
         gap: spacing.sm,
-    },
-    formBackdrop: {
-        flex: 1,
-        backgroundColor: "rgba(15, 23, 42, 0.45)",
-        justifyContent: "center",
-        padding: spacing.lg,
-    },
-    formCard: {
-        backgroundColor: colors.surface,
-        borderRadius: 20,
-        padding: spacing.lg,
-        gap: spacing.sm,
-    },
-    formActions: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        gap: spacing.sm,
-        marginTop: spacing.sm,
     },
     negativeValue: {
         color: colors.danger,

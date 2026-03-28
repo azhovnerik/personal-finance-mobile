@@ -225,6 +225,7 @@ export default function EditTransactionScreen() {
     const nextCategory = selectedCategory ? toCategory(selectedCategory) : initialTransaction.category;
 
     const nextCategoryType = selectedCategory?.type ?? initialTransaction.category?.type ?? "EXPENSES";
+    const currency = nextAccount.currency ?? initialTransaction.currency ?? mockUser.baseCurrency ?? "UAH";
 
     const nextTransaction: TransactionDto = {
       ...initialTransaction,
@@ -235,10 +236,10 @@ export default function EditTransactionScreen() {
       comment: formState.comment || null,
       direction: directionForCategoryType(nextCategoryType),
       type: transactionTypeForCategoryType(nextCategoryType),
+      currency,
     };
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
-    const currency = initialTransaction.currency ?? mockUser.baseCurrency ?? "UAH";
     const comment = formState.comment.trim();
     const payload = {
       date: toBackendDateTime(formState.date ?? initialTransaction.date),

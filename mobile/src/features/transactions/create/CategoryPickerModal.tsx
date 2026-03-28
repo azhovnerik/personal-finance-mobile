@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text, colors, spacing } from "../../../shared/ui";
-import { CategoryReactDto } from "../../../shared/api/dto";
+import { CategoryReactDto, CategoryType } from "../../../shared/api/dto";
 
 type CategoryPickerModalProps = {
   visible: boolean;
@@ -13,6 +13,7 @@ type CategoryPickerModalProps = {
   iconForCategory: (icon: string) => string;
   onClose: () => void;
   onSelect: (categoryId: string) => void;
+  defaultType?: CategoryType;
 };
 
 export const CategoryPickerModal = ({
@@ -23,16 +24,36 @@ export const CategoryPickerModal = ({
   iconForCategory,
   onClose,
   onSelect,
+  defaultType = "EXPENSES",
 }: CategoryPickerModalProps) => {
+  const insets = useSafeAreaInsets();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<CategoryType>(defaultType);
+
+  const matchesSelectedType = (category: CategoryReactDto) => {
+    const rawType = String(category.type).toUpperCase();
+    const normalizedCategoryType = rawType === "EXPENSE" ? "EXPENSES" : rawType;
+    return normalizedCategoryType === selectedType;
+  };
 
   useEffect(() => {
+    if (visible) {
+      setSelectedType(defaultType);
+      setActiveCategoryId(null);
+      setIsSubcategoryOpen(false);
+      return;
+    }
     if (!visible) {
       setActiveCategoryId(null);
       setIsSubcategoryOpen(false);
     }
-  }, [visible]);
+  }, [defaultType, visible]);
+
+  const filteredCategories = useMemo(
+    () => categories.filter((category) => matchesSelectedType(category)),
+    [categories, selectedType],
+  );
 
   const activeCategory = useMemo(
     () => categories.find((category) => category.id === activeCategoryId) ?? null,
@@ -50,8 +71,8 @@ export const CategoryPickerModal = ({
     const selectedCategory = flatCategories.find((item) => item.id === categoryId);
     if (selectedCategory) {
       onSelect(selectedCategory.id);
+      onClose();
     }
-    onClose();
   };
 
   const handleSubcategoryPress = (subcategoryId: string) => {
@@ -70,7 +91,7 @@ export const CategoryPickerModal = ({
       {!isSubcategoryOpen ? (
         <View style={styles.categoryOverlay}>
           <SafeAreaView style={styles.categoryModal}>
-            <View style={styles.categoryHeader}>
+            <View style={[styles.categoryHeader, { paddingTop: insets.top + spacing.sm }]}>
               <Pressable onPress={onClose}>
                 <Text style={styles.modalAction}>Назад</Text>
               </Pressable>
@@ -98,9 +119,36 @@ export const CategoryPickerModal = ({
                 ))}
               </ScrollView>
 
+              <View style={styles.typeSwitchWrap}>
+                <Pressable
+                  style={[styles.typeSwitchButton, selectedType === "EXPENSES" && styles.typeSwitchButtonActive]}
+                  onPress={() => {
+                    setSelectedType("EXPENSES");
+                    setIsSubcategoryOpen(false);
+                    setActiveCategoryId(null);
+                  }}
+                >
+                  <Text style={selectedType === "EXPENSES" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
+                    Расход
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.typeSwitchButton, selectedType === "INCOME" && styles.typeSwitchButtonActive]}
+                  onPress={() => {
+                    setSelectedType("INCOME");
+                    setIsSubcategoryOpen(false);
+                    setActiveCategoryId(null);
+                  }}
+                >
+                  <Text style={selectedType === "INCOME" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
+                    Доход
+                  </Text>
+                </Pressable>
+              </View>
+
               <Text style={styles.sectionTitle}>Все категории</Text>
               <View style={styles.categoryList}>
-                {categories.map((category) => (
+                {filteredCategories.map((category) => (
                   <Pressable
                     key={category.id}
                     style={styles.categoryRow}
@@ -113,6 +161,9 @@ export const CategoryPickerModal = ({
                     {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
                   </Pressable>
                 ))}
+                {filteredCategories.length === 0 ? (
+                  <Text style={styles.emptyText}>Категории не найдены для выбранного типа.</Text>
+                ) : null}
               </View>
             </ScrollView>
           </SafeAreaView>
@@ -120,7 +171,7 @@ export const CategoryPickerModal = ({
       ) : (
         <View style={styles.categoryOverlay}>
           <SafeAreaView style={styles.categoryModal}>
-            <View style={styles.categoryHeader}>
+            <View style={[styles.categoryHeader, { paddingTop: insets.top + spacing.sm }]}>
               <Pressable onPress={handleSubcategoryBack}>
                 <Text style={styles.modalAction}>Назад</Text>
               </Pressable>
@@ -172,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
@@ -180,6 +231,32 @@ const styles = StyleSheet.create({
   categoryContent: {
     padding: spacing.lg,
     gap: spacing.md,
+  },
+  typeSwitchWrap: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  typeSwitchButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  typeSwitchButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  typeSwitchText: {
+    color: colors.textSecondary,
+    fontWeight: "600",
+  },
+  typeSwitchTextActive: {
+    color: colors.surface,
+    fontWeight: "700",
   },
   sectionTitle: {
     color: colors.textSecondary,
@@ -210,6 +287,11 @@ const styles = StyleSheet.create({
   },
   categoryList: {
     gap: spacing.sm,
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    textAlign: "center",
+    paddingVertical: spacing.md,
   },
   categoryRow: {
     flexDirection: "row",

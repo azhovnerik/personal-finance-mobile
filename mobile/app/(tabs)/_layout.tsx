@@ -21,24 +21,15 @@ export default function TabsLayout() {
         >
           <Tabs.Screen name="index" options={{ title: "Главная" }} />
           <Tabs.Screen name="transactions" options={{ title: "Транзакции" }} />
-          <Tabs.Screen
-            name="add"
-            options={{
-              title: "",
-              tabBarLabel: "",
-              tabBarButton: () => (
-                <Pressable style={styles.addButtonWrapper} onPress={() => setIsCreateOpen(true)}>
-                  <View style={styles.addButton}>
-                    <Text style={styles.addButtonLabel}>+</Text>
-                  </View>
-                </Pressable>
-              ),
-            }}
-          />
           <Tabs.Screen name="budgets" options={{ title: "Бюджеты" }} />
           <Tabs.Screen name="accounts" options={{ title: "Счета" }} />
           <Tabs.Screen name="more" options={{ title: "Ещё" }} />
         </Tabs>
+        <Pressable style={styles.addButtonWrapper} onPress={() => setIsCreateOpen(true)}>
+          <View style={styles.addButton}>
+            <Text style={styles.addButtonLabel}>+</Text>
+          </View>
+        </Pressable>
       </View>
 
       <CreateTransactionModal visible={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
@@ -58,7 +49,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   addButtonWrapper: {
-    flex: 1,
+    position: "absolute",
+    left: "50%",
+    marginLeft: -32,
+    bottom: spacing.lg,
+    zIndex: 20,
     alignItems: "center",
     justifyContent: "center",
   },

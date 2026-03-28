@@ -35,6 +35,7 @@ export type TransactionFilters = {
 };
 
 export type EditTransactionPayload = {
+  id: string;
   date: string;
   timezone: string;
   categoryId: string | null;
@@ -214,10 +215,9 @@ export const useTransactions = (
         }
 
         const { error: apiError } = await client.PUT(
-          "/api/v2/transactions/{id}" as any,
+          "/api/v2/transactions" as any,
           {
             headers: { Authorization: `Bearer ${token}` },
-            params: { path: { id } },
             body: payload,
           },
         );

@@ -17,6 +17,7 @@ import {
 import { mockUser } from "../../src/shared/mocks";
 import { useTransactions } from "../../src/features/transactions/useTransactions";
 import { CategoryPickerModal } from "../../src/features/transactions/create/CategoryPickerModal";
+import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
 
 type TransactionFormState = {
   date: string | null;
@@ -55,23 +56,25 @@ const formatDateTime = (date: Date) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
-const toInputDate = (date: string) => {
-  if (!date) {
-    return date;
+const normalizeDateOnly = (value: string) => {
+  const directMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (directMatch) {
+    return directMatch[1];
   }
-  const normalized = date.includes("T") ? date.replace("T", " ") : date;
-  return normalized.length >= 10 ? normalized.slice(0, 10) : normalized;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const toBackendDateTime = (date: string) => {
-  if (!date) {
-    return date;
-  }
-  const normalized = date.includes("T") ? date.replace("T", " ") : date;
-  if (normalized.includes(" ")) {
-    return normalized;
-  }
-  const [year, month, day] = normalized.split("-").map(Number);
+  const [year, month, day] = normalizeDateOnly(date).split("-").map(Number);
   const now = new Date();
   const localDate = new Date(
     year,
@@ -127,13 +130,24 @@ export default function EditTransactionScreen() {
     amount: "",
     comment: "",
   });
-  const [categoryType, setCategoryType] = useState<CategoryType | null>(null);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [isAmountKeypadOpen, setIsAmountKeypadOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const { accounts } = useAccounts();
-  const { categories, refresh } = useCategories({ type: categoryType }, { enabled: isCategoryPickerOpen });
+  const { categories: expenseCategories, refresh: refreshExpenseCategories } = useCategories(
+    { type: "EXPENSES" },
+    { enabled: isCategoryPickerOpen },
+  );
+  const { categories: incomeCategories, refresh: refreshIncomeCategories } = useCategories(
+    { type: "INCOME" },
+    { enabled: isCategoryPickerOpen },
+  );
+  const categories = useMemo(
+    () => [...expenseCategories, ...incomeCategories],
+    [expenseCategories, incomeCategories],
+  );
   const { editTransaction, error: saveError } = useTransactions();
 
   const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
@@ -149,13 +163,12 @@ export default function EditTransactionScreen() {
       const parsed = JSON.parse(decoded) as TransactionDto;
       setInitialTransaction(parsed);
       setFormState({
-        date: parsed.date ? toInputDate(parsed.date) : null,
+        date: parsed.date ? normalizeDateOnly(parsed.date) : null,
         categoryId: parsed.category?.id ?? null,
         accountId: parsed.account?.id ?? null,
         amount: String(parsed.amount ?? ""),
         comment: parsed.comment ?? "",
       });
-      setCategoryType(parsed.category?.type ?? null);
     } catch {
       setLocalError("Не удалось открыть транзакцию.");
     }
@@ -192,8 +205,10 @@ export default function EditTransactionScreen() {
 
   const handleOpenCategoryPicker = () => {
     Keyboard.dismiss();
+    setIsAmountKeypadOpen(false);
     setIsCategoryPickerOpen(true);
-    void refresh();
+    void refreshExpenseCategories();
+    void refreshIncomeCategories();
   };
 
   const handleCloseCategoryPicker = () => {
@@ -202,10 +217,15 @@ export default function EditTransactionScreen() {
 
   const handleCategorySelect = (categoryId: string) => {
     setFormState((prev) => ({ ...prev, categoryId }));
-    const nextCategory = flatCategories.find((category) => category.id === categoryId);
-    if (nextCategory?.type) {
-      setCategoryType(nextCategory.type);
-    }
+  };
+
+  const handleAmountPress = () => {
+    Keyboard.dismiss();
+    setIsAmountKeypadOpen(true);
+  };
+
+  const updateAmount = (value: string) => {
+    setFormState((prev) => ({ ...prev, amount: value }));
   };
 
   const handleSave = async () => {
@@ -225,11 +245,12 @@ export default function EditTransactionScreen() {
     const nextCategory = selectedCategory ? toCategory(selectedCategory) : initialTransaction.category;
 
     const nextCategoryType = selectedCategory?.type ?? initialTransaction.category?.type ?? "EXPENSES";
+    const selectedDate = formState.date ?? normalizeDateOnly(initialTransaction.date);
     const currency = nextAccount.currency ?? initialTransaction.currency ?? mockUser.baseCurrency ?? "UAH";
 
     const nextTransaction: TransactionDto = {
       ...initialTransaction,
-      date: formState.date ?? initialTransaction.date,
+      date: selectedDate,
       account: nextAccount,
       category: nextCategory,
       amount: parsedAmount,
@@ -242,7 +263,8 @@ export default function EditTransactionScreen() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
     const comment = formState.comment.trim();
     const payload = {
-      date: toBackendDateTime(formState.date ?? initialTransaction.date),
+      id: initialTransaction.id,
+      date: toBackendDateTime(selectedDate),
       timezone,
       categoryId: formState.categoryId ?? initialTransaction.category?.id ?? null,
       accountId: formState.accountId ?? initialTransaction.account?.id ?? null,
@@ -257,6 +279,7 @@ export default function EditTransactionScreen() {
     };
 
     setIsSaving(true);
+    setIsAmountKeypadOpen(false);
     setLocalError(null);
     const success = await editTransaction(initialTransaction.id, payload, nextTransaction);
     setIsSaving(false);
@@ -288,11 +311,15 @@ export default function EditTransactionScreen() {
             </View>
             <View style={styles.amountInput}>
               <Text variant="caption">Сумма</Text>
-              <Input
-                keyboardType="numeric"
-                value={formState.amount}
-                onChangeText={(value) => setFormState((prev) => ({ ...prev, amount: value }))}
-              />
+              <Pressable onPress={handleAmountPress}>
+                <Input
+                  keyboardType="numeric"
+                  value={formState.amount}
+                  onPressIn={handleAmountPress}
+                  showSoftInputOnFocus={false}
+                  editable={false}
+                />
+              </Pressable>
             </View>
           </View>
 
@@ -311,20 +338,27 @@ export default function EditTransactionScreen() {
           <Input
             placeholder="Примечание"
             value={formState.comment}
+            onFocus={() => setIsAmountKeypadOpen(false)}
             onChangeText={(value) => setFormState((prev) => ({ ...prev, comment: value }))}
           />
 
           <DateInput
             placeholder="Дата"
             value={formState.date}
-            onChange={(value) => setFormState((prev) => ({ ...prev, date: value }))}
+            onChange={(value) => {
+              setIsAmountKeypadOpen(false);
+              setFormState((prev) => ({ ...prev, date: value }));
+            }}
           />
 
           <Select
             placeholder="Счет"
             value={formState.accountId}
             options={accountOptions}
-            onChange={(value) => setFormState((prev) => ({ ...prev, accountId: value }))}
+            onChange={(value) => {
+              setIsAmountKeypadOpen(false);
+              setFormState((prev) => ({ ...prev, accountId: value }));
+            }}
           />
         </ScrollView>
 
@@ -345,10 +379,19 @@ export default function EditTransactionScreen() {
           categories={categories}
           flatCategories={flatCategories}
           topCategories={topCategories}
+          defaultType="EXPENSES"
           iconForCategory={iconForCategory}
           onClose={handleCloseCategoryPicker}
           onSelect={handleCategorySelect}
         />
+
+        {isAmountKeypadOpen ? (
+          <AmountKeypad
+            value={formState.amount}
+            onChange={updateAmount}
+            onDone={() => setIsAmountKeypadOpen(false)}
+          />
+        ) : null}
       </View>
     </ScreenContainer>
   );

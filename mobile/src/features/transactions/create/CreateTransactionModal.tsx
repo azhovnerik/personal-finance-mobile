@@ -20,6 +20,7 @@ import { notifyTransactionsChanged } from "../../../shared/lib/events/transactio
 import { getToken, removeToken } from "../../../storage/auth";
 
 import { CategoryPickerModal } from "./CategoryPickerModal";
+import { AmountKeypad } from "../components/AmountKeypad";
 
 type CreateTransactionModalProps = {
   visible: boolean;
@@ -33,13 +34,6 @@ type TransactionFormState = {
   date: string;
   accountId: string | null;
 };
-
-const KEYPAD_ROWS = [
-  ["7", "8", "9"],
-  ["4", "5", "6"],
-  ["1", "2", "3"],
-  ["0", "000", "."],
-];
 
 const toYmd = (d: Date) => {
   const year = d.getFullYear();
@@ -125,7 +119,18 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
   const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
 
   const { accounts } = useAccounts();
-  const { categories, refresh } = useCategories({ type: "EXPENSES" }, { enabled: isCategoryPickerOpen });
+  const { categories: expenseCategories, refresh: refreshExpenseCategories } = useCategories(
+    { type: "EXPENSES" },
+    { enabled: isCategoryPickerOpen },
+  );
+  const { categories: incomeCategories, refresh: refreshIncomeCategories } = useCategories(
+    { type: "INCOME" },
+    { enabled: isCategoryPickerOpen },
+  );
+  const categories = useMemo(
+    () => [...expenseCategories, ...incomeCategories],
+    [expenseCategories, incomeCategories],
+  );
 
   const accountOptions = useMemo(
     () => accounts.map((account) => ({ value: account.id, label: account.name })),
@@ -165,37 +170,11 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
     setFormState((prev) => ({ ...prev, amount: value }));
   };
 
-  const appendDigit = (value: string) => {
-    setFormState((prev) => {
-      const next = prev.amount === "0" ? value : `${prev.amount}${value}`;
-      return { ...prev, amount: next };
-    });
-  };
-
-  const appendDecimal = () => {
-    setFormState((prev) => {
-      if (prev.amount.includes(".")) {
-        return prev;
-      }
-      return { ...prev, amount: `${prev.amount}.` };
-    });
-  };
-
-  const clearAmount = () => {
-    updateAmount("0");
-  };
-
-  const deleteLast = () => {
-    setFormState((prev) => {
-      const next = prev.amount.length > 1 ? prev.amount.slice(0, -1) : "0";
-      return { ...prev, amount: next };
-    });
-  };
-
   const handleOpenCategoryPicker = () => {
     Keyboard.dismiss();
     setIsCategoryPickerOpen(true);
-    void refresh();
+    void refreshExpenseCategories();
+    void refreshIncomeCategories();
   };
 
   const handleCloseCategoryPicker = () => {
@@ -411,40 +390,14 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
           />
         </View>
 
-        <View style={styles.keypad}>
-          <View style={styles.keypadTopRow}>
-            <Text style={styles.keypadPreview}>{formState.amount}</Text>
-            <View style={styles.keypadTopActions}>
-              <Pressable style={[styles.keypadAction, styles.keypadClear]} onPress={clearAmount}>
-                <Text style={styles.keypadActionText}>C</Text>
-              </Pressable>
-              <Pressable style={[styles.keypadAction, styles.keypadDelete]} onPress={deleteLast}>
-                <Text style={styles.keypadActionText}>⌫</Text>
-              </Pressable>
-            </View>
-          </View>
-          {KEYPAD_ROWS.map((row) => (
-            <View key={row.join("-")} style={styles.keypadRow}>
-              {row.map((key) => {
-                const onPress = key === "." ? appendDecimal : () => appendDigit(key);
-                return (
-                  <Pressable key={key} style={styles.keypadKey} onPress={onPress}>
-                    <Text style={styles.keypadKeyText}>{key}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ))}
-          <Pressable style={[styles.keypadKey, styles.keypadDone]} onPress={onClose}>
-            <Text style={[styles.keypadKeyText, styles.keypadDoneText]}>ГОТОВО</Text>
-          </Pressable>
-        </View>
+        <AmountKeypad value={formState.amount} onChange={updateAmount} onDone={onClose} />
 
         <CategoryPickerModal
           visible={isCategoryPickerOpen}
           categories={categories}
           flatCategories={flatCategories}
           topCategories={topCategories}
+          defaultType="EXPENSES"
           iconForCategory={iconForCategory}
           onClose={handleCloseCategoryPicker}
           onSelect={handleCategorySelect}
@@ -556,68 +509,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7,
-  },
-  keypad: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: "#1f1f1f",
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  keypadTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  keypadTopActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  keypadPreview: {
-    color: colors.surface,
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  keypadAction: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 8,
-    backgroundColor: "#2a2a2a",
-  },
-  keypadClear: {
-    backgroundColor: "#2a2a2a",
-  },
-  keypadDelete: {
-    backgroundColor: "#2f2f2f",
-  },
-  keypadActionText: {
-    color: "#38d169",
-    fontWeight: "700",
-  },
-  keypadRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  keypadKey: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 10,
-    backgroundColor: "#2a2a2a",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  keypadKeyText: {
-    color: "#38d169",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  keypadDone: {
-    marginTop: spacing.sm,
-    backgroundColor: "#38d169",
-  },
-  keypadDoneText: {
-    color: colors.surface,
-    fontWeight: "700",
   },
 });

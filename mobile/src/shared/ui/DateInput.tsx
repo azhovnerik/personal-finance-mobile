@@ -156,22 +156,23 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    width: "100%",
   },
   weekLabel: {
-    width: 32,
+    width: "14.2857%",
     textAlign: "center",
     fontSize: 12,
     color: colors.textSecondary,
   },
   daysGrid: {
+    width: "100%",
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.xs,
+    rowGap: spacing.xs,
   },
   dayCell: {
-    width: 32,
-    height: 32,
+    width: "14.2857%",
+    aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 16,

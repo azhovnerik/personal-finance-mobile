@@ -3,12 +3,11 @@ import { useRouter } from "expo-router";
 
 import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency } from "../../src/shared/utils/format";
-import { mockUser } from "../../src/shared/mocks";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
 
 export default function AccountsScreen() {
   const router = useRouter();
-  const baseCurrency = mockUser.baseCurrency ?? "UAH";
+  const baseCurrency = "UAH";
   const { accounts, isLoading, error, actionError } = useAccounts();
   const accountItems = Array.isArray(accounts) ? accounts : [];
 

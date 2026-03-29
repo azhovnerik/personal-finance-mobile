@@ -7,7 +7,6 @@ import { Button, Card, ScreenContainer, Text, colors, spacing } from "../../src/
 import { AccountDto } from "../../src/shared/api/dto";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
 import { formatCurrency } from "../../src/shared/utils/format";
-import { mockUser } from "../../src/shared/mocks";
 
 const parseAccountParam = (raw?: string): AccountDto | null => {
   if (!raw) {
@@ -31,7 +30,7 @@ export default function AccountDetailsScreen() {
     const byId = accountItems.find((account) => account.id === params.accountId);
     return byId ?? fallbackAccount;
   }, [accounts, fallbackAccount, params.accountId]);
-  const baseCurrency = mockUser.baseCurrency ?? "UAH";
+  const baseCurrency = "UAH";
 
   const openEdit = () => {
     if (!selectedAccount) {

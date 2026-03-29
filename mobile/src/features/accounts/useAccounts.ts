@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { AccountDto, AccountType, CurrencyCode } from "../../shared/api/dto";
-import { mockAccountDtos } from "../../shared/mocks";
 import { getToken, removeToken } from "../../storage/auth";
 
 const ACCOUNTS_QUERY_KEY = ["accounts"];
@@ -25,7 +24,6 @@ type UseAccountsResult = {
   error: string | null;
   actionError: string | null;
   refresh: () => Promise<void>;
-  isMockMode: boolean;
   isCrudAvailable: boolean;
   createAccount: (payload: AccountMutationPayload) => Promise<boolean>;
   updateAccount: (id: string, payload: AccountMutationPayload) => Promise<boolean>;
@@ -33,14 +31,7 @@ type UseAccountsResult = {
   updateBalance: (id: string, newBalance: number) => Promise<boolean>;
 };
 
-const fetchAccounts = async (
-  useMocks: boolean,
-  onUnauthorized: () => Promise<void>,
-): Promise<AccountDto[]> => {
-  if (useMocks) {
-    return mockAccountDtos;
-  }
-
+const fetchAccounts = async (onUnauthorized: () => Promise<void>): Promise<AccountDto[]> => {
   const token = await getToken();
   if (!token) {
     await onUnauthorized();
@@ -121,7 +112,6 @@ const fetchAccounts = async (
 export const useAccounts = (): UseAccountsResult => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -132,7 +122,7 @@ export const useAccounts = (): UseAccountsResult => {
 
   const query = useQuery({
     queryKey: ACCOUNTS_QUERY_KEY,
-    queryFn: () => fetchAccounts(useMocks, handleUnauthorized),
+    queryFn: () => fetchAccounts(handleUnauthorized),
   });
 
   const errorMessage = useMemo(() => {
@@ -203,20 +193,6 @@ export const useAccounts = (): UseAccountsResult => {
     setIsSaving(true);
     setActionError(null);
     try {
-      if (useMocks) {
-        mockAccountDtos.push({
-          id: `${Date.now()}-${Math.random()}`,
-          name: payload.name,
-          type: payload.type,
-          currency: payload.currency,
-          description: payload.description ?? null,
-          balance: payload.balance ?? 0,
-          balanceInBase: payload.balance ?? 0,
-        });
-        await query.refetch();
-        return true;
-      }
-
       const token = await withAuth();
       const response = await fetch(`${API_BASE_URL}/api/v2/accounts`, {
         method: "POST",
@@ -246,26 +222,12 @@ export const useAccounts = (): UseAccountsResult => {
     } finally {
       setIsSaving(false);
     }
-  }, [handleUnauthorized, query, useMocks, withAuth]);
+  }, [handleUnauthorized, query, withAuth]);
 
   const updateAccount = useCallback(async (id: string, payload: AccountMutationPayload) => {
     setIsSaving(true);
     setActionError(null);
     try {
-      if (useMocks) {
-        const index = mockAccountDtos.findIndex((account) => account.id === id);
-        if (index >= 0) {
-          mockAccountDtos[index] = {
-            ...mockAccountDtos[index],
-            ...payload,
-            balance: payload.balance ?? mockAccountDtos[index].balance ?? 0,
-            balanceInBase: payload.balance ?? mockAccountDtos[index].balanceInBase ?? 0,
-          };
-        }
-        await query.refetch();
-        return true;
-      }
-
       const token = await withAuth();
       const response = await fetch(`${API_BASE_URL}/api/v2/accounts/${id}`, {
         method: "PUT",
@@ -292,19 +254,12 @@ export const useAccounts = (): UseAccountsResult => {
     } finally {
       setIsSaving(false);
     }
-  }, [handleUnauthorized, query, useMocks, withAuth]);
+  }, [handleUnauthorized, query, withAuth]);
 
   const deleteAccount = useCallback(async (id: string) => {
     setIsSaving(true);
     setActionError(null);
     try {
-      if (useMocks) {
-        const next = mockAccountDtos.filter((account) => account.id !== id);
-        mockAccountDtos.splice(0, mockAccountDtos.length, ...next);
-        await query.refetch();
-        return true;
-      }
-
       const token = await withAuth();
       const response = await fetch(`${API_BASE_URL}/api/v2/accounts/${id}`, {
         method: "DELETE",
@@ -327,25 +282,12 @@ export const useAccounts = (): UseAccountsResult => {
     } finally {
       setIsSaving(false);
     }
-  }, [handleUnauthorized, query, useMocks, withAuth]);
+  }, [handleUnauthorized, query, withAuth]);
 
   const updateBalance = useCallback(async (id: string, newBalance: number) => {
     setIsSaving(true);
     setActionError(null);
     try {
-      if (useMocks) {
-        const index = mockAccountDtos.findIndex((account) => account.id === id);
-        if (index >= 0) {
-          mockAccountDtos[index] = {
-            ...mockAccountDtos[index],
-            balance: newBalance,
-            balanceInBase: newBalance,
-          };
-        }
-        await query.refetch();
-        return true;
-      }
-
       const token = await withAuth();
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -410,7 +352,7 @@ export const useAccounts = (): UseAccountsResult => {
     } finally {
       setIsSaving(false);
     }
-  }, [applyBalanceToCache, fetchWithTimeout, handleUnauthorized, query, useMocks, withAuth]);
+  }, [applyBalanceToCache, fetchWithTimeout, handleUnauthorized, query, withAuth]);
 
   return {
     accounts: query.data ?? [],
@@ -419,7 +361,6 @@ export const useAccounts = (): UseAccountsResult => {
     error: errorMessage,
     actionError,
     refresh,
-    isMockMode: useMocks,
     isCrudAvailable: true,
     createAccount,
     updateAccount,

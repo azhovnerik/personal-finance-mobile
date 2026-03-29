@@ -44,15 +44,16 @@ export default function FilterAccountScreen() {
           </Pressable>
 
           {accounts.map((account) => {
-            if (!account.id) {
+            const accountId = account.id;
+            if (!accountId) {
               return null;
             }
-            const isActive = selectedAccountId === account.id;
+            const isActive = selectedAccountId === accountId;
             return (
               <Pressable
-                key={account.id}
+                key={accountId}
                 style={[styles.accountRow, isActive && styles.accountRowActive]}
-                onPress={() => handleSelect(account.id)}
+                onPress={() => handleSelect(accountId)}
               >
                 <Text style={isActive ? styles.accountTextActive : styles.accountText}>{account.name}</Text>
               </Pressable>

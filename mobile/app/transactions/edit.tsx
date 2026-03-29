@@ -73,16 +73,28 @@ const normalizeDateOnly = (value: string) => {
   return `${year}-${month}-${day}`;
 };
 
-const toBackendDateTime = (date: string) => {
+const extractTimePart = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+  const matched = value.match(/(\d{2}:\d{2}:\d{2})/);
+  return matched ? matched[1] : null;
+};
+
+const toBackendDateTime = (date: string, previousDateTime?: string | null) => {
   const [year, month, day] = normalizeDateOnly(date).split("-").map(Number);
+  const preservedTime = extractTimePart(previousDateTime);
   const now = new Date();
+  const [hours, minutes, seconds] = preservedTime
+    ? preservedTime.split(":").map(Number)
+    : [now.getHours(), now.getMinutes(), now.getSeconds()];
   const localDate = new Date(
     year,
     month - 1,
     day,
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds(),
+    hours,
+    minutes,
+    seconds,
   );
 
   return formatDateTime(localDate);
@@ -264,7 +276,7 @@ export default function EditTransactionScreen() {
     const comment = formState.comment.trim();
     const payload = {
       id: initialTransaction.id,
-      date: toBackendDateTime(selectedDate),
+      date: toBackendDateTime(selectedDate, initialTransaction.date),
       timezone,
       categoryId: formState.categoryId ?? initialTransaction.category?.id ?? null,
       accountId: formState.accountId ?? initialTransaction.account?.id ?? null,

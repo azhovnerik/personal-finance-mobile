@@ -94,6 +94,38 @@ export default function TransactionsScreen() {
         return `${year}-${month}-${day}`;
     };
 
+    const getCategoryLabel = (transaction: unknown) => {
+        const dto = transaction as {
+            category?:
+                | string
+                | { name?: string | null; title?: string | null; label?: string | null }
+                | null;
+            categoryName?: string | null;
+            categoryTitle?: string | null;
+        };
+
+        if (typeof dto.category === "string" && dto.category.trim().length > 0) {
+            return dto.category;
+        }
+
+        if (dto.category && typeof dto.category === "object") {
+            const nested = dto.category.name ?? dto.category.title ?? dto.category.label;
+            if (nested && nested.trim().length > 0) {
+                return nested;
+            }
+        }
+
+        if (dto.categoryName && dto.categoryName.trim().length > 0) {
+            return dto.categoryName;
+        }
+
+        if (dto.categoryTitle && dto.categoryTitle.trim().length > 0) {
+            return dto.categoryTitle;
+        }
+
+        return "Без категории";
+    };
+
     return (
         <ScreenContainer>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -154,7 +186,7 @@ export default function TransactionsScreen() {
                                     {formatListDate(transaction.date)}
                                 </Text>
                                 <Text numberOfLines={1} style={styles.categoryText}>
-                                    {transaction.category?.name ?? "Без категории"}
+                                    {getCategoryLabel(transaction)}
                                 </Text>
                                 <Text
                                     numberOfLines={1}

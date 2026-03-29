@@ -229,7 +229,7 @@ export const useAccounts = (): UseAccountsResult => {
           initialBalance: payload.balance,
         }),
       });
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -240,6 +240,9 @@ export const useAccounts = (): UseAccountsResult => {
       }
       await query.refetch();
       return true;
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Не удалось создать счет.");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -272,7 +275,7 @@ export const useAccounts = (): UseAccountsResult => {
         },
         body: JSON.stringify(payload),
       });
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -283,6 +286,9 @@ export const useAccounts = (): UseAccountsResult => {
       }
       await query.refetch();
       return true;
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Не удалось обновить счет.");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -304,7 +310,7 @@ export const useAccounts = (): UseAccountsResult => {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -315,6 +321,9 @@ export const useAccounts = (): UseAccountsResult => {
       }
       await query.refetch();
       return true;
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Не удалось удалить счет.");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -355,7 +364,7 @@ export const useAccounts = (): UseAccountsResult => {
           body: JSON.stringify({ newBalance }),
         });
       }
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;

@@ -383,6 +383,11 @@ export const useAccounts = (): UseAccountsResult => {
           const verifyResponse = await fetchWithTimeout(`${API_BASE_URL}/api/v2/accounts`, {
             headers: { Authorization: `Bearer ${token}` },
           });
+          if (verifyResponse.status === 401 || verifyResponse.status === 403) {
+            await handleUnauthorized();
+            setActionError("Сессия истекла. Войдите снова.");
+            return false;
+          }
           if (verifyResponse.ok) {
             const verifyAccounts = (await verifyResponse.json()) as AccountDto[];
             const updated = verifyAccounts.find((account) => account.id === id);

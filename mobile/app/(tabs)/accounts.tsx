@@ -1,13 +1,32 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
 
-import { Button, Card, Chip, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency } from "../../src/shared/utils/format";
-import { mockAccountDtos, mockUser } from "../../src/shared/mocks";
-import {useAccounts} from "../../src/features/accounts/useAccounts";
+import { useAccounts } from "../../src/features/accounts/useAccounts";
 
 export default function AccountsScreen() {
-  const baseCurrency = mockUser.baseCurrency ?? "UAH";
-  const accounts = useAccounts()
+  const router = useRouter();
+  const baseCurrency = "UAH";
+  const { accounts, isLoading, error, actionError } = useAccounts();
+  const accountItems = Array.isArray(accounts) ? accounts : [];
+
+  const openEdit = (account?: unknown) => {
+    const payload = account ? encodeURIComponent(JSON.stringify(account)) : undefined;
+    router.push({ pathname: "/accounts/edit", params: payload ? { account: payload } : {} });
+  };
+
+  const openDetails = (account: unknown) => {
+    const payload = encodeURIComponent(JSON.stringify(account));
+    const dto = account as { id?: string | null };
+    router.push({
+      pathname: "/accounts/details",
+      params: {
+        account: payload,
+        accountId: dto.id ?? "",
+      },
+    });
+  };
 
   return (
     <ScreenContainer>
@@ -19,66 +38,44 @@ export default function AccountsScreen() {
           </View>
           <View style={styles.headerActions}>
             <Chip label={baseCurrency} isActive />
-            <Button title="Add new account" size="sm" />
-            <Button title="Add transfer" variant="outline" tone="primary" size="sm" />
+            <Button title="Add" size="sm" onPress={() => openEdit()} />
           </View>
         </View>
 
-        <Card style={styles.tableCard}>
-          <View style={styles.tableHeader}>
-            <Text variant="caption">Name</Text>
-            <Text variant="caption">Type</Text>
-            <Text variant="caption">Balance</Text>
-          </View>
-          <View style={styles.list}>
-            {accounts.accounts.map((account) => (
-              <View key={account.id} style={styles.rowCard}>
-                <View>
-                  <Text>{account.name}</Text>
-                  <Text variant="caption">{account.type}</Text>
-                </View>
-                <View style={styles.accountBalance}>
-                  <Text
-                    style={
-                      (account.balance ?? 0) < 0 ? styles.negativeValue : styles.positiveValue
-                    }
-                  >
-                    {formatCurrency(account.balance ?? 0, account.currency ?? baseCurrency)}
-                  </Text>
-                  <Text variant="caption">
-                    {formatCurrency(account.balanceInBase ?? 0, baseCurrency)}
-                  </Text>
-                </View>
-                <View style={styles.actionRow}>
-                  <Button title="Edit" variant="outline" tone="primary" size="sm" />
-                  <Button title="Delete" variant="ghost" size="sm" />
-                </View>
-              </View>
-            ))}
-          </View>
-        </Card>
+        {isLoading ? <Text variant="caption">Загрузка счетов...</Text> : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
 
-        <Card style={styles.formCard}>
-          <Text variant="subtitle">Add account</Text>
-          <Input placeholder="Account name" />
-          <Input placeholder="Account type" />
-          <Input placeholder="Currency" />
-          <Input placeholder="Opening balance" keyboardType="numeric" />
-          <Button title="Create account" />
-        </Card>
-
-        <Card style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text variant="subtitle">Transfers</Text>
-              <Text variant="caption">Latest account transfers.</Text>
-            </View>
-            <Button title="Add transfer" variant="outline" tone="primary" size="sm" />
-          </View>
-          <View style={styles.emptyRow}>
-            <Text variant="caption">No transfers yet.</Text>
-          </View>
-        </Card>
+        <View style={styles.list}>
+          {accountItems.map((account) => {
+            if (!account.id) {
+              return null;
+            }
+            return (
+              <Pressable key={account.id} onPress={() => openDetails(account)}>
+                <Card style={styles.rowCard}>
+                  <View style={styles.rowLine}>
+                    <Text numberOfLines={1} style={styles.nameText}>
+                      {account.name}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.typeText}>
+                      {account.type}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.amountText,
+                        (account.balance ?? 0) < 0 ? styles.negativeValue : styles.positiveValue,
+                      ]}
+                    >
+                      {formatCurrency(account.balance ?? 0, account.currency ?? baseCurrency)}
+                    </Text>
+                  </View>
+                </Card>
+              </Pressable>
+            );
+          })}
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
@@ -87,7 +84,7 @@ export default function AccountsScreen() {
 const styles = StyleSheet.create({
   container: {
     paddingBottom: spacing.xl,
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   header: {
     gap: spacing.sm,
@@ -98,46 +95,31 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     alignItems: "center",
   },
-  tableCard: {
-    gap: spacing.sm,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   list: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   rowCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.sm,
-    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
   },
-  accountBalance: {
-    gap: 4,
-  },
-  actionRow: {
+  rowLine: {
     flexDirection: "row",
-    gap: spacing.sm,
-  },
-  formCard: {
-    gap: spacing.sm,
-  },
-  sectionCard: {
-    gap: spacing.sm,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     gap: spacing.sm,
   },
-  emptyRow: {
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  nameText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  typeText: {
+    width: 76,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+  amountText: {
+    width: 104,
+    textAlign: "right",
   },
   positiveValue: {
     color: colors.success,
@@ -146,5 +128,8 @@ const styles = StyleSheet.create({
   negativeValue: {
     color: colors.danger,
     fontWeight: "600",
+  },
+  errorText: {
+    color: colors.danger,
   },
 });

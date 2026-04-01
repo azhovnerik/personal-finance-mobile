@@ -15,14 +15,19 @@ const currencySymbols: Record<CurrencyCode, string> = {
   CZK: "Kč",
 };
 
-export const formatCurrency = (amount: number, currency: CurrencyCode = "UAH") => {
-  const symbol = currencySymbols[currency] ?? currency;
-  const formatted = typeof Intl !== "undefined"
+export const getCurrencySymbol = (currency: CurrencyCode = "UAH") => currencySymbols[currency] ?? currency;
+
+export const formatAmount = (amount: number) =>
+  typeof Intl !== "undefined"
     ? new Intl.NumberFormat("uk-UA", {
         minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
       }).format(amount)
     : amount.toFixed(2);
+
+export const formatCurrency = (amount: number, currency: CurrencyCode = "UAH") => {
+  const symbol = getCurrencySymbol(currency);
+  const formatted = formatAmount(amount);
   return `${symbol} ${formatted}`;
 };
 

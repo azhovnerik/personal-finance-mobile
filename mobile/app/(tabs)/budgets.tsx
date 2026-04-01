@@ -52,6 +52,11 @@ const monthApiFromDate = (value: Date) =>
   `${String(value.getMonth() + 1).padStart(2, "0")}-${value.getFullYear()}`;
 
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
+const resolveAmountCurrency = (
+  amountInBase: number | null | undefined,
+  itemCurrency: CurrencyCode | null | undefined,
+  baseCurrency: CurrencyCode,
+) => (amountInBase != null ? baseCurrency : (itemCurrency ?? baseCurrency));
 const formatAmountWithSymbol = (value: number, currency: CurrencyCode) =>
   `${formatAmount(value)} ${getCurrencySymbol(currency)}`;
 
@@ -124,7 +129,11 @@ const CategorySection = ({
         const planned = resolveAmount(item.planAmountInBase, item.planAmount);
         const fact = resolveAmount(item.factAmountInBase, item.factAmount);
         const leftover = resolveAmount(item.leftoverInBase, item.leftover);
-        const currency = (item.currency ?? baseCurrency) as CurrencyCode;
+        const displayCurrency = resolveAmountCurrency(
+          item.planAmountInBase ?? item.factAmountInBase ?? item.leftoverInBase,
+          item.currency,
+          baseCurrency,
+        );
         const ratioRaw = planned > 0 ? fact / planned : fact > 0 ? 1 : 0;
         const progress = Math.min(Math.max(ratioRaw, 0), 1);
         const isOverspend = leftover < 0;
@@ -142,7 +151,7 @@ const CategorySection = ({
                 {renderCategoryName(item)}
               </Text>
               <Text style={styles.categoryAmountMeta}>
-                {formatAmountWithSymbol(fact, currency)} / {formatAmountWithSymbol(planned, currency)}
+                {formatAmountWithSymbol(fact, displayCurrency)} / {formatAmountWithSymbol(planned, displayCurrency)}
               </Text>
             </View>
 
@@ -165,16 +174,16 @@ const CategorySection = ({
             {isIncomeSection ? (
               <Text style={[styles.leftoverText, isOverspend ? styles.safeValue : leftover === 0 ? styles.safeValue : styles.mutedValue]}>
                 {isOverspend
-                  ? `+${formatAmountWithSymbol(Math.abs(leftover), currency)} сверх плана 🚀`
+                  ? `+${formatAmountWithSymbol(Math.abs(leftover), displayCurrency)} сверх плана 🚀`
                   : leftover === 0
                     ? "Цель достигнута! 🎉"
-                    : `До цели: ${formatAmountWithSymbol(leftover, currency)}`}
+                    : `До цели: ${formatAmountWithSymbol(leftover, displayCurrency)}`}
               </Text>
             ) : (
               <Text style={[styles.leftoverText, isOverspend ? styles.negativeValue : styles.safeValue]}>
                 {isOverspend
-                  ? `Перерасход ${formatAmountWithSymbol(Math.abs(leftover), currency)}`
-                  : `Осталось ${formatAmountWithSymbol(leftover, currency)}`}
+                  ? `Перерасход ${formatAmountWithSymbol(Math.abs(leftover), displayCurrency)}`
+                  : `Осталось ${formatAmountWithSymbol(leftover, displayCurrency)}`}
               </Text>
             )}
           </View>

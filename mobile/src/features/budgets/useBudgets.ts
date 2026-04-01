@@ -284,9 +284,12 @@ export const useBudgetDetails = (id: string | undefined) => {
 
   const refresh = useMemo(() => {
     return async () => {
+      if (!id) {
+        return;
+      }
       await query.refetch();
     };
-  }, [query]);
+  }, [id, query]);
 
   const errorMessage = query.error instanceof Error ? query.error.message : null;
 

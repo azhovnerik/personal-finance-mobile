@@ -1,12 +1,14 @@
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import {Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, View} from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../../../src/shared/ui";
-import { BudgetCategoryDetailedDto, CategoryType, CurrencyCode } from "../../../src/shared/api/dto";
+import {BudgetCategoryDetailedDto, CategoryReactDto, CategoryType, CurrencyCode} from "../../../src/shared/api/dto";
 import { formatCurrency } from "../../../src/shared/utils/format";
 import { useBudgetCategoryActions, useBudgetDetails } from "../../../src/features/budgets/useBudgets";
 import { AmountKeypad } from "../../../src/features/transactions/components/AmountKeypad";
+import {CategoryPickerModal} from "../../../src/features/transactions/create/CategoryPickerModal";
+import {useCategories} from "../../../src/features/categories/useCategories";
 
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
@@ -38,6 +40,19 @@ export default function AddBudgetCategoryScreen() {
   const [commentInput, setCommentInput] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isAmountKeypadOpen, setIsAmountKeypadOpen] = useState(false);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const { categories: expenseCategories, refresh: refreshExpenseCategories } = useCategories(
+      { type: "EXPENSES" },
+      { enabled: isCategoryPickerOpen },
+  );
+  const { categories: incomeCategories, refresh: refreshIncomeCategories } = useCategories(
+      { type: "INCOME" },
+      { enabled: isCategoryPickerOpen },
+  );
+  const categories = useMemo(
+      () => [...expenseCategories, ...incomeCategories],
+      [expenseCategories, incomeCategories],
+  );
 
   useEffect(() => {
     if (categoryId) {
@@ -130,6 +145,74 @@ export default function AddBudgetCategoryScreen() {
   const updateAmount = (value: string) => {
     setPlanAmountInput(value);
   };
+  const flattenCategories = (categories: CategoryReactDto[]) =>
+      categories.flatMap((category) =>
+          category.subcategories ? [category, ...category.subcategories] : [category],
+      );
+
+  const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
+  const categoryFrequency = useMemo(() => {
+    const counts = new Map<string, number>();
+    flatCategories.forEach((category) => {
+      counts.set(category.name, (counts.get(category.name) ?? 0) + 1);
+    });
+    return counts;
+  }, [flatCategories]);
+
+  const topCategories = useMemo(() => {
+    const sorted = [...flatCategories].sort((a, b) => {
+      const countA = categoryFrequency.get(a.name) ?? 0;
+      const countB = categoryFrequency.get(b.name) ?? 0;
+      return countB - countA;
+    });
+    return sorted.slice(0, 5);
+  }, [categoryFrequency, flatCategories]);
+
+  const iconForCategory = (icon: string) => {
+    switch (icon) {
+      case "basket":
+        return "🛒";
+      case "food":
+        return "🍽️";
+      case "bag":
+        return "🛍️";
+      case "home":
+        return "🏠";
+      case "car":
+        return "🚕";
+      case "fuel":
+        return "⛽";
+      case "auto":
+        return "🚗";
+      case "party":
+        return "🎉";
+      case "tech":
+        return "💻";
+      case "finance":
+        return "💸";
+      case "shirt":
+        return "👕";
+      default:
+        return "💰";
+    }
+  };
+
+  const handleOpenCategoryPicker = () => {
+    Keyboard.dismiss();
+    setIsAmountKeypadOpen(false);
+    setIsCategoryPickerOpen(true);
+    void refreshExpenseCategories();
+    void refreshIncomeCategories();
+  };
+
+  const handleCloseCategoryPicker = () => {
+    setIsCategoryPickerOpen(false);
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setIsCategoryPickerOpen(false);
+  };
 
   return (
     <ScreenContainer>
@@ -192,11 +275,21 @@ export default function AddBudgetCategoryScreen() {
 
               <View style={styles.field}>
                 <Text variant="caption">Категория</Text>
-                <Select
-                  value={selectedCategoryId}
-                  onChange={(value) => setSelectedCategoryId(value)}
-                  options={categoryOptions}
-                  placeholder="Выберите категорию"
+                {/*<Select*/}
+                {/*  value={selectedCategoryId}*/}
+                {/*  onChange={(value) => setSelectedCategoryId(value)}*/}
+                {/*  options={categoryOptions}*/}
+                {/*  placeholder="Выберите категорию"*/}
+                {/*/>*/}
+                <CategoryPickerModal
+                    visible={isCategoryPickerOpen}
+                    categories={categories}
+                    flatCategories={flatCategories}
+                    topCategories={topCategories}
+                    defaultType="EXPENSES"
+                    iconForCategory={iconForCategory}
+                    onClose={handleCloseCategoryPicker}
+                    onSelect={handleCategorySelect}
                 />
               </View>
 
@@ -280,5 +373,16 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: spacing.xs,
+  },
+  categoryField: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
 });

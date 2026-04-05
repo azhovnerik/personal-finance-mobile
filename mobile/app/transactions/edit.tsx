@@ -5,10 +5,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button, DateInput, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
-import { useCategories } from "../../src/features/categories/useCategories";
 import {
+  Account,
   Category,
-  CategoryReactDto,
   CategoryType,
   TransactionDirection,
   TransactionDto,
@@ -16,8 +15,8 @@ import {
 } from "../../src/shared/api/dto";
 import { mockUser } from "../../src/shared/mocks";
 import { useTransactions } from "../../src/features/transactions/useTransactions";
-import { CategoryPickerModal } from "../../src/features/transactions/create/CategoryPickerModal";
 import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
+import { CategoryPickerField } from "../../src/features/categories/components/CategoryPickerField";
 
 type TransactionFormState = {
   date: string | null;
@@ -27,23 +26,30 @@ type TransactionFormState = {
   comment: string;
 };
 
-const flattenCategories = (categories: CategoryReactDto[]) =>
-  categories.flatMap((category) =>
-    category.subcategories ? [category, ...category.subcategories] : [category],
-  );
-
 const directionForCategoryType = (type: CategoryType): TransactionDirection =>
   type === "INCOME" ? "INCREASE" : "DECREASE";
 
 const transactionTypeForCategoryType = (type: CategoryType): TransactionType =>
   type === "INCOME" ? "INCOME" : "EXPENSE";
 
-const toCategory = (category: CategoryReactDto): Category => ({
+const toCategory = (category: Category): Category => ({
   id: category.id,
   name: category.name,
   type: category.type,
   disabled: category.disabled,
 });
+
+const toAccount = (account: TransactionDto["account"] | { id?: string; name: string; type: Account["type"]; currency?: Account["currency"] | null } | null | undefined): Account | null => {
+  if (!account?.id) {
+    return null;
+  }
+  return {
+    id: account.id,
+    name: account.name,
+    type: account.type,
+    currency: account.currency ?? null,
+  };
+};
 
 const formatDateTime = (date: Date) => {
   const year = date.getFullYear();
@@ -100,35 +106,6 @@ const toBackendDateTime = (date: string, previousDateTime?: string | null) => {
   return formatDateTime(localDate);
 };
 
-const iconForCategory = (icon: string) => {
-  switch (icon) {
-    case "basket":
-      return "🛒";
-    case "food":
-      return "🍽️";
-    case "bag":
-      return "🛍️";
-    case "home":
-      return "🏠";
-    case "car":
-      return "🚕";
-    case "fuel":
-      return "⛽";
-    case "auto":
-      return "🚗";
-    case "party":
-      return "🎉";
-    case "tech":
-      return "💻";
-    case "finance":
-      return "💸";
-    case "shirt":
-      return "👕";
-    default:
-      return "💰";
-  }
-};
-
 export default function EditTransactionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -142,27 +119,13 @@ export default function EditTransactionScreen() {
     amount: "",
     comment: "",
   });
-  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isAmountKeypadOpen, setIsAmountKeypadOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const { accounts } = useAccounts();
-  const { categories: expenseCategories, refresh: refreshExpenseCategories } = useCategories(
-    { type: "EXPENSES" },
-    { enabled: isCategoryPickerOpen },
-  );
-  const { categories: incomeCategories, refresh: refreshIncomeCategories } = useCategories(
-    { type: "INCOME" },
-    { enabled: isCategoryPickerOpen },
-  );
-  const categories = useMemo(
-    () => [...expenseCategories, ...incomeCategories],
-    [expenseCategories, incomeCategories],
-  );
   const { editTransaction, error: saveError } = useTransactions();
-
-  const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
 
   useEffect(() => {
     if (!params.transaction) {
@@ -187,45 +150,14 @@ export default function EditTransactionScreen() {
   }, [params.transaction]);
 
   const accountOptions = useMemo(
-    () => accounts.map((account) => ({ value: account.id, label: account.name })),
+    () =>
+      accounts
+        .filter((account) => Boolean(account.id))
+        .map((account) => ({ value: account.id!, label: account.name })),
     [accounts],
   );
 
-  const selectedCategory = useMemo(
-    () => flatCategories.find((category) => category.id === formState.categoryId) ?? null,
-    [flatCategories, formState.categoryId],
-  );
-
   const displayedCategory = selectedCategory ?? initialTransaction?.category ?? null;
-
-  const categoryFrequency = useMemo(() => {
-    const counts = new Map<string, number>();
-    flatCategories.forEach((category) => {
-      counts.set(category.name, (counts.get(category.name) ?? 0) + 1);
-    });
-    return counts;
-  }, [flatCategories]);
-
-  const topCategories = useMemo(() => {
-    const sorted = [...flatCategories].sort((a, b) => {
-      const countA = categoryFrequency.get(a.name) ?? 0;
-      const countB = categoryFrequency.get(b.name) ?? 0;
-      return countB - countA;
-    });
-    return sorted.slice(0, 5);
-  }, [categoryFrequency, flatCategories]);
-
-  const handleOpenCategoryPicker = () => {
-    Keyboard.dismiss();
-    setIsAmountKeypadOpen(false);
-    setIsCategoryPickerOpen(true);
-    void refreshExpenseCategories();
-    void refreshIncomeCategories();
-  };
-
-  const handleCloseCategoryPicker = () => {
-    setIsCategoryPickerOpen(false);
-  };
 
   const handleCategorySelect = (categoryId: string) => {
     setFormState((prev) => ({ ...prev, categoryId }));
@@ -253,7 +185,12 @@ export default function EditTransactionScreen() {
     }
 
     const nextAccount =
-      accounts.find((account) => account.id === formState.accountId) ?? initialTransaction.account;
+      toAccount(accounts.find((account) => account.id === formState.accountId)) ??
+      toAccount(initialTransaction.account);
+    if (!nextAccount) {
+      setLocalError("Счет недоступен.");
+      return;
+    }
     const nextCategory = selectedCategory ? toCategory(selectedCategory) : initialTransaction.category;
 
     const nextCategoryType = selectedCategory?.type ?? initialTransaction.category?.type ?? "EXPENSES";
@@ -335,17 +272,23 @@ export default function EditTransactionScreen() {
             </View>
           </View>
 
-          <Pressable style={styles.categoryField} onPress={handleOpenCategoryPicker}>
-            <View style={[styles.categoryIcon, { backgroundColor: displayedCategory?.color ?? colors.border }]}>
-              <Text style={styles.categoryIconText}>{iconForCategory(displayedCategory?.icon ?? "default")}</Text>
-            </View>
-            <View style={styles.categoryLabelWrapper}>
-              <Text style={displayedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
-                {displayedCategory?.name ?? "Выберите категорию"}
-              </Text>
-            </View>
-            <Text style={styles.categoryChevron}>›</Text>
-          </Pressable>
+          <CategoryPickerField
+            value={formState.categoryId}
+            onChange={handleCategorySelect}
+            onOpen={() => setIsAmountKeypadOpen(false)}
+            onResolvedCategoryChange={(category) => setSelectedCategory(category ? toCategory(category) : null)}
+            defaultType={(displayedCategory?.type as CategoryType | undefined) ?? "EXPENSES"}
+            displayCategory={
+              displayedCategory
+                ? {
+                    name: displayedCategory.name,
+                    icon: displayedCategory.icon ?? null,
+                    color: selectedCategory ? null : null,
+                  }
+                : null
+            }
+            placeholder="Выберите категорию"
+          />
 
           <Input
             placeholder="Примечание"
@@ -385,18 +328,6 @@ export default function EditTransactionScreen() {
             style={isSaving ? styles.buttonDisabled : undefined}
           />
         </View>
-
-        <CategoryPickerModal
-          visible={isCategoryPickerOpen}
-          categories={categories}
-          flatCategories={flatCategories}
-          topCategories={topCategories}
-          defaultType="EXPENSES"
-          iconForCategory={iconForCategory}
-          onClose={handleCloseCategoryPicker}
-          onSelect={handleCategorySelect}
-        />
-
         {isAmountKeypadOpen ? (
           <AmountKeypad
             value={formState.amount}
@@ -454,42 +385,6 @@ const styles = StyleSheet.create({
   amountInput: {
     flex: 1,
     gap: spacing.xs,
-  },
-  categoryField: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  categoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryIconText: {
-    fontSize: 16,
-  },
-  categoryLabelWrapper: {
-    flex: 1,
-  },
-  categoryLabel: {
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  categoryPlaceholder: {
-    fontSize: 15,
-    color: colors.textSecondary,
-  },
-  categoryChevron: {
-    fontSize: 20,
-    color: colors.textSecondary,
   },
   footer: {
     padding: spacing.lg,

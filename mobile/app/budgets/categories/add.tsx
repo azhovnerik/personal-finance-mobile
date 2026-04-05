@@ -1,12 +1,13 @@
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../../../src/shared/ui";
+import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../../../src/shared/ui";
 import { BudgetCategoryDetailedDto, CategoryType, CurrencyCode } from "../../../src/shared/api/dto";
 import { formatCurrency } from "../../../src/shared/utils/format";
 import { useBudgetCategoryActions, useBudgetDetails } from "../../../src/features/budgets/useBudgets";
 import { AmountKeypad } from "../../../src/features/transactions/components/AmountKeypad";
+import { CategoryPickerField } from "../../../src/features/categories/components/CategoryPickerField";
 
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
@@ -30,8 +31,20 @@ export default function AddBudgetCategoryScreen() {
       return [];
     }
     const list = type === "INCOME" ? budget.incomeCategories ?? [] : budget.expenseCategories ?? [];
-    return list.filter((item) => Boolean(item.id));
+    const parentCategoryIds = new Set(
+      list
+        .map((item) => item.parentId)
+        .filter(Boolean),
+    );
+
+    // Parent categories are containers for subcategories and cannot be added to budget directly.
+    return list.filter((item) => Boolean(item.id) && !parentCategoryIds.has(item.id));
   }, [budget, type]);
+
+  const allowedCategoryIds = useMemo(
+    () => availableCategories.map((item) => item.id).filter(Boolean) as string[],
+    [availableCategories],
+  );
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(categoryId);
   const [planAmountInput, setPlanAmountInput] = useState("0");
@@ -62,13 +75,6 @@ export default function AddBudgetCategoryScreen() {
     return availableCategories.find((item) => item.id === selectedCategoryId) ?? null;
   }, [availableCategories, selectedCategoryId]);
 
-  const categoryOptions = useMemo(() => {
-    return availableCategories.map((item) => ({
-      label: item.name,
-      value: item.id!,
-    }));
-  }, [availableCategories]);
-
   useEffect(() => {
     if (!factOnlyCategory) {
       return;
@@ -84,6 +90,11 @@ export default function AddBudgetCategoryScreen() {
 
   const onSave = async () => {
     if (!budgetId || !type || !selectedCategoryId) {
+      return;
+    }
+
+    if (!selectedCategory) {
+      setFormError("Выберите подкатегорию. Родительскую категорию добавить нельзя.");
       return;
     }
 
@@ -190,15 +201,27 @@ export default function AddBudgetCategoryScreen() {
             <Card style={styles.formCard}>
               <Text variant="subtitle">Новая плановая сумма</Text>
 
-              <View style={styles.field}>
-                <Text variant="caption">Категория</Text>
-                <Select
-                  value={selectedCategoryId}
-                  onChange={(value) => setSelectedCategoryId(value)}
-                  options={categoryOptions}
-                  placeholder="Выберите категорию"
-                />
-              </View>
+              <CategoryPickerField
+                value={selectedCategoryId}
+                onChange={setSelectedCategoryId}
+                onOpen={() => {
+                  Keyboard.dismiss();
+                  setIsAmountKeypadOpen(false);
+                }}
+                defaultType={type}
+                lockType
+                allowedCategoryIds={allowedCategoryIds}
+                displayCategory={
+                  selectedCategory
+                    ? {
+                        name: selectedCategory.name,
+                        icon: selectedCategory.icon ?? null,
+                        color: null,
+                      }
+                    : null
+                }
+                placeholder="Выберите категорию"
+              />
 
               <View style={styles.field}>
                 <Text variant="caption">План ({categoryCurrency})</Text>

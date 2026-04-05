@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text, colors, spacing } from "../../../shared/ui";
@@ -14,6 +14,8 @@ type CategoryPickerModalProps = {
   onClose: () => void;
   onSelect: (categoryId: string) => void;
   defaultType?: CategoryType;
+  showTypeSwitch?: boolean;
+  preferFlatList?: boolean;
 };
 
 export const CategoryPickerModal = ({
@@ -25,6 +27,8 @@ export const CategoryPickerModal = ({
   onClose,
   onSelect,
   defaultType = "EXPENSES",
+  showTypeSwitch = true,
+  preferFlatList = false,
 }: CategoryPickerModalProps) => {
   const insets = useSafeAreaInsets();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
@@ -55,6 +59,23 @@ export const CategoryPickerModal = ({
     [categories, selectedType],
   );
 
+  const filteredFlatCategories = useMemo(
+    () => flatCategories.filter((category) => matchesSelectedType(category)),
+    [flatCategories, selectedType],
+  );
+
+  const filteredTopCategories = useMemo(
+    () => topCategories.filter((category) => matchesSelectedType(category)),
+    [topCategories, selectedType],
+  );
+
+  const visibleCategories = useMemo(() => {
+    if (preferFlatList) {
+      return filteredFlatCategories;
+    }
+    return filteredCategories.length > 0 ? filteredCategories : filteredFlatCategories;
+  }, [filteredCategories, filteredFlatCategories, preferFlatList]);
+
   const activeCategory = useMemo(
     () => categories.find((category) => category.id === activeCategoryId) ?? null,
     [activeCategoryId, categories]
@@ -84,10 +105,8 @@ export const CategoryPickerModal = ({
     setIsSubcategoryOpen(false);
   };
 
-  if (!visible) return null;
-
   return (
-    <>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {!isSubcategoryOpen ? (
         <View style={styles.categoryOverlay}>
           <SafeAreaView style={styles.categoryModal}>
@@ -103,7 +122,7 @@ export const CategoryPickerModal = ({
             <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
               <Text style={styles.sectionTitle}>Самые частые</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topCategoryRow}>
-                {topCategories.map((category) => (
+                {filteredTopCategories.map((category) => (
                   <Pressable
                     key={category.id}
                     style={styles.topCategoryItem}
@@ -112,43 +131,45 @@ export const CategoryPickerModal = ({
                     <View style={[styles.topCategoryIcon, { backgroundColor: category.color ?? colors.border }]}>
                       <Text style={styles.categoryIconText}>{iconForCategory(category.icon ?? "default")}</Text>
                     </View>
-                    <Text style={styles.topCategoryLabel} numberOfLines={1}>
+                    <Text style={styles.topCategoryLabel} numberOfLines={2}>
                       {category.name}
                     </Text>
                   </Pressable>
                 ))}
               </ScrollView>
 
-              <View style={styles.typeSwitchWrap}>
-                <Pressable
-                  style={[styles.typeSwitchButton, selectedType === "EXPENSES" && styles.typeSwitchButtonActive]}
-                  onPress={() => {
-                    setSelectedType("EXPENSES");
-                    setIsSubcategoryOpen(false);
-                    setActiveCategoryId(null);
-                  }}
-                >
-                  <Text style={selectedType === "EXPENSES" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
-                    Расход
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.typeSwitchButton, selectedType === "INCOME" && styles.typeSwitchButtonActive]}
-                  onPress={() => {
-                    setSelectedType("INCOME");
-                    setIsSubcategoryOpen(false);
-                    setActiveCategoryId(null);
-                  }}
-                >
-                  <Text style={selectedType === "INCOME" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
-                    Доход
-                  </Text>
-                </Pressable>
-              </View>
+              {showTypeSwitch ? (
+                <View style={styles.typeSwitchWrap}>
+                  <Pressable
+                    style={[styles.typeSwitchButton, selectedType === "EXPENSES" && styles.typeSwitchButtonActive]}
+                    onPress={() => {
+                      setSelectedType("EXPENSES");
+                      setIsSubcategoryOpen(false);
+                      setActiveCategoryId(null);
+                    }}
+                  >
+                    <Text style={selectedType === "EXPENSES" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
+                      Расход
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.typeSwitchButton, selectedType === "INCOME" && styles.typeSwitchButtonActive]}
+                    onPress={() => {
+                      setSelectedType("INCOME");
+                      setIsSubcategoryOpen(false);
+                      setActiveCategoryId(null);
+                    }}
+                  >
+                    <Text style={selectedType === "INCOME" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
+                      Доход
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
 
               <Text style={styles.sectionTitle}>Все категории</Text>
               <View style={styles.categoryList}>
-                {filteredCategories.map((category) => (
+                {visibleCategories.map((category) => (
                   <Pressable
                     key={category.id}
                     style={styles.categoryRow}
@@ -161,7 +182,7 @@ export const CategoryPickerModal = ({
                     {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
                   </Pressable>
                 ))}
-                {filteredCategories.length === 0 ? (
+                {visibleCategories.length === 0 ? (
                   <Text style={styles.emptyText}>Категории не найдены для выбранного типа.</Text>
                 ) : null}
               </View>
@@ -197,7 +218,7 @@ export const CategoryPickerModal = ({
           </SafeAreaView>
         </View>
       )}
-    </>
+    </Modal>
   );
 };
 
@@ -272,6 +293,7 @@ const styles = StyleSheet.create({
     width: 84,
     alignItems: "center",
     gap: spacing.xs,
+    justifyContent: "flex-start",
   },
   topCategoryIcon: {
     width: 56,
@@ -284,6 +306,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 12,
     color: colors.textPrimary,
+    minHeight: 30,
+    width: "100%",
   },
   categoryList: {
     gap: spacing.sm,

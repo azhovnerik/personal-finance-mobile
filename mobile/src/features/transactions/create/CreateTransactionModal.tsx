@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button, DateInput, Input, Select, Text, colors, spacing } from "../../../shared/ui";
 import { mockTransactions, mockUser } from "../../../shared/mocks";
 import { useAccounts } from "../../accounts/useAccounts";
-import { useCategories } from "../../categories/useCategories";
 import {
-  CategoryReactDto,
+  Account,
+  Category,
   CategoryType,
   CurrencyCode,
   TransactionDirection,
@@ -19,8 +19,8 @@ import client from "../../../shared/lib/api/client";
 import { notifyTransactionsChanged } from "../../../shared/lib/events/transactions";
 import { getToken, removeToken } from "../../../storage/auth";
 
-import { CategoryPickerModal } from "./CategoryPickerModal";
 import { AmountKeypad } from "../components/AmountKeypad";
+import { CategoryPickerField } from "../../categories/components/CategoryPickerField";
 
 type CreateTransactionModalProps = {
   visible: boolean;
@@ -76,109 +76,58 @@ const getInitialFormState = (): TransactionFormState => ({
   accountId: null,
 });
 
-const iconForCategory = (icon: string) => {
-  switch (icon) {
-    case "basket":
-      return "🛒";
-    case "food":
-      return "🍽️";
-    case "bag":
-      return "🛍️";
-    case "home":
-      return "🏠";
-    case "car":
-      return "🚕";
-    case "fuel":
-      return "⛽";
-    case "auto":
-      return "🚗";
-    case "party":
-      return "🎉";
-    case "tech":
-      return "💻";
-    case "finance":
-      return "💸";
-    case "shirt":
-      return "👕";
-    default:
-      return "💰";
-  }
-};
+const toCategory = (category: Category): Category => ({
+  id: category.id,
+  name: category.name,
+  type: category.type,
+  disabled: category.disabled,
+});
 
-const flattenCategories = (categories: CategoryReactDto[]) =>
-  categories.flatMap((category) => (category.subcategories ? [category, ...category.subcategories] : [category]));
+const toAccount = (
+  account:
+    | TransactionDto["account"]
+    | { id?: string; name: string; type: Account["type"]; currency?: Account["currency"] | null }
+    | null
+    | undefined,
+): Account | null => {
+  if (!account?.id) {
+    return null;
+  }
+  return {
+    id: account.id,
+    name: account.name,
+    type: account.type,
+    currency: account.currency ?? null,
+  };
+};
 
 export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionModalProps) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [formState, setFormState] = useState<TransactionFormState>(() => getInitialFormState());
-  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
 
   const { accounts } = useAccounts();
-  const { categories: expenseCategories, refresh: refreshExpenseCategories } = useCategories(
-    { type: "EXPENSES" },
-    { enabled: isCategoryPickerOpen },
-  );
-  const { categories: incomeCategories, refresh: refreshIncomeCategories } = useCategories(
-    { type: "INCOME" },
-    { enabled: isCategoryPickerOpen },
-  );
-  const categories = useMemo(
-    () => [...expenseCategories, ...incomeCategories],
-    [expenseCategories, incomeCategories],
-  );
 
   const accountOptions = useMemo(
-    () => accounts.map((account) => ({ value: account.id, label: account.name })),
-    [accounts]
-  );
-
-  const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
-
-  const categoryFrequency = useMemo(() => {
-    const counts = new Map<string, number>();
-    mockTransactions.forEach((transaction) => {
-      counts.set(transaction.category.name, (counts.get(transaction.category.name) ?? 0) + 1);
-    });
-    return counts;
-  }, []);
-
-  const topCategories = useMemo(() => {
-    const sorted = [...flatCategories].sort((a, b) => {
-      const countA = categoryFrequency.get(a.name) ?? 0;
-      const countB = categoryFrequency.get(b.name) ?? 0;
-      return countB - countA;
-    });
-    return sorted.slice(0, 5);
-  }, [categoryFrequency, flatCategories]);
-
-  const selectedCategory = useMemo(
-    () => flatCategories.find((category) => category.id === formState.categoryId) ?? null,
-    [flatCategories, formState.categoryId]
+    () =>
+      accounts
+        .filter((account) => Boolean(account.id))
+        .map((account) => ({ value: account.id!, label: account.name })),
+    [accounts],
   );
 
   const selectedAccount = useMemo(
-    () => accounts.find((account) => account.id === formState.accountId) ?? null,
+    () => toAccount(accounts.find((account) => account.id === formState.accountId)),
     [accounts, formState.accountId],
   );
 
   const updateAmount = (value: string) => {
     setFormState((prev) => ({ ...prev, amount: value }));
-  };
-
-  const handleOpenCategoryPicker = () => {
-    Keyboard.dismiss();
-    setIsCategoryPickerOpen(true);
-    void refreshExpenseCategories();
-    void refreshIncomeCategories();
-  };
-
-  const handleCloseCategoryPicker = () => {
-    setIsCategoryPickerOpen(false);
   };
 
   const handleCategorySelect = (categoryId: string) => {
@@ -187,7 +136,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
 
   const resetForm = () => {
     setFormState(getInitialFormState());
-    setIsCategoryPickerOpen(false);
+    setSelectedCategory(null);
     setErrorMessage(null);
   };
 
@@ -343,17 +292,13 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
             </View>
           </View>
 
-          <Pressable style={styles.categoryField} onPress={handleOpenCategoryPicker}>
-            <View style={[styles.categoryIcon, { backgroundColor: selectedCategory?.color ?? colors.border }]}>
-              <Text style={styles.categoryIconText}>{iconForCategory(selectedCategory?.icon ?? "default")}</Text>
-            </View>
-            <View style={styles.categoryLabelWrapper}>
-              <Text style={selectedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
-                {selectedCategory?.name ?? "Выберите категорию"}
-              </Text>
-            </View>
-            <Text style={styles.categoryChevron}>›</Text>
-          </Pressable>
+          <CategoryPickerField
+            value={formState.categoryId}
+            onChange={handleCategorySelect}
+            onResolvedCategoryChange={(category) => setSelectedCategory(category ? toCategory(category) : null)}
+            defaultType="EXPENSES"
+            placeholder="Выберите категорию"
+          />
 
           <Input
             placeholder="Примечание"
@@ -391,17 +336,6 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
         </View>
 
         <AmountKeypad value={formState.amount} onChange={updateAmount} onDone={onClose} />
-
-        <CategoryPickerModal
-          visible={isCategoryPickerOpen}
-          categories={categories}
-          flatCategories={flatCategories}
-          topCategories={topCategories}
-          defaultType="EXPENSES"
-          iconForCategory={iconForCategory}
-          onClose={handleCloseCategoryPicker}
-          onSelect={handleCategorySelect}
-        />
       </View>
     </Modal>
   );
@@ -460,42 +394,6 @@ const styles = StyleSheet.create({
   detailsText: {
     color: "#2ecc71",
     fontWeight: "600",
-  },
-  categoryField: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  categoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryIconText: {
-    fontSize: 16,
-  },
-  categoryLabelWrapper: {
-    flex: 1,
-  },
-  categoryLabel: {
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  categoryPlaceholder: {
-    fontSize: 15,
-    color: colors.textSecondary,
-  },
-  categoryChevron: {
-    fontSize: 20,
-    color: colors.textSecondary,
   },
   modalFooter: {
     padding: spacing.lg,

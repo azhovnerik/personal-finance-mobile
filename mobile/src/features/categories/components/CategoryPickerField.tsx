@@ -5,6 +5,7 @@ import { Text, colors, spacing } from "../../../shared/ui";
 import { CategoryReactDto, CategoryType } from "../../../shared/api/dto";
 import { useCategories } from "../useCategories";
 import { CategoryPickerModal } from "../../transactions/create/CategoryPickerModal";
+import { getCategoryChildren, getCategoryIcon, isCategoryGroup, isCategorySelectable } from "../categoryTree";
 
 export type CategoryPickerDisplayCategory = {
   name?: string | null;
@@ -29,39 +30,9 @@ type CategoryPickerFieldProps = {
   onResolvedCategoryChange?: (category: CategoryReactDto | null) => void;
 };
 
-const iconForCategory = (icon: string) => {
-  switch (icon) {
-    case "basket":
-      return "🛒";
-    case "food":
-      return "🍽️";
-    case "bag":
-      return "🛍️";
-    case "home":
-      return "🏠";
-    case "car":
-      return "🚕";
-    case "fuel":
-      return "⛽";
-    case "auto":
-      return "🚗";
-    case "party":
-      return "🎉";
-    case "tech":
-      return "💻";
-    case "finance":
-      return "💸";
-    case "shirt":
-      return "👕";
-    default:
-      return "💰";
-  }
-};
-
 const flattenCategories = (categories: CategoryReactDto[]): CategoryReactDto[] =>
-  categories.flatMap((category) => [category, ...flattenCategories(category.subcategories ?? [])]);
+  categories.flatMap((category) => [category, ...flattenCategories(getCategoryChildren(category))]);
 
-const isLeafCategory = (category: CategoryReactDto) => !category.subcategories || category.subcategories.length === 0;
 const normalizeCategoryName = (value?: string | null) => (value ?? "").trim().toLowerCase();
 const compareByName = (left: CategoryReactDto, right: CategoryReactDto) =>
   left.name.localeCompare(right.name, "uk");
@@ -128,20 +99,15 @@ export function CategoryPickerField({
   const filteredTreeCategories = useMemo(() => {
     const filterTree = (items: CategoryReactDto[]): CategoryReactDto[] =>
       items.flatMap((item) => {
-        const hadSubcategories = Boolean(item.subcategories && item.subcategories.length > 0);
-        const filteredSubcategories = item.subcategories ? filterTree(item.subcategories) : undefined;
+        const filteredSubcategories = filterTree(getCategoryChildren(item));
         const hasVisibleSubcategories = Boolean(filteredSubcategories && filteredSubcategories.length > 0);
         const isAllowed = allowedIdsSet.size === 0 || allowedIdsSet.has(item.id);
+        const isGroup = isCategoryGroup(item);
+        const isSelectable = isCategorySelectable(item);
         const isExcluded =
           excludedIdsSet.has(item.id) ||
           (item.categoryTemplateId ? excludedTemplateIdsSet.has(item.categoryTemplateId) : false) ||
           excludedNamesSet.has(normalizeCategoryName(item.name));
-
-        // Parent categories are containers only and must not be selectable.
-        // If a parent has no visible children after filtering, hide it completely.
-        if (hadSubcategories && !hasVisibleSubcategories) {
-          return [];
-        }
 
         // Excluded categories should not appear in picker at all.
         // If they still have visible children, lift children one level up.
@@ -149,7 +115,21 @@ export function CategoryPickerField({
           return filteredSubcategories ?? [];
         }
 
-        if (!isAllowed && !hasVisibleSubcategories) {
+        // Groups are navigation containers. They are shown only when at least
+        // one selectable child remains visible after filtering.
+        if (isGroup) {
+          if (!hasVisibleSubcategories) {
+            return [];
+          }
+          return [
+            {
+              ...item,
+              subcategories: filteredSubcategories,
+            },
+          ];
+        }
+
+        if (!isSelectable || !isAllowed) {
           return [];
         }
 
@@ -172,7 +152,7 @@ export function CategoryPickerField({
   const flatCategories = useMemo(() => flattenCategories(sortedTreeCategories), [sortedTreeCategories]);
 
   const leafCategories = useMemo(
-    () => flatCategories.filter((category) => isLeafCategory(category)).sort(compareByName),
+    () => flatCategories.filter((category) => isCategorySelectable(category)).sort(compareByName),
     [flatCategories],
   );
 
@@ -220,7 +200,7 @@ export function CategoryPickerField({
     <>
       <Pressable style={styles.categoryField} onPress={handleOpenCategoryPicker}>
         <View style={[styles.categoryIcon, { backgroundColor: displayedCategory?.color ?? colors.border }]}>
-          <Text style={styles.categoryIconText}>{iconForCategory(displayedCategory?.icon ?? "default")}</Text>
+          <Text style={styles.categoryIconText}>{getCategoryIcon(displayedCategory?.icon ?? "default")}</Text>
         </View>
         <View style={styles.categoryLabelWrapper}>
           <Text style={displayedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
@@ -238,7 +218,7 @@ export function CategoryPickerField({
         defaultType={defaultType}
         showTypeSwitch={!lockType}
         preferFlatList={preferFlatList}
-        iconForCategory={iconForCategory}
+        iconForCategory={getCategoryIcon}
         onClose={handleCloseCategoryPicker}
         onSelect={handleCategorySelect}
       />

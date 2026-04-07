@@ -1,13 +1,14 @@
 import { useMemo } from "react";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import client from "../../shared/lib/api/client";
 import { getToken, removeToken } from "../../storage/auth";
 import { mockCategories } from "../../shared/mocks";
-import { CategoryReactDto, CategoryType } from "../../shared/api/dto";
+import { CategoryDto, CategoryReactDto, CategoryType } from "../../shared/api/dto";
 
 export const CATEGORIES_QUERY_KEY = ["categories"] as const;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
 export type CategoriesFilters = {
     type?: CategoryType | null;
@@ -29,8 +30,43 @@ const toQueryFilters = (filters?: CategoriesFilters) => {
 type UseCategoriesResult = {
     categories: CategoryReactDto[];
     isLoading: boolean;
+    isRefreshing: boolean;
     error: string | null;
     refresh: () => Promise<void>;
+};
+
+export type CategoryMutationPayload = {
+    name: string;
+    type: CategoryType;
+    parentId?: string | null;
+    icon?: string | null;
+    description?: string | null;
+    disabled?: boolean;
+};
+
+const parseMessage = async (response: Response, fallback: string) => {
+    try {
+        const body = (await response.json()) as { message?: string };
+        if (body?.message) {
+            return body.message;
+        }
+    } catch {
+        // ignore parse errors
+    }
+    return fallback;
+};
+
+const getAuthorizedHeaders = async (router: ReturnType<typeof useRouter>) => {
+    const token = await getToken();
+    if (!token) {
+        await removeToken();
+        router.replace("/login");
+        throw new Error("Сессия истекла. Войдите снова.");
+    }
+    return {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+    };
 };
 
 export const useCategories = (filters?: CategoriesFilters, options?: UseCategoriesOptions): UseCategoriesResult => {
@@ -82,9 +118,81 @@ export const useCategories = (filters?: CategoriesFilters, options?: UseCategori
     return {
         categories: query.data ?? [],
         isLoading: query.isLoading,
+        isRefreshing: query.isFetching,
         error: errorMessage,
         refresh: async () => {
             await query.refetch();
         },
+    };
+};
+
+export const useCategoryActions = () => {
+    const router = useRouter();
+    const queryClient = useQueryClient();
+
+    const createMutation = useMutation({
+        mutationFn: async (payload: CategoryMutationPayload) => {
+            const response = await fetch(`${API_BASE_URL}/api/v2/categories`, {
+                method: "POST",
+                headers: await getAuthorizedHeaders(router),
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(await parseMessage(response, `Не удалось создать категорию (HTTP ${response.status}).`));
+            }
+            return (await response.json()) as CategoryDto;
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, payload }: { id: string; payload: CategoryMutationPayload }) => {
+            const response = await fetch(`${API_BASE_URL}/api/v2/categories/${id}`, {
+                method: "PUT",
+                headers: await getAuthorizedHeaders(router),
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(await parseMessage(response, `Не удалось обновить категорию (HTTP ${response.status}).`));
+            }
+            return (await response.json()) as CategoryDto;
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const response = await fetch(`${API_BASE_URL}/api/v2/categories/${id}`, {
+                method: "DELETE",
+                headers: await getAuthorizedHeaders(router),
+            });
+
+            if (!response.ok) {
+                throw new Error(await parseMessage(response, `Не удалось удалить категорию (HTTP ${response.status}).`));
+            }
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+
+    const actionError =
+        createMutation.error instanceof Error ? createMutation.error.message :
+            updateMutation.error instanceof Error ? updateMutation.error.message :
+                deleteMutation.error instanceof Error ? deleteMutation.error.message :
+                    null;
+
+    return {
+        createCategory: createMutation.mutateAsync,
+        updateCategory: updateMutation.mutateAsync,
+        deleteCategory: deleteMutation.mutateAsync,
+        isSaving: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+        actionError,
     };
 };

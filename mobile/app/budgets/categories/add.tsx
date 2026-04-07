@@ -8,6 +8,7 @@ import { formatCurrency } from "../../../src/shared/utils/format";
 import { useBudgetCategoryActions, useBudgetDetails } from "../../../src/features/budgets/useBudgets";
 import { AmountKeypad } from "../../../src/features/transactions/components/AmountKeypad";
 import { CategoryPickerField } from "../../../src/features/categories/components/CategoryPickerField";
+import { isCategorySelectable } from "../../../src/features/categories/categoryTree";
 
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
@@ -31,14 +32,7 @@ export default function AddBudgetCategoryScreen() {
       return [];
     }
     const list = type === "INCOME" ? budget.incomeCategories ?? [] : budget.expenseCategories ?? [];
-    const parentCategoryIds = new Set(
-      list
-        .map((item) => item.parentId)
-        .filter(Boolean),
-    );
-
-    // Parent categories are containers for subcategories and cannot be added to budget directly.
-    return list.filter((item) => Boolean(item.id) && !parentCategoryIds.has(item.id));
+    return list.filter((item) => Boolean(item.id) && isCategorySelectable(item));
   }, [budget, type]);
 
   const allowedCategoryIds = useMemo(

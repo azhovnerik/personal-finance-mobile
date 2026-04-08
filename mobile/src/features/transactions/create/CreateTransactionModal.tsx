@@ -81,6 +81,7 @@ const toCategory = (category: Category): Category => ({
   name: category.name,
   type: category.type,
   disabled: category.disabled,
+  icon: category.icon ?? null,
 });
 
 const toAccount = (

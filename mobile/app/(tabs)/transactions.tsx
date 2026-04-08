@@ -6,6 +6,7 @@ import {Card, Chip, DateInput, ScreenContainer, Select, Text, colors, spacing} f
 import { mockUser } from "../../src/shared/mocks";
 import { TransactionFilters, useTransactions } from "../../src/features/transactions/useTransactions";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
+import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 const toYmd = (d: Date) => {
     // локальная дата в YYYY-MM-DD без UTC-сдвига
@@ -126,6 +127,19 @@ export default function TransactionsScreen() {
         return "Без категории";
     };
 
+    const getCategoryIcon = (transaction: unknown) => {
+        const dto = transaction as {
+            category?: string | { icon?: string | null } | null;
+            categoryIcon?: string | null;
+            icon?: string | null;
+        };
+
+        if (dto.category && typeof dto.category === "object" && dto.category.icon) {
+            return dto.category.icon;
+        }
+        return dto.categoryIcon ?? dto.icon ?? null;
+    };
+
     return (
         <ScreenContainer>
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -185,9 +199,14 @@ export default function TransactionsScreen() {
                                 <Text variant="caption" style={styles.dateText}>
                                     {formatListDate(transaction.date)}
                                 </Text>
-                                <Text numberOfLines={1} style={styles.categoryText}>
-                                    {getCategoryLabel(transaction)}
-                                </Text>
+                                <View style={styles.categoryCell}>
+                                    <View style={styles.categoryIcon}>
+                                        <CategoryIcon name={getCategoryIcon(transaction)} size={28} />
+                                    </View>
+                                    <Text numberOfLines={1} style={styles.categoryText}>
+                                        {getCategoryLabel(transaction)}
+                                    </Text>
+                                </View>
                                 <Text
                                     numberOfLines={1}
                                     style={[
@@ -258,6 +277,21 @@ const styles = StyleSheet.create({
     categoryText: {
         flex: 1,
         minWidth: 0,
+    },
+    categoryCell: {
+        flex: 1,
+        minWidth: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
+    },
+    categoryIcon: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.surfaceMuted,
     },
     amountText: {
         marginLeft: spacing.xs,

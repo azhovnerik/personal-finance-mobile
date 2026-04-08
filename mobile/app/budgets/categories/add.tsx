@@ -8,6 +8,8 @@ import { formatCurrency } from "../../../src/shared/utils/format";
 import { useBudgetCategoryActions, useBudgetDetails } from "../../../src/features/budgets/useBudgets";
 import { AmountKeypad } from "../../../src/features/transactions/components/AmountKeypad";
 import { CategoryPickerField } from "../../../src/features/categories/components/CategoryPickerField";
+import { CategoryIcon } from "../../../src/features/categories/components/CategoryIcon";
+import { isCategorySelectable } from "../../../src/features/categories/categoryTree";
 
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
@@ -31,14 +33,20 @@ export default function AddBudgetCategoryScreen() {
       return [];
     }
     const list = type === "INCOME" ? budget.incomeCategories ?? [] : budget.expenseCategories ?? [];
-    const parentCategoryIds = new Set(
-      list
-        .map((item) => item.parentId)
-        .filter(Boolean),
-    );
+    return list.filter((item) => {
+      if (!item.id) {
+        return false;
+      }
 
-    // Parent categories are containers for subcategories and cannot be added to budget directly.
-    return list.filter((item) => Boolean(item.id) && !parentCategoryIds.has(item.id));
+      const hasTreeFlags =
+        item.isGroup !== undefined || item.selectable !== undefined || item.childrenCount !== undefined;
+
+      if (!hasTreeFlags) {
+        return Boolean(item.parentId);
+      }
+
+      return isCategorySelectable(item);
+    });
   }, [budget, type]);
 
   const allowedCategoryIds = useMemo(
@@ -181,11 +189,16 @@ export default function AddBudgetCategoryScreen() {
         {budgetId && type && availableCategories.length > 0 ? (
           <>
             <Card style={styles.infoCard}>
-              <Text variant="subtitle">
-                {factOnlyCategory
-                  ? renderCategoryName(factOnlyCategory)
-                  : selectedCategory?.name ?? "Выберите категорию"}
-              </Text>
+              <View style={styles.categoryHeaderRow}>
+                <View style={styles.categoryIcon}>
+                  <CategoryIcon name={factOnlyCategory?.category?.icon ?? selectedCategory?.icon} size={36} />
+                </View>
+                <Text numberOfLines={1} variant="subtitle" style={styles.categoryTitle}>
+                  {factOnlyCategory
+                    ? renderCategoryName(factOnlyCategory)
+                    : selectedCategory?.name ?? "Выберите категорию"}
+                </Text>
+              </View>
               <View style={styles.row}>
                 <Text>Тип</Text>
                 <Text>{type === "INCOME" ? "Доход" : "Расход"}</Text>
@@ -292,6 +305,23 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     gap: spacing.sm,
+  },
+  categoryHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  categoryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+  },
+  categoryTitle: {
+    flex: 1,
+    minWidth: 0,
   },
   row: {
     flexDirection: "row",

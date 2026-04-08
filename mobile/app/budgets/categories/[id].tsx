@@ -7,6 +7,7 @@ import { BudgetCategoryDetailedDto, CurrencyCode } from "../../../src/shared/api
 import { formatCurrency } from "../../../src/shared/utils/format";
 import { useBudgetCategoryActions, useBudgetDetails } from "../../../src/features/budgets/useBudgets";
 import { AmountKeypad } from "../../../src/features/transactions/components/AmountKeypad";
+import { CategoryIcon } from "../../../src/features/categories/components/CategoryIcon";
 
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
@@ -145,7 +146,14 @@ export default function BudgetCategoryDetailsScreen() {
         {targetCategory ? (
           <>
             <Card style={styles.infoCard}>
-              <Text variant="subtitle">{renderCategoryName(targetCategory)}</Text>
+              <View style={styles.categoryHeaderRow}>
+                <View style={styles.categoryIcon}>
+                  <CategoryIcon name={targetCategory.category?.icon} size={36} />
+                </View>
+                <Text numberOfLines={1} variant="subtitle" style={styles.categoryTitle}>
+                  {renderCategoryName(targetCategory)}
+                </Text>
+              </View>
               <View style={styles.row}>
                 <Text>Тип</Text>
                 <Text>{targetCategory.type === "INCOME" ? "Доход" : "Расход"}</Text>
@@ -240,6 +248,23 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     gap: spacing.sm,
+  },
+  categoryHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  categoryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+  },
+  categoryTitle: {
+    flex: 1,
+    minWidth: 0,
   },
   row: {
     flexDirection: "row",

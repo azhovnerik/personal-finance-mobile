@@ -35,6 +35,9 @@ export interface Category {
   disabled: boolean;
   icon?: string | null;
   categoryTemplateId?: UUID | null;
+  isGroup?: boolean | null;
+  selectable?: boolean | null;
+  childrenCount?: number | null;
 }
 
 export interface Account {
@@ -56,6 +59,9 @@ export interface CategoryDto {
   disabled: boolean;
   icon?: string | null;
   categoryTemplateId?: UUID | null;
+  isGroup?: boolean | null;
+  selectable?: boolean | null;
+  childrenCount?: number | null;
 }
 
 export interface CategoryReactDto {
@@ -68,6 +74,9 @@ export interface CategoryReactDto {
   icon?: string | null;
   categoryTemplateId?: UUID | null;
   color?: string | null;
+  isGroup?: boolean | null;
+  selectable?: boolean | null;
+  childrenCount?: number | null;
 }
 
 export interface AccountDto {

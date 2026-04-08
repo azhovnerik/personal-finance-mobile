@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import { Button, Card, ScreenContainer, Text, spacing } from "../../src/shared/ui";
 
 const MORE_ITEMS = [
-  { label: "Категории", description: "Доходы и расходы", route: "/categories" },
   { label: "Поддержка", description: "Связаться с сервисом", route: "/support" },
   { label: "Настройки", description: "Профиль и безопасность", route: "/settings" },
   { label: "Подписки", description: "Планы и оплата", route: "/subscriptions" },

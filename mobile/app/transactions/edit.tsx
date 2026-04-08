@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, DateInput, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Card, DateInput, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
 import {
   Account,
@@ -17,6 +17,7 @@ import { mockUser } from "../../src/shared/mocks";
 import { useTransactions } from "../../src/features/transactions/useTransactions";
 import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
 import { CategoryPickerField } from "../../src/features/categories/components/CategoryPickerField";
+import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 type TransactionFormState = {
   date: string | null;
@@ -37,6 +38,7 @@ const toCategory = (category: Category): Category => ({
   name: category.name,
   type: category.type,
   disabled: category.disabled,
+  icon: category.icon ?? null,
 });
 
 const toAccount = (account: TransactionDto["account"] | { id?: string; name: string; type: Account["type"]; currency?: Account["currency"] | null } | null | undefined): Account | null => {
@@ -272,6 +274,20 @@ export default function EditTransactionScreen() {
             </View>
           </View>
 
+          <Card style={styles.categorySummaryCard}>
+            <View style={styles.categorySummaryRow}>
+              <View style={styles.categorySummaryIcon}>
+                <CategoryIcon name={displayedCategory?.icon} size={34} />
+              </View>
+              <View style={styles.categorySummaryText}>
+                <Text variant="caption">Категория</Text>
+                <Text numberOfLines={1} style={styles.categorySummaryName}>
+                  {displayedCategory?.name ?? "Без категории"}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
           <CategoryPickerField
             value={formState.categoryId}
             onChange={handleCategorySelect}
@@ -385,6 +401,30 @@ const styles = StyleSheet.create({
   amountInput: {
     flex: 1,
     gap: spacing.xs,
+  },
+  categorySummaryCard: {
+    gap: spacing.xs,
+  },
+  categorySummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  categorySummaryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+  },
+  categorySummaryText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  categorySummaryName: {
+    color: colors.textPrimary,
+    fontWeight: "600",
   },
   footer: {
     padding: spacing.lg,

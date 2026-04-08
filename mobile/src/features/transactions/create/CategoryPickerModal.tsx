@@ -4,13 +4,21 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Text, colors, spacing } from "../../../shared/ui";
 import { CategoryReactDto, CategoryType } from "../../../shared/api/dto";
+import {
+  findCategoryByPath,
+  findCategoryInTree,
+  getCategoryChildren,
+  getCategoryChildrenCount,
+  isCategoryGroup,
+  isCategorySelectable,
+} from "../../categories/categoryTree";
+import { CategoryIcon } from "../../categories/components/CategoryIcon";
 
 type CategoryPickerModalProps = {
   visible: boolean;
   categories: CategoryReactDto[];
   flatCategories: CategoryReactDto[];
   topCategories: CategoryReactDto[];
-  iconForCategory: (icon: string) => string;
   onClose: () => void;
   onSelect: (categoryId: string) => void;
   defaultType?: CategoryType;
@@ -23,7 +31,6 @@ export const CategoryPickerModal = ({
   categories,
   flatCategories,
   topCategories,
-  iconForCategory,
   onClose,
   onSelect,
   defaultType = "EXPENSES",
@@ -31,8 +38,7 @@ export const CategoryPickerModal = ({
   preferFlatList = false,
 }: CategoryPickerModalProps) => {
   const insets = useSafeAreaInsets();
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-  const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
+  const [navigationStack, setNavigationStack] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<CategoryType>(defaultType);
 
   const matchesSelectedType = (category: CategoryReactDto) => {
@@ -44,13 +50,11 @@ export const CategoryPickerModal = ({
   useEffect(() => {
     if (visible) {
       setSelectedType(defaultType);
-      setActiveCategoryId(null);
-      setIsSubcategoryOpen(false);
+      setNavigationStack([]);
       return;
     }
     if (!visible) {
-      setActiveCategoryId(null);
-      setIsSubcategoryOpen(false);
+      setNavigationStack([]);
     }
   }, [defaultType, visible]);
 
@@ -73,53 +77,58 @@ export const CategoryPickerModal = ({
     if (preferFlatList) {
       return filteredFlatCategories;
     }
-    return filteredCategories.length > 0 ? filteredCategories : filteredFlatCategories;
-  }, [filteredCategories, filteredFlatCategories, preferFlatList]);
+    if (navigationStack.length === 0) {
+      return filteredCategories.length > 0 ? filteredCategories : filteredFlatCategories;
+    }
+    return findCategoryByPath(filteredCategories, navigationStack).children;
+  }, [filteredCategories, filteredFlatCategories, navigationStack, preferFlatList]);
 
   const activeCategory = useMemo(
-    () => categories.find((category) => category.id === activeCategoryId) ?? null,
-    [activeCategoryId, categories]
+    () => findCategoryByPath(filteredCategories, navigationStack).parent,
+    [filteredCategories, navigationStack],
   );
 
   const handleCategoryPress = (categoryId: string) => {
-    const category = categories.find((item) => item.id === categoryId);
-    if (category?.subcategories?.length) {
-      setActiveCategoryId(categoryId);
-      setIsSubcategoryOpen(true);
+    const category = findCategoryInTree(filteredCategories, categoryId) ?? filteredFlatCategories.find((item) => item.id === categoryId);
+    if (!category) {
       return;
     }
 
-    const selectedCategory = flatCategories.find((item) => item.id === categoryId);
-    if (selectedCategory) {
-      onSelect(selectedCategory.id);
+    if (isCategoryGroup(category) && getCategoryChildren(category).length > 0 && !preferFlatList) {
+      setNavigationStack((prev) => [...prev, categoryId]);
+      return;
+    }
+
+    if (isCategorySelectable(category)) {
+      onSelect(category.id);
       onClose();
     }
   };
 
-  const handleSubcategoryPress = (subcategoryId: string) => {
-    onSelect(subcategoryId);
+  const handleBack = () => {
+    if (navigationStack.length > 0) {
+      setNavigationStack((prev) => prev.slice(0, -1));
+      return;
+    }
     onClose();
-  };
-
-  const handleSubcategoryBack = () => {
-    setIsSubcategoryOpen(false);
   };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      {!isSubcategoryOpen ? (
-        <View style={styles.categoryOverlay}>
-          <SafeAreaView style={styles.categoryModal}>
-            <View style={[styles.categoryHeader, { paddingTop: insets.top + spacing.sm }]}>
-              <Pressable onPress={onClose}>
-                <Text style={styles.modalAction}>Назад</Text>
-              </Pressable>
-              <Text variant="subtitle">Категории</Text>
-              <Pressable>
-                <Text style={styles.modalAction}>Редактировать</Text>
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.categoryOverlay}>
+        <SafeAreaView style={styles.categoryModal}>
+          <View style={[styles.categoryHeader, { paddingTop: insets.top + spacing.sm }]}>
+            <Pressable onPress={handleBack}>
+              <Text style={styles.modalAction}>Назад</Text>
+            </Pressable>
+            <Text variant="subtitle">{activeCategory?.name ?? "Категории"}</Text>
+            <Pressable>
+              <Text style={styles.modalAction}>Редактировать</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
+            {navigationStack.length === 0 ? (
+              <>
               <Text style={styles.sectionTitle}>Самые частые</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topCategoryRow}>
                 {filteredTopCategories.map((category) => (
@@ -129,7 +138,7 @@ export const CategoryPickerModal = ({
                     onPress={() => handleCategoryPress(category.id)}
                   >
                     <View style={[styles.topCategoryIcon, { backgroundColor: category.color ?? colors.border }]}>
-                      <Text style={styles.categoryIconText}>{iconForCategory(category.icon ?? "default")}</Text>
+                      <CategoryIcon name={category.icon} size={44} color={colors.textPrimary} />
                     </View>
                     <Text style={styles.topCategoryLabel} numberOfLines={2}>
                       {category.name}
@@ -144,8 +153,7 @@ export const CategoryPickerModal = ({
                     style={[styles.typeSwitchButton, selectedType === "EXPENSES" && styles.typeSwitchButtonActive]}
                     onPress={() => {
                       setSelectedType("EXPENSES");
-                      setIsSubcategoryOpen(false);
-                      setActiveCategoryId(null);
+                      setNavigationStack([]);
                     }}
                   >
                     <Text style={selectedType === "EXPENSES" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
@@ -156,8 +164,7 @@ export const CategoryPickerModal = ({
                     style={[styles.typeSwitchButton, selectedType === "INCOME" && styles.typeSwitchButtonActive]}
                     onPress={() => {
                       setSelectedType("INCOME");
-                      setIsSubcategoryOpen(false);
-                      setActiveCategoryId(null);
+                      setNavigationStack([]);
                     }}
                   >
                     <Text style={selectedType === "INCOME" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
@@ -166,58 +173,42 @@ export const CategoryPickerModal = ({
                   </Pressable>
                 </View>
               ) : null}
+              </>
+            ) : null}
 
-              <Text style={styles.sectionTitle}>Все категории</Text>
-              <View style={styles.categoryList}>
-                {visibleCategories.map((category) => (
+            <Text style={styles.sectionTitle}>{navigationStack.length > 0 ? "Подкатегории" : "Все категории"}</Text>
+            <View style={styles.categoryList}>
+              {visibleCategories.map((category) => {
+                const isGroup = isCategoryGroup(category);
+                const childCount = getCategoryChildrenCount(category);
+                return (
                   <Pressable
                     key={category.id}
-                    style={styles.categoryRow}
+                    style={[styles.categoryRow, isGroup ? styles.groupRow : undefined]}
                     onPress={() => handleCategoryPress(category.id)}
                   >
-                    <View style={[styles.categoryIcon, { backgroundColor: category.color ?? colors.border }]}>
-                      <Text style={styles.categoryIconText}>{iconForCategory(category.icon ?? "default")}</Text>
+                    <View style={[styles.categoryIcon, isGroup ? styles.groupIcon : { backgroundColor: category.color ?? colors.border }]}>
+                      <CategoryIcon
+                        name={category.icon}
+                        size={30}
+                        color={isGroup ? colors.surface : colors.textPrimary}
+                      />
                     </View>
-                    <Text style={styles.categoryLabel}>{category.name}</Text>
-                    {category.subcategories?.length ? <Text style={styles.categoryChevron}>›</Text> : null}
+                    <View style={styles.categoryLabelColumn}>
+                      <Text style={[styles.categoryLabel, isGroup ? styles.groupLabel : undefined]}>{category.name}</Text>
+                      {isGroup ? <Text style={styles.groupHint}>{childCount} категорий</Text> : null}
+                    </View>
+                    {isGroup ? <Text style={styles.categoryChevron}>›</Text> : null}
                   </Pressable>
-                ))}
-                {visibleCategories.length === 0 ? (
-                  <Text style={styles.emptyText}>Категории не найдены для выбранного типа.</Text>
-                ) : null}
-              </View>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      ) : (
-        <View style={styles.categoryOverlay}>
-          <SafeAreaView style={styles.categoryModal}>
-            <View style={[styles.categoryHeader, { paddingTop: insets.top + spacing.sm }]}>
-              <Pressable onPress={handleSubcategoryBack}>
-                <Text style={styles.modalAction}>Назад</Text>
-              </Pressable>
-              <Text variant="subtitle">{activeCategory?.name ?? "Подкатегории"}</Text>
-              <View style={styles.modalActionSpacer} />
+                );
+              })}
+              {visibleCategories.length === 0 ? (
+                <Text style={styles.emptyText}>Категории не найдены для выбранного типа.</Text>
+              ) : null}
             </View>
-            <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.categoryList}>
-                {activeCategory?.subcategories?.map((subcategory) => (
-                  <Pressable
-                    key={subcategory.id}
-                    style={styles.categoryRow}
-                    onPress={() => handleSubcategoryPress(subcategory.id)}
-                  >
-                    <View style={[styles.categoryIcon, { backgroundColor: subcategory.color ?? colors.border }]}>
-                      <Text style={styles.categoryIconText}>{iconForCategory(subcategory.icon ?? "default")}</Text>
-                    </View>
-                    <Text style={styles.categoryLabel}>{subcategory.name}</Text>
-                  </Pressable>
-                )) ?? null}
-              </View>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      )}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
     </Modal>
   );
 };
@@ -226,9 +217,6 @@ const styles = StyleSheet.create({
   modalAction: {
     color: colors.textSecondary,
     fontWeight: "600",
-  },
-  modalActionSpacer: {
-    width: 60,
   },
   categoryOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -328,6 +316,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  groupRow: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.primary,
+  },
   categoryIcon: {
     width: 36,
     height: 36,
@@ -335,13 +327,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  categoryIconText: {
-    fontSize: 16,
+  groupIcon: {
+    backgroundColor: colors.primary,
+  },
+  categoryLabelColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   categoryLabel: {
-    flex: 1,
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  groupLabel: {
+    fontWeight: "700",
+  },
+  groupHint: {
+    color: colors.textSecondary,
+    fontSize: 12,
   },
   categoryChevron: {
     fontSize: 20,

@@ -7,6 +7,7 @@ import { BudgetCategoryDetailedDto, CurrencyCode } from "../../src/shared/api/dt
 import { formatAmount, getCurrencySymbol } from "../../src/shared/utils/format";
 import { useBudgetActions, useBudgetDetails, useBudgets } from "../../src/features/budgets/useBudgets";
 import { subscribeTransactionsChanged } from "../../src/shared/lib/events/transactions";
+import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 const parseBudgetMonth = (value: string): Date | null => {
   const match = value.match(/^(\d{2})-(\d{4})$/);
@@ -147,9 +148,14 @@ const CategorySection = ({
         const rowContent = (
           <View style={styles.categoryCard}>
             <View style={styles.categoryTopRow}>
-              <Text numberOfLines={1} style={styles.categoryName}>
-                {renderCategoryName(item)}
-              </Text>
+              <View style={styles.categoryTitleCell}>
+                <View style={styles.categoryIcon}>
+                  <CategoryIcon name={item.category?.icon} size={30} />
+                </View>
+                <Text numberOfLines={1} style={styles.categoryName}>
+                  {renderCategoryName(item)}
+                </Text>
+              </View>
               <Text style={styles.categoryAmountMeta}>
                 {formatAmountWithSymbol(fact, displayCurrency)} / {formatAmountWithSymbol(planned, displayCurrency)}
               </Text>
@@ -492,6 +498,21 @@ const styles = StyleSheet.create({
     minWidth: 0,
     fontWeight: "600",
     color: colors.textPrimary,
+  },
+  categoryTitleCell: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  categoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
   },
   categoryAmountMeta: {
     fontSize: 12,

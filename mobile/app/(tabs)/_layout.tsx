@@ -22,8 +22,10 @@ export default function TabsLayout() {
           <Tabs.Screen name="index" options={{ title: "Главная" }} />
           <Tabs.Screen name="transactions" options={{ title: "Транзакции" }} />
           <Tabs.Screen name="budgets" options={{ title: "Бюджеты" }} />
+          <Tabs.Screen name="categories" options={{ title: "Категории" }} />
           <Tabs.Screen name="accounts" options={{ title: "Счета" }} />
           <Tabs.Screen name="more" options={{ title: "Ещё" }} />
+          <Tabs.Screen name="add" options={{ href: null }} />
         </Tabs>
         <Pressable style={styles.addButtonWrapper} onPress={() => setIsCreateOpen(true)}>
           <View style={styles.addButton}>

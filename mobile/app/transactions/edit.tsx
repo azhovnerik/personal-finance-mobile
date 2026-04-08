@@ -1,4 +1,4 @@
-import { Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -124,10 +124,11 @@ export default function EditTransactionScreen() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isAmountKeypadOpen, setIsAmountKeypadOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const { accounts } = useAccounts();
-  const { editTransaction, error: saveError } = useTransactions();
+  const { editTransaction, deleteTransaction, error: saveError } = useTransactions();
 
   useEffect(() => {
     if (!params.transaction) {
@@ -240,6 +241,35 @@ export default function EditTransactionScreen() {
     }
   };
 
+  const handleDelete = () => {
+    if (!initialTransaction?.id) {
+      setLocalError("Не удалось удалить транзакцию.");
+      return;
+    }
+    const transactionId = initialTransaction.id;
+
+    Alert.alert("Удалить транзакцию?", "Транзакция будет удалена без возможности восстановления.", [
+      { text: "Отмена", style: "cancel" },
+      {
+        text: "Удалить",
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            setIsDeleting(true);
+            setIsAmountKeypadOpen(false);
+            setLocalError(null);
+            const success = await deleteTransaction(transactionId);
+            setIsDeleting(false);
+
+            if (success) {
+              router.back();
+            }
+          })();
+        },
+      },
+    ]);
+  };
+
   return (
     <ScreenContainer>
       <View style={styles.container}>
@@ -339,9 +369,18 @@ export default function EditTransactionScreen() {
           <Button
             title={isSaving ? "Сохраняем..." : "Сохранить"}
             size="lg"
-            disabled={isSaving}
-            onPress={handleSave}
-            style={isSaving ? styles.buttonDisabled : undefined}
+            disabled={isSaving || isDeleting}
+            onPress={() => void handleSave()}
+            style={isSaving || isDeleting ? styles.buttonDisabled : undefined}
+          />
+          <Button
+            title={isDeleting ? "Удаляем..." : "Удалить транзакцию"}
+            variant="outline"
+            tone="danger"
+            size="lg"
+            disabled={isSaving || isDeleting}
+            onPress={handleDelete}
+            style={isSaving || isDeleting ? styles.buttonDisabled : undefined}
           />
         </View>
         {isAmountKeypadOpen ? (

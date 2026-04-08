@@ -150,7 +150,17 @@ type BudgetCategoryMutationPayload = {
 const buildBudgetCategoryMutationBody = (payload: BudgetCategoryMutationPayload) => ({
   id: payload.category.id,
   budgetId: payload.budgetId,
-  category: payload.category.category,
+  category: {
+    id: payload.category.category.id,
+    name: payload.category.category.name,
+    type: payload.category.category.type,
+    disabled: payload.category.category.disabled,
+    description: payload.category.category.description ?? null,
+    parentId: payload.category.category.parentId ?? null,
+    userId: payload.category.category.userId ?? null,
+    categoryTemplateId: payload.category.category.categoryTemplateId ?? null,
+    icon: payload.category.category.icon ?? null,
+  },
   type: payload.category.type,
   amount: payload.amount,
   comment: payload.comment ?? null,

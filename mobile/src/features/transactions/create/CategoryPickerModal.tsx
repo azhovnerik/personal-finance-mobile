@@ -12,13 +12,13 @@ import {
   isCategoryGroup,
   isCategorySelectable,
 } from "../../categories/categoryTree";
+import { CategoryIcon } from "../../categories/components/CategoryIcon";
 
 type CategoryPickerModalProps = {
   visible: boolean;
   categories: CategoryReactDto[];
   flatCategories: CategoryReactDto[];
   topCategories: CategoryReactDto[];
-  iconForCategory: (icon: string) => string;
   onClose: () => void;
   onSelect: (categoryId: string) => void;
   defaultType?: CategoryType;
@@ -31,7 +31,6 @@ export const CategoryPickerModal = ({
   categories,
   flatCategories,
   topCategories,
-  iconForCategory,
   onClose,
   onSelect,
   defaultType = "EXPENSES",
@@ -139,7 +138,7 @@ export const CategoryPickerModal = ({
                     onPress={() => handleCategoryPress(category.id)}
                   >
                     <View style={[styles.topCategoryIcon, { backgroundColor: category.color ?? colors.border }]}>
-                      <Text style={styles.categoryIconText}>{iconForCategory(category.icon ?? "default")}</Text>
+                      <CategoryIcon name={category.icon} size={22} color={colors.textPrimary} />
                     </View>
                     <Text style={styles.topCategoryLabel} numberOfLines={2}>
                       {category.name}
@@ -189,7 +188,11 @@ export const CategoryPickerModal = ({
                     onPress={() => handleCategoryPress(category.id)}
                   >
                     <View style={[styles.categoryIcon, isGroup ? styles.groupIcon : { backgroundColor: category.color ?? colors.border }]}>
-                      <Text style={styles.categoryIconText}>{isGroup ? "▦" : iconForCategory(category.icon ?? "default")}</Text>
+                      <CategoryIcon
+                        name={isGroup ? "bi-folder2-open" : category.icon}
+                        size={18}
+                        color={isGroup ? colors.surface : colors.textPrimary}
+                      />
                     </View>
                     <View style={styles.categoryLabelColumn}>
                       <Text style={[styles.categoryLabel, isGroup ? styles.groupLabel : undefined]}>{category.name}</Text>
@@ -326,10 +329,6 @@ const styles = StyleSheet.create({
   },
   groupIcon: {
     backgroundColor: colors.primary,
-  },
-  categoryIconText: {
-    fontSize: 16,
-    color: colors.surface,
   },
   categoryLabelColumn: {
     flex: 1,

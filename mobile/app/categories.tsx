@@ -1,6 +1,6 @@
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
 import { CategoryReactDto, CategoryType } from "../src/shared/api/dto";
@@ -9,9 +9,9 @@ import {
   findCategoryByPath,
   getCategoryChildren,
   getCategoryChildrenCount,
-  getCategoryIcon,
   isCategoryGroup,
 } from "../src/features/categories/categoryTree";
+import { CategoryIcon } from "../src/features/categories/components/CategoryIcon";
 
 const sortByName = (left: CategoryReactDto, right: CategoryReactDto) =>
   left.name.localeCompare(right.name, "uk");
@@ -45,6 +45,12 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
   const { categories, isLoading, isRefreshing, error, refresh } = useCategories({ type: selectedType });
 
   const sortedCategories = useMemo(() => sortTree(categories), [categories]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const leafCount = useMemo(
     () => flattenLeaves(sortedCategories).length,
@@ -141,7 +147,11 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
         >
           <View style={styles.treeMain}>
             <View style={[styles.categoryIcon, isGroup ? styles.groupIcon : undefined]}>
-              <Text style={styles.categoryIconText}>{isGroup ? "▦" : getCategoryIcon(item.icon)}</Text>
+              <CategoryIcon
+                name={isGroup ? "bi-folder2-open" : item.icon}
+                size={16}
+                color={isGroup ? colors.surface : colors.textPrimary}
+              />
             </View>
             <View style={styles.treeTextColumn}>
               <Text style={[styles.treeName, isGroup ? styles.groupName : undefined]}>{item.name}</Text>
@@ -388,10 +398,6 @@ const styles = StyleSheet.create({
   },
   groupIcon: {
     backgroundColor: colors.primary,
-  },
-  categoryIconText: {
-    fontSize: 15,
-    color: colors.surface,
   },
   treeName: {
     color: colors.textPrimary,

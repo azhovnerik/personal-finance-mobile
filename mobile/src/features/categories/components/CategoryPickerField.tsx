@@ -5,7 +5,8 @@ import { Text, colors, spacing } from "../../../shared/ui";
 import { CategoryReactDto, CategoryType } from "../../../shared/api/dto";
 import { useCategories } from "../useCategories";
 import { CategoryPickerModal } from "../../transactions/create/CategoryPickerModal";
-import { getCategoryChildren, getCategoryIcon, isCategoryGroup, isCategorySelectable } from "../categoryTree";
+import { getCategoryChildren, isCategoryGroup, isCategorySelectable } from "../categoryTree";
+import { CategoryIcon } from "./CategoryIcon";
 
 export type CategoryPickerDisplayCategory = {
   name?: string | null;
@@ -200,7 +201,7 @@ export function CategoryPickerField({
     <>
       <Pressable style={styles.categoryField} onPress={handleOpenCategoryPicker}>
         <View style={[styles.categoryIcon, { backgroundColor: displayedCategory?.color ?? colors.border }]}>
-          <Text style={styles.categoryIconText}>{getCategoryIcon(displayedCategory?.icon ?? "default")}</Text>
+          <CategoryIcon name={displayedCategory?.icon} size={18} color={colors.textPrimary} />
         </View>
         <View style={styles.categoryLabelWrapper}>
           <Text style={displayedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>
@@ -218,7 +219,6 @@ export function CategoryPickerField({
         defaultType={defaultType}
         showTypeSwitch={!lockType}
         preferFlatList={preferFlatList}
-        iconForCategory={getCategoryIcon}
         onClose={handleCloseCategoryPicker}
         onSelect={handleCategorySelect}
       />
@@ -244,9 +244,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-  },
-  categoryIconText: {
-    fontSize: 16,
   },
   categoryLabelWrapper: {
     flex: 1,

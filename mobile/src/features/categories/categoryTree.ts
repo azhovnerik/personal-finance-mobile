@@ -18,35 +18,6 @@ export const isCategoryGroup = (category: CategoryTreeNode) =>
 export const isCategorySelectable = (category: CategoryTreeNode) =>
   Boolean(category.selectable ?? !isCategoryGroup(category)) && !isCategoryGroup(category);
 
-export const getCategoryIcon = (icon?: string | null) => {
-  switch (icon) {
-    case "basket":
-      return "🛒";
-    case "food":
-      return "🍽️";
-    case "bag":
-      return "🛍️";
-    case "home":
-      return "🏠";
-    case "car":
-      return "🚕";
-    case "fuel":
-      return "⛽";
-    case "auto":
-      return "🚗";
-    case "party":
-      return "🎉";
-    case "tech":
-      return "💻";
-    case "finance":
-      return "💸";
-    case "shirt":
-      return "👕";
-    default:
-      return "💰";
-  }
-};
-
 export const findCategoryInTree = (
   categories: CategoryReactDto[],
   categoryId: string | null | undefined,

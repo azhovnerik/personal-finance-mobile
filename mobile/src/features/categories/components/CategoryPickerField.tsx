@@ -201,7 +201,7 @@ export function CategoryPickerField({
     <>
       <Pressable style={styles.categoryField} onPress={handleOpenCategoryPicker}>
         <View style={[styles.categoryIcon, { backgroundColor: displayedCategory?.color ?? colors.border }]}>
-          <CategoryIcon name={displayedCategory?.icon} size={18} color={colors.textPrimary} />
+          <CategoryIcon name={displayedCategory?.icon} size={30} color={colors.textPrimary} />
         </View>
         <View style={styles.categoryLabelWrapper}>
           <Text style={displayedCategory ? styles.categoryLabel : styles.categoryPlaceholder}>

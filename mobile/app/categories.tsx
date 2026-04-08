@@ -148,8 +148,8 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
           <View style={styles.treeMain}>
             <View style={[styles.categoryIcon, isGroup ? styles.groupIcon : undefined]}>
               <CategoryIcon
-                name={isGroup ? "bi-folder2-open" : item.icon}
-                size={16}
+                name={item.icon}
+                size={24}
                 color={isGroup ? colors.surface : colors.textPrimary}
               />
             </View>

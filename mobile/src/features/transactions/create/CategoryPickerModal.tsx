@@ -138,7 +138,7 @@ export const CategoryPickerModal = ({
                     onPress={() => handleCategoryPress(category.id)}
                   >
                     <View style={[styles.topCategoryIcon, { backgroundColor: category.color ?? colors.border }]}>
-                      <CategoryIcon name={category.icon} size={22} color={colors.textPrimary} />
+                      <CategoryIcon name={category.icon} size={44} color={colors.textPrimary} />
                     </View>
                     <Text style={styles.topCategoryLabel} numberOfLines={2}>
                       {category.name}
@@ -189,8 +189,8 @@ export const CategoryPickerModal = ({
                   >
                     <View style={[styles.categoryIcon, isGroup ? styles.groupIcon : { backgroundColor: category.color ?? colors.border }]}>
                       <CategoryIcon
-                        name={isGroup ? "bi-folder2-open" : category.icon}
-                        size={18}
+                        name={category.icon}
+                        size={30}
                         color={isGroup ? colors.surface : colors.textPrimary}
                       />
                     </View>

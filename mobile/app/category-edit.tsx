@@ -287,7 +287,7 @@ export default function CategoryEditScreen() {
                 style={[styles.selectedIconPreview, isIconPickerOpen ? styles.selectedIconPreviewActive : undefined]}
                 onPress={() => setIsIconPickerOpen((prev) => !prev)}
               >
-                <CategoryIcon name={form.icon} size={22} color={colors.textPrimary} />
+                <CategoryIcon name={form.icon} size={36} color={colors.textPrimary} />
               </Pressable>
             </View>
             {isIconPickerOpen && iconsError ? <Text style={styles.errorText}>{iconsError}</Text> : null}
@@ -305,7 +305,7 @@ export default function CategoryEditScreen() {
                         setIsIconPickerOpen(false);
                       }}
                     >
-                      <CategoryIcon name={icon.key} size={18} color={colors.textPrimary} />
+                      <CategoryIcon name={icon.key} size={34} color={colors.textPrimary} />
                       <Text style={styles.iconOptionLabel} numberOfLines={1}>
                         {icon.label}
                       </Text>

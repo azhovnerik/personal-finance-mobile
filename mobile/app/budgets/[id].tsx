@@ -5,6 +5,7 @@ import { Card, ScreenContainer, Text, Button, colors, spacing } from "../../src/
 import { BudgetCategoryDetailedDto, CurrencyCode } from "../../src/shared/api/dto";
 import { formatCurrency } from "../../src/shared/utils/format";
 import { useBudgetDetails } from "../../src/features/budgets/useBudgets";
+import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 const renderAmount = (value?: number | null, currency: CurrencyCode = "UAH") => {
   return formatCurrency(value ?? 0, currency);
@@ -81,9 +82,14 @@ export default function BudgetDetailsScreen() {
               ) : (
                 incomeCategories.map((item) => (
                   <View key={item.id ?? `${item.category?.id}-${item.planAmount}`} style={styles.categoryRow}>
-                    <Text numberOfLines={1} style={styles.categoryName}>
-                      {renderCategoryName(item)}
-                    </Text>
+                    <View style={styles.categoryTitleCell}>
+                      <View style={styles.categoryIcon}>
+                        <CategoryIcon name={item.category?.icon} size={26} />
+                      </View>
+                      <Text numberOfLines={1} style={styles.categoryName}>
+                        {renderCategoryName(item)}
+                      </Text>
+                    </View>
                     <Text numberOfLines={1} style={styles.positiveValue}>
                       {renderAmount(item.planAmount, (item.currency ?? currency) as CurrencyCode)}
                     </Text>
@@ -99,9 +105,14 @@ export default function BudgetDetailsScreen() {
               ) : (
                 expenseCategories.map((item) => (
                   <View key={item.id ?? `${item.category?.id}-${item.planAmount}`} style={styles.categoryRow}>
-                    <Text numberOfLines={1} style={styles.categoryName}>
-                      {renderCategoryName(item)}
-                    </Text>
+                    <View style={styles.categoryTitleCell}>
+                      <View style={styles.categoryIcon}>
+                        <CategoryIcon name={item.category?.icon} size={26} />
+                      </View>
+                      <Text numberOfLines={1} style={styles.categoryName}>
+                        {renderCategoryName(item)}
+                      </Text>
+                    </View>
                     <Text numberOfLines={1} style={styles.negativeValue}>
                       {renderAmount(item.planAmount, (item.currency ?? currency) as CurrencyCode)}
                     </Text>
@@ -165,6 +176,21 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  categoryTitleCell: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  categoryIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+  },
   positiveValue: {
     color: colors.success,
     fontWeight: "600",
@@ -174,4 +200,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

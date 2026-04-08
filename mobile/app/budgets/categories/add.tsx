@@ -33,7 +33,20 @@ export default function AddBudgetCategoryScreen() {
       return [];
     }
     const list = type === "INCOME" ? budget.incomeCategories ?? [] : budget.expenseCategories ?? [];
-    return list.filter((item) => Boolean(item.id) && isCategorySelectable(item));
+    return list.filter((item) => {
+      if (!item.id) {
+        return false;
+      }
+
+      const hasTreeFlags =
+        item.isGroup !== undefined || item.selectable !== undefined || item.childrenCount !== undefined;
+
+      if (!hasTreeFlags) {
+        return Boolean(item.parentId);
+      }
+
+      return isCategorySelectable(item);
+    });
   }, [budget, type]);
 
   const allowedCategoryIds = useMemo(

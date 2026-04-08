@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { BudgetDetailedDto, BudgetDto, BudgetCategoryDetailedDto } from "../../shared/api/dto";
+import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken, removeToken } from "../../storage/auth";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 const BUDGETS_QUERY_KEY = ["budgets"];
 
 const parseMessage = async (response: Response, fallback: string) => {

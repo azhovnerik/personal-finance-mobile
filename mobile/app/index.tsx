@@ -3,10 +3,8 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { getToken, removeToken } from "../src/storage/auth";
+import { API_BASE_URL } from "../src/shared/lib/api/config";
 import { Button, ScreenContainer, Text, colors } from "../src/shared/ui";
-
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
 
 const decodeBase64Url = (input: string): string => {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");

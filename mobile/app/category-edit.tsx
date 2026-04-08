@@ -59,7 +59,7 @@ export default function CategoryEditScreen() {
     categoryPath?: string;
     category?: string;
   }>();
-  const { createCategory, updateCategory, deleteCategory, isSaving, actionError } = useCategoryActions();
+  const { createCategory, updateCategory, deleteCategory, isSaving } = useCategoryActions();
   const [editingCategory, setEditingCategory] = useState<CategoryReactDto | null>(null);
   const [form, setForm] = useState<CategoryFormState>(EMPTY_FORM);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -340,7 +340,6 @@ export default function CategoryEditScreen() {
 
         <View style={styles.footer}>
           {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
-          {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
           <Button
             title={isSaving ? "Сохранение..." : mode === "edit" ? "Сохранить" : "Создать"}
             onPress={() => void handleSave()}

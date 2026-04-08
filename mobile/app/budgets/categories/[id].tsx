@@ -77,14 +77,18 @@ export default function BudgetCategoryDetailsScreen() {
       return;
     }
 
-    setFormError(null);
-    await updateCategory({
-      budgetId,
-      category: targetCategory,
-      amount: parsedAmount,
-      comment: commentInput.trim() || null,
-    });
-    router.back();
+    try {
+      setFormError(null);
+      await updateCategory({
+        budgetId,
+        category: targetCategory,
+        amount: parsedAmount,
+        comment: commentInput.trim() || null,
+      });
+      router.back();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Не удалось обновить бюджетную категорию.");
+    }
   };
 
   const onDelete = () => {
@@ -99,8 +103,13 @@ export default function BudgetCategoryDetailsScreen() {
         style: "destructive",
         onPress: () => {
           void (async () => {
-            await deleteCategory({ budgetId, category: targetCategory });
-            router.back();
+            try {
+              setFormError(null);
+              await deleteCategory({ budgetId, category: targetCategory });
+              router.back();
+            } catch (error) {
+              setFormError(error instanceof Error ? error.message : "Не удалось удалить бюджетную категорию.");
+            }
           })();
         },
       },

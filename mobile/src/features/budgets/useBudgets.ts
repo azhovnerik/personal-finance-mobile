@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { BudgetDetailedDto, BudgetDto, BudgetCategoryDetailedDto } from "../../shared/api/dto";
+import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken, removeToken } from "../../storage/auth";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 const BUDGETS_QUERY_KEY = ["budgets"];
 
 const parseMessage = async (response: Response, fallback: string) => {
@@ -150,7 +150,17 @@ type BudgetCategoryMutationPayload = {
 const buildBudgetCategoryMutationBody = (payload: BudgetCategoryMutationPayload) => ({
   id: payload.category.id,
   budgetId: payload.budgetId,
-  category: payload.category.category,
+  category: {
+    id: payload.category.category.id,
+    name: payload.category.category.name,
+    type: payload.category.category.type,
+    disabled: payload.category.category.disabled,
+    description: payload.category.category.description ?? null,
+    parentId: payload.category.category.parentId ?? null,
+    userId: payload.category.category.userId ?? null,
+    categoryTemplateId: payload.category.category.categoryTemplateId ?? null,
+    icon: payload.category.category.icon ?? null,
+  },
   type: payload.category.type,
   amount: payload.amount,
   comment: payload.comment ?? null,

@@ -6,11 +6,11 @@ import client from "../../shared/lib/api/client";
 import { getToken, removeToken } from "../../storage/auth";
 import { mockCategories } from "../../shared/mocks";
 import { CategoryDto, CategoryReactDto, CategoryType } from "../../shared/api/dto";
+import { API_BASE_URL } from "../../shared/lib/api/config";
 import { CategoryIconOption, FALLBACK_CATEGORY_ICONS, normalizeCategoryIcon } from "./categoryIcons";
 
 export const CATEGORIES_QUERY_KEY = ["categories"] as const;
 export const CATEGORY_ICONS_QUERY_KEY = ["categories", "icons"] as const;
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 
 export type CategoriesFilters = {
     type?: CategoryType | null;
@@ -53,14 +53,32 @@ export type CategoryMutationPayload = {
     disabled?: boolean;
 };
 
-const parseMessage = async (response: Response, fallback: string) => {
+const parseMessage = async (response: Response, fallback: string, debugContext?: Record<string, unknown>) => {
+    let rawBody = "";
     try {
-        const body = (await response.json()) as { message?: string };
-        if (body?.message) {
-            return body.message;
+        rawBody = await response.text();
+        const body = rawBody ? JSON.parse(rawBody) as { code?: string; error?: string; message?: string; path?: string } : null;
+        const parts = [body?.message, body?.code, body?.error].filter(Boolean);
+        if (__DEV__) {
+            console.warn("Category API request failed", {
+                status: response.status,
+                statusText: response.statusText,
+                body,
+                ...debugContext,
+            });
+        }
+        if (parts.length > 0) {
+            return parts.join(" ");
         }
     } catch {
-        // ignore parse errors
+        if (__DEV__) {
+            console.warn("Category API request failed", {
+                status: response.status,
+                statusText: response.statusText,
+                body: rawBody,
+                ...debugContext,
+            });
+        }
     }
     return fallback;
 };
@@ -210,14 +228,20 @@ export const useCategoryActions = () => {
 
     const createMutation = useMutation({
         mutationFn: async (payload: CategoryMutationPayload) => {
-            const response = await fetch(`${API_BASE_URL}/api/v2/categories`, {
+            const url = `${API_BASE_URL}/api/v2/categories`;
+            const body = normalizeCategoryMutationPayload(payload);
+            const response = await fetch(url, {
                 method: "POST",
                 headers: await getAuthorizedHeaders(router),
-                body: JSON.stringify(normalizeCategoryMutationPayload(payload)),
+                body: JSON.stringify(body),
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось создать категорию (HTTP ${response.status}).`));
+                throw new Error(await parseMessage(response, `Не удалось создать категорию (HTTP ${response.status}).`, {
+                    method: "POST",
+                    url,
+                    requestBody: body,
+                }));
             }
             return (await response.json()) as CategoryDto;
         },
@@ -228,14 +252,21 @@ export const useCategoryActions = () => {
 
     const updateMutation = useMutation({
         mutationFn: async ({ id, payload }: { id: string; payload: CategoryMutationPayload }) => {
-            const response = await fetch(`${API_BASE_URL}/api/v2/categories/${id}`, {
+            const url = `${API_BASE_URL}/api/v2/categories/${id}`;
+            const body = normalizeCategoryMutationPayload(payload);
+            const response = await fetch(url, {
                 method: "PUT",
                 headers: await getAuthorizedHeaders(router),
-                body: JSON.stringify(normalizeCategoryMutationPayload(payload)),
+                body: JSON.stringify(body),
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось обновить категорию (HTTP ${response.status}).`));
+                throw new Error(await parseMessage(response, `Не удалось обновить категорию (HTTP ${response.status}).`, {
+                    categoryId: id,
+                    method: "PUT",
+                    url,
+                    requestBody: body,
+                }));
             }
             return (await response.json()) as CategoryDto;
         },
@@ -246,13 +277,18 @@ export const useCategoryActions = () => {
 
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
-            const response = await fetch(`${API_BASE_URL}/api/v2/categories/${id}`, {
+            const url = `${API_BASE_URL}/api/v2/categories/${id}`;
+            const response = await fetch(url, {
                 method: "DELETE",
                 headers: await getAuthorizedHeaders(router),
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось удалить категорию (HTTP ${response.status}).`));
+                throw new Error(await parseMessage(response, `Не удалось удалить категорию (HTTP ${response.status}).`, {
+                    categoryId: id,
+                    method: "DELETE",
+                    url,
+                }));
             }
         },
         onSuccess: async () => {

@@ -3,10 +3,10 @@ import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { AccountDto, AccountType, CurrencyCode } from "../../shared/api/dto";
+import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken, removeToken } from "../../storage/auth";
 
 const ACCOUNTS_QUERY_KEY = ["accounts"];
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
 const REQUEST_TIMEOUT_MS = 15000;
 
 export type AccountMutationPayload = {

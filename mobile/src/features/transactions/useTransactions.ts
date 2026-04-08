@@ -13,13 +13,14 @@ import {
   UUID,
 } from "../../shared/api/dto";
 import { mockTransactions } from "../../shared/mocks";
+import { API_BASE_URL } from "../../shared/lib/api/config";
 
 type UseTransactionsResult = {
   transactions: TransactionDto[];
   isLoading: boolean;
   error: string | null;
   refresh: (filters?: TransactionFilters) => Promise<void>;
-  deleteTransaction: (id: string) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<boolean>;
   editTransaction: (
     id: string,
     payload: EditTransactionPayload,
@@ -151,7 +152,7 @@ export const useTransactions = (
         if (!token) {
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
-          return;
+          return false;
         }
 
         if (useMocks) {
@@ -159,34 +160,32 @@ export const useTransactions = (
           mockTransactions.splice(0, mockTransactions.length, ...nextTransactions);
           setTransactions([...nextTransactions]);
           notifyTransactionsChanged();
-          return;
+          return true;
         }
 
-        const { error: apiError } = await client.DELETE(
-          "/api/v2/transactions/{id}" as any,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { path: { id } },
-          },
-        );
+        const response = await fetch(`${API_BASE_URL}/api/v2/transactions/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const status = (apiError as { status?: number } | undefined)?.status;
-        if (status === 401) {
+        if (response.status === 401) {
           await removeToken();
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
-          return;
+          return false;
         }
 
-        if (apiError) {
+        if (!response.ok) {
           setError("Не удалось удалить транзакцию.");
-          return;
+          return false;
         }
 
         setTransactions((prev) => prev.filter((transaction) => transaction.id !== id));
         notifyTransactionsChanged();
+        return true;
       } catch {
         setError("Не удалось удалить транзакцию.");
+        return false;
       }
     },
     [router, useMocks],
@@ -214,23 +213,23 @@ export const useTransactions = (
           return true;
         }
 
-        const { error: apiError } = await client.PUT(
-          "/api/v2/transactions" as any,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            body: payload,
+        const response = await fetch(`${API_BASE_URL}/api/v2/transactions`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(payload),
+        });
 
-        const status = (apiError as { status?: number } | undefined)?.status;
-        if (status === 401) {
+        if (response.status === 401) {
           await removeToken();
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
           return false;
         }
 
-        if (apiError) {
+        if (!response.ok) {
           setError("Не удалось сохранить транзакцию.");
           return false;
         }

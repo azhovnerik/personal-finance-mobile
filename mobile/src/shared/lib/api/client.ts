@@ -1,11 +1,10 @@
 import createClient from "openapi-fetch";
 
 import type { paths } from "./sdk";
-
-const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4010";
+import { API_BASE_URL } from "./config";
 
 const client = createClient<paths>({
-  baseUrl,
+  baseUrl: API_BASE_URL,
 });
 
 export default client;

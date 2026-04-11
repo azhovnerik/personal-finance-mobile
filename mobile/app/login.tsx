@@ -1,36 +1,35 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useLogin } from "../src/features/auth/useLogin";
 import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
+import { resolveRouteFromAuthResult } from "../src/features/auth/routing";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoading, error } = useLogin();
+  const { login, isLoading, error, errorCode } = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    const isSuccess = await login(email.trim(), password);
-    if (isSuccess) {
-      router.replace("/(tabs)");
+    const response = await login(email.trim(), password);
+    if (response) {
+      router.replace(resolveRouteFromAuthResult(response));
     }
   };
 
   return (
     <ScreenContainer style={styles.screen}>
       <View style={styles.logoWrapper}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoBadgeText}>S</Text>
-        </View>
+        <Image source={require("../assets/logo.png")} style={styles.logoImage} resizeMode="contain" />
         <Text variant="subtitle" style={styles.logoText}>MoneyDrive.me</Text>
       </View>
 
       <Card style={styles.card}>
         <Text variant="heading" style={styles.title}>Log in</Text>
         <Input
-          placeholder="Username"
+          placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
           textContentType="username"
@@ -48,22 +47,45 @@ export default function LoginScreen() {
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
-          title={isLoading ? "Logging in..." : "Log in"}
+          title={isLoading ? "Входим..." : "Войти"}
           onPress={handleLogin}
           disabled={isLoading || !email.trim() || !password}
           size="lg"
         />
         <Button
-          title="Create an account"
+          title="Создать аккаунт"
           variant="outline"
           tone="primary"
           size="lg"
+          onPress={() => router.push("/auth/register")}
         />
+        <Button
+          title="Забыли пароль?"
+          variant="ghost"
+          tone="primary"
+          size="lg"
+          onPress={() => router.push("/auth/forgot-password")}
+        />
+        {errorCode === "EMAIL_NOT_VERIFIED" ? (
+          <Button
+            title="Отправить письмо повторно"
+            variant="outline"
+            tone="secondary"
+            size="lg"
+            onPress={() =>
+              router.push({
+                pathname: "/auth/resend-verification",
+                params: { email: email.trim() },
+              })
+            }
+          />
+        ) : null}
         <Button
           title="Login with Google"
           variant="outline"
           tone="secondary"
           size="lg"
+          disabled
         />
       </Card>
     </ScreenContainer>
@@ -80,18 +102,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
-  logoBadge: {
+  logoImage: {
     width: 72,
     height: 72,
-    borderRadius: 36,
-    backgroundColor: "#12d2c3",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoBadgeText: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: colors.surface,
   },
   logoText: {
     color: colors.secondary,

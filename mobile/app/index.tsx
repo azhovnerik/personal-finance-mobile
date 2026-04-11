@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { getToken, removeToken } from "../src/storage/auth";
-import { API_BASE_URL } from "../src/shared/lib/api/config";
+import { getToken } from "../src/storage/auth";
+import { clearAuthSession } from "../src/features/auth/api";
 import { Button, ScreenContainer, Text, colors } from "../src/shared/ui";
+import { getCurrentUser } from "../src/features/auth/api";
+import { resolveRouteFromUser } from "../src/features/auth/routing";
 
 const decodeBase64Url = (input: string): string => {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -29,17 +31,6 @@ const getTokenExp = (token: string): number | null => {
   } catch {
     return null;
   }
-};
-
-const fetchMe = async (token: string) => {
-  return fetch(`${API_BASE_URL}/api/v2/user/me`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Cache-Control": "no-store",
-      Pragma: "no-cache",
-    },
-  });
 };
 
 export default function IndexScreen() {
@@ -79,7 +70,7 @@ export default function IndexScreen() {
     const exp = getTokenExp(token);
     if (exp && exp * 1000 <= Date.now()) {
       try {
-        await removeToken();
+        await clearAuthSession();
       } catch {
         // ignore remove failures; routing to login below
       }
@@ -91,21 +82,26 @@ export default function IndexScreen() {
     }
 
     try {
-      const response = await fetchMe(token);
-      if (response.status === 200) {
-        updateIfMounted(() => {
-          router.replace("/(tabs)");
-        });
-        return;
-      }
-      if (response.status === 401 || response.status === 403) {
+      const me = await getCurrentUser(token);
+      updateIfMounted(() => {
+        router.replace(resolveRouteFromUser(me));
+      });
+      return;
+    } catch (error) {
+      const status = typeof error === "object" && error !== null && "status" in error
+        ? Number((error as { status?: number }).status ?? 0)
+        : 0;
+      if (status === 401 || status === 403) {
         try {
-          await removeToken();
+          await clearAuthSession();
         } catch {
           // ignore remove failures; routing to login below
         }
+        updateIfMounted(() => {
+          router.replace("/login");
+        });
+        return;
       }
-    } catch {
       updateIfMounted(() => {
         setHasNetworkError(true);
         setIsChecking(false);

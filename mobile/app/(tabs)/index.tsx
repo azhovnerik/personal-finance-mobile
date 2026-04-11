@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { removeToken } from "../../src/storage/auth";
+import { clearAuthSession } from "../../src/features/auth/api";
 import { Button, Card, Chip, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
 import { mockDashboardSummary } from "../../src/shared/mocks";
@@ -112,7 +112,7 @@ export default function DashboardScreen() {
 
   const handleLogout = useCallback(async () => {
     try {
-      await removeToken();
+      await clearAuthSession();
     } finally {
       router.replace("/login");
     }

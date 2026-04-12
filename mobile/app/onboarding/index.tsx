@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import type { AccountType, CategoryReactDto, CurrencyCode } from "../../src/shared/api/dto";
 import { API_BASE_URL } from "../../src/shared/lib/api/config";
 import { getOnboardingBaseCurrencySelected, getToken, setOnboardingBaseCurrencySelected } from "../../src/storage/auth";
-import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 import { CategoryPickerField } from "../../src/features/categories/components/CategoryPickerField";
 import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
 import { getCategoryChildren, isCategorySelectable } from "../../src/features/categories/categoryTree";
@@ -25,6 +24,14 @@ import type {
   OnboardingStep,
 } from "../../src/features/auth/types";
 import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
+import {
+  completeOnboardingWithRetry,
+  delay,
+  hasFirstExpensesActuallyCompleted,
+  hasStepActuallyAdvanced,
+  saveStepWithObservedProgress,
+  waitForStepAdvance
+} from "./orchestration";
 
 type AccountDraft = {
   clientId: string;
@@ -54,13 +61,6 @@ type ExpenseFieldErrors = {
 type ExpenseProgressStage = 1 | 2 | null;
 
 const MINIMUM_ONBOARDING_EXPENSES = 3;
-
-const ACCOUNT_TYPE_OPTIONS: { value: AccountType; label: string }[] = [
-  { value: "CARD", label: "Карта" },
-  { value: "CASH", label: "Наличные" },
-  { value: "BANK_ACCOUNT", label: "Банк" },
-  { value: "DEBT", label: "Долг" },
-];
 
 const todayDate = () => new Date().toISOString().slice(0, 10);
 
@@ -120,18 +120,7 @@ const toExpensePayload = (expense: ExpenseDraft): OnboardingExpense => ({
   comment: expense.comment.trim() || null,
 });
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const EXPENSE_PROGRESS_COPY: Record<Exclude<ExpenseProgressStage, null>, { title: string; text: string }> = {
-  1: {
-    title: "👍 Хорошо!",
-    text: "Добавьте еще 2 расхода, чтобы увидеть первую аналитику.",
-  },
-  2: {
-    title: "Почти готово 👌",
-    text: "Остался еще 1 расход.",
-  },
-};
 
 const getTemplateSelectionKey = (template: OnboardingCategoryTemplate) => template.id ?? template.templateId;
 
@@ -160,23 +149,6 @@ const validateExpenseDraft = (expense: ExpenseDraft) => {
     errors,
     isValid: Object.keys(errors).length === 0,
   };
-};
-
-const hasStepActuallyAdvanced = (step: OnboardingStep, onboardingState: OnboardingStateResponse) => {
-  if (step === "FIRST_EXPENSES") {
-    return onboardingState.currentStep !== step || onboardingState.completed;
-  }
-  return onboardingState.currentStep !== step;
-};
-
-const hasFirstExpensesActuallyCompleted = (onboardingState: OnboardingStateResponse | null | undefined) => {
-  if (!onboardingState) {
-    return false;
-  }
-
-  return onboardingState.completed
-    || onboardingState.currentStep === null
-    || onboardingState.completedSteps.includes("FIRST_EXPENSES");
 };
 
 const sortCategoryTemplates = (
@@ -215,7 +187,6 @@ export default function OnboardingScreen() {
   const [accountDrafts, setAccountDrafts] = useState<AccountDraft[]>([]);
   const [completedExpenseDrafts, setCompletedExpenseDrafts] = useState<ExpenseDraft[]>([]);
   const [currentExpenseDraft, setCurrentExpenseDraft] = useState<ExpenseDraft | null>(null);
-  const [expenseProgressStage, setExpenseProgressStage] = useState<ExpenseProgressStage>(null);
   const [expenseFieldErrors, setExpenseFieldErrors] = useState<ExpenseFieldErrors>({});
   const [expenseCategories, setExpenseCategories] = useState<CategoryReactDto[]>([]);
   const [isInitialBalanceKeypadOpen, setIsInitialBalanceKeypadOpen] = useState(false);
@@ -267,108 +238,6 @@ export default function OnboardingScreen() {
     [],
   );
 
-  const waitForStepAdvance = useCallback(
-    async (step: OnboardingStep, options?: { timeoutMs?: number; intervalMs?: number }) => {
-      const timeoutMs = options?.timeoutMs ?? 12000;
-      const intervalMs = options?.intervalMs ?? 700;
-      const startedAt = Date.now();
-
-      while (Date.now() - startedAt < timeoutMs) {
-        const refreshedState = await getOnboardingState();
-        if (hasStepActuallyAdvanced(step, refreshedState)) {
-          return refreshedState;
-        }
-
-        await delay(intervalMs);
-      }
-
-      return null;
-    },
-    [],
-  );
-
-  const saveStepWithObservedProgress = useCallback(
-    async (step: OnboardingStep, payload: SaveOnboardingStepPayload) => {
-      const saveAttempt = saveOnboardingStep(payload)
-        .then((nextState) => ({ kind: "save_success" as const, state: nextState }))
-        .catch((error) => ({ kind: "save_error" as const, error }));
-
-      const progressAttempt = waitForStepAdvance(step)
-        .then((nextState) => (nextState ? { kind: "poll_success" as const, state: nextState } : { kind: "poll_timeout" as const }))
-        .catch((error) => ({ kind: "poll_error" as const, error }));
-
-      const firstResult = await Promise.race([saveAttempt, progressAttempt]);
-      if (firstResult.kind === "poll_success") {
-        return firstResult.state;
-      }
-
-      if (firstResult.kind === "save_success") {
-        if (hasStepActuallyAdvanced(step, firstResult.state)) {
-          return firstResult.state;
-        }
-
-        const progressResult = await progressAttempt;
-        if (progressResult.kind === "poll_success") {
-          return progressResult.state;
-        }
-
-        return firstResult.state;
-      }
-
-      if (firstResult.kind === "save_error") {
-        const progressResult = await progressAttempt;
-        if (progressResult.kind === "poll_success") {
-          return progressResult.state;
-        }
-
-        throw firstResult.error;
-      }
-
-      const finalSaveResult = await saveAttempt;
-      if (finalSaveResult.kind === "save_success") {
-        if (hasStepActuallyAdvanced(step, finalSaveResult.state)) {
-          return finalSaveResult.state;
-        }
-
-        const reconciledState = await getOnboardingState();
-        if (hasStepActuallyAdvanced(step, reconciledState)) {
-          return reconciledState;
-        }
-
-        return finalSaveResult.state;
-      }
-
-      throw finalSaveResult.error;
-    },
-    [waitForStepAdvance],
-  );
-
-  const completeOnboardingWithRetry = useCallback(async () => {
-    try {
-      return await completeOnboarding();
-    } catch (rawError) {
-      const apiError = rawError as ApiError;
-      const missingSteps = Array.isArray(apiError.details?.missingSteps) ? apiError.details.missingSteps : [];
-      const shouldRetry =
-        apiError.status === 409
-        && apiError.code === "ONBOARDING_REQUIRED"
-        && missingSteps.includes("FIRST_EXPENSES");
-
-      if (!shouldRetry) {
-        throw rawError;
-      }
-
-      const refreshedState = await getOnboardingState();
-      setState(refreshedState);
-
-      if (!hasFirstExpensesActuallyCompleted(refreshedState)) {
-        throw rawError;
-      }
-
-      await delay(500);
-      return completeOnboarding();
-    }
-  }, []);
 
   const autoAdvanceHiddenStep = useCallback(
     async (onboardingState: OnboardingStateResponse) => {
@@ -457,7 +326,6 @@ export default function OnboardingScreen() {
 
     setCompletedExpenseDrafts(firstExpenses.map((item) => toExpenseDraft(item, fallbackCurrency)));
     setCurrentExpenseDraft(createEmptyExpenseDraft(fallbackCurrency, accounts[0]?.id));
-    setExpenseProgressStage(null);
     setExpenseFieldErrors({});
     setIsInitialBalanceKeypadOpen(false);
     setIsExpenseAmountKeypadOpen(false);
@@ -591,11 +459,6 @@ export default function OnboardingScreen() {
     [state?.supportedCurrencies],
   );
 
-  const languageOptions = useMemo(
-    () => (state?.supportedLanguages ?? []).map((item) => ({ value: item.code, label: item.label })),
-    [state?.supportedLanguages],
-  );
-
   const accountOptions = useMemo(
     () =>
       (stateAccounts.length
@@ -611,23 +474,6 @@ export default function OnboardingScreen() {
     [accountDrafts, stateAccounts],
   );
 
-  const selectedTemplateIds = useMemo(
-    () => [...selectedIncomeTemplateIds, ...selectedExpenseTemplateIds],
-    [selectedExpenseTemplateIds, selectedIncomeTemplateIds],
-  );
-  const visibleTemplates = useMemo(
-    () =>
-      sortCategoryTemplates(
-        categoryStage === "income" ? stateIncomeTemplates : stateExpenseTemplates,
-        categoryStage,
-      ),
-    [categoryStage, stateExpenseTemplates, stateIncomeTemplates],
-  );
-  const selectedTemplateCount = categoryStage === "income" ? selectedIncomeTemplateIds.length : selectedExpenseTemplateIds.length;
-  const totalTemplateCount =
-    categoryStage === "income" ? stateIncomeTemplates.length : stateExpenseTemplates.length;
-  const currentExpenseNumber = Math.min(completedExpenseDrafts.length + 1, MINIMUM_ONBOARDING_EXPENSES);
-  const currentAccountDraft = accountDrafts[0] ?? null;
   const isAnyAmountKeypadOpen = isInitialBalanceKeypadOpen || isExpenseAmountKeypadOpen;
 
   const submitStep = async (step: OnboardingStep) => {

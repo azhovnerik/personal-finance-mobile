@@ -1,53 +1,29 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 
-import type { AccountType, CategoryReactDto, CurrencyCode } from "../../src/shared/api/dto";
-import { API_BASE_URL } from "../../src/shared/lib/api/config";
-import { getOnboardingBaseCurrencySelected, getToken, setOnboardingBaseCurrencySelected } from "../../src/storage/auth";
-import { CategoryPickerField } from "../../src/features/categories/components/CategoryPickerField";
-import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
-import { getCategoryChildren, isCategorySelectable } from "../../src/features/categories/categoryTree";
+import type { CurrencyCode } from "../../src/shared/api/dto";
 import {
   ApiError,
   clearAuthSession,
-  completeOnboarding,
-  getOnboardingState,
-  saveOnboardingStep,
+  getOnboardingSession,
+  submitOnboardingBaseCurrency,
+  submitOnboardingFirstExpense,
 } from "../../src/features/auth/api";
 import type {
-  OnboardingAccount,
-  OnboardingCategoryTemplate,
-  OnboardingExpense,
-  SaveOnboardingStepPayload,
-  OnboardingStateResponse,
-  OnboardingStep,
+  OnboardingBaseCurrencyPayload,
+  OnboardingFirstExpensePayload,
+  OnboardingSessionResponse,
 } from "../../src/features/auth/types";
+import { CategoryPickerField } from "../../src/features/categories/components/CategoryPickerField";
+import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
 import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
-import {
-  completeOnboardingWithRetry,
-  delay,
-  hasFirstExpensesActuallyCompleted,
-  hasStepActuallyAdvanced,
-  saveStepWithObservedProgress,
-  waitForStepAdvance
-} from "./orchestration";
-
-type AccountDraft = {
-  clientId: string;
-  name: string;
-  type: AccountType;
-  currency: CurrencyCode;
-  initialBalance: string;
-};
 
 type ExpenseDraft = {
-  clientId: string;
   date: string;
   categoryId: string;
   accountId: string;
   amount: string;
-  currency: CurrencyCode;
   comment: string;
 };
 
@@ -58,161 +34,89 @@ type ExpenseFieldErrors = {
   amount?: string;
 };
 
-type ExpenseProgressStage = 1 | 2 | null;
+const detectDeviceLocale = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale ?? null;
+  } catch {
+    return null;
+  }
+};
 
-const MINIMUM_ONBOARDING_EXPENSES = 3;
+const isBaseCurrencyPayload = (payload: unknown): payload is OnboardingBaseCurrencyPayload =>
+  Boolean(
+    payload
+    && typeof payload === "object"
+    && "supportedCurrencies" in payload
+    && "supportedLanguages" in payload,
+  );
 
-const todayDate = () => new Date().toISOString().slice(0, 10);
+const isFirstExpensePayload = (payload: unknown): payload is OnboardingFirstExpensePayload =>
+  Boolean(
+    payload
+    && typeof payload === "object"
+    && "defaultDate" in payload
+    && "accountOptions" in payload
+    && "categoryOptions" in payload,
+  );
 
-const nextClientId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-const createEmptyExpenseDraft = (fallbackCurrency: CurrencyCode, accountId?: string): ExpenseDraft => ({
-  clientId: nextClientId("expense"),
-  date: todayDate(),
+const buildDefaultExpenseDraft = (payload: OnboardingFirstExpensePayload): ExpenseDraft => ({
+  date: payload.defaultDate,
   categoryId: "",
-  accountId: accountId ?? "",
+  accountId: payload.accountOptions[0]?.id ?? "",
   amount: "",
-  currency: fallbackCurrency,
   comment: "",
 });
 
-const flattenSelectableCategories = (categories: CategoryReactDto[]): CategoryReactDto[] => {
-  const result: CategoryReactDto[] = [];
-
-  const visit = (nodes: CategoryReactDto[]) => {
-    nodes.forEach((node) => {
-      if (isCategorySelectable(node)) {
-        result.push(node);
-      }
-      visit(getCategoryChildren(node));
-    });
-  };
-
-  visit(categories);
-  return result;
-};
-
-const toAccountDraft = (account: OnboardingAccount, fallbackCurrency: CurrencyCode): AccountDraft => ({
-  clientId: account.clientId ?? account.id ?? nextClientId("account"),
-  name: account.name,
-  type: account.type,
-  currency: account.currency ?? fallbackCurrency,
-  initialBalance: String(account.initialBalance ?? 0),
-});
-
-const toExpenseDraft = (expense: OnboardingExpense, fallbackCurrency: CurrencyCode): ExpenseDraft => ({
-  clientId: expense.clientId ?? expense.id ?? nextClientId("expense"),
-  date: expense.date,
-  categoryId: expense.categoryId,
-  accountId: expense.accountId,
-  amount: String(expense.amount),
-  currency: expense.currency ?? fallbackCurrency,
-  comment: expense.comment ?? "",
-});
-
-const toExpensePayload = (expense: ExpenseDraft): OnboardingExpense => ({
-  clientId: expense.clientId,
-  date: expense.date.trim(),
-  categoryId: expense.categoryId,
-  accountId: expense.accountId,
-  amount: Number.parseFloat(expense.amount.replace(",", ".")),
-  currency: expense.currency,
-  comment: expense.comment.trim() || null,
-});
-
-
-
-const getTemplateSelectionKey = (template: OnboardingCategoryTemplate) => template.id ?? template.templateId;
-
-const validateExpenseDraft = (expense: ExpenseDraft) => {
+const validateExpenseDraft = (expense: ExpenseDraft): { errors: ExpenseFieldErrors; isValid: boolean; amount: number } => {
   const errors: ExpenseFieldErrors = {};
-  const parsedExpense = toExpensePayload(expense);
+  const amount = Number.parseFloat(expense.amount.replace(",", "."));
 
-  if (!parsedExpense.date) {
+  if (!expense.date.trim()) {
     errors.date = "Укажите дату.";
   }
 
-  if (!parsedExpense.categoryId) {
+  if (!expense.categoryId) {
     errors.categoryId = "Выберите категорию.";
   }
 
-  if (!parsedExpense.accountId) {
+  if (!expense.accountId) {
     errors.accountId = "Выберите счет.";
   }
 
-  if (!Number.isFinite(parsedExpense.amount) || parsedExpense.amount <= 0) {
+  if (!Number.isFinite(amount) || amount <= 0) {
     errors.amount = "Укажите сумму больше нуля.";
   }
 
   return {
-    parsedExpense,
     errors,
     isValid: Object.keys(errors).length === 0,
+    amount,
   };
 };
 
-const sortCategoryTemplates = (
-  templates: OnboardingCategoryTemplate[],
-  stage: "income" | "expenses",
-): OnboardingCategoryTemplate[] =>
-  [...templates].sort((left, right) => {
-    if (stage === "income") {
-      const leftPriority = left.templateId === "SALARY" ? 0 : 1;
-      const rightPriority = right.templateId === "SALARY" ? 0 : 1;
-      if (leftPriority !== rightPriority) {
-        return leftPriority - rightPriority;
-      }
-    }
-
-    return left.name.localeCompare(right.name, "uk");
-  });
-
 export default function OnboardingScreen() {
   const router = useRouter();
-  const previousStepRef = useRef<OnboardingStep | null>(null);
-  const hiddenStepTransitionRef = useRef(false);
-  const [state, setState] = useState<OnboardingStateResponse | null>(null);
+  const [session, setSession] = useState<OnboardingSessionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [screenError, setScreenError] = useState<string | null>(null);
-  const [isBaseCurrencyGateLoading, setIsBaseCurrencyGateLoading] = useState(true);
-  const [shouldForceBaseCurrencyStep, setShouldForceBaseCurrencyStep] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode | null>(null);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
-  const [selectedIncomeTemplateIds, setSelectedIncomeTemplateIds] = useState<string[]>([]);
-  const [selectedExpenseTemplateIds, setSelectedExpenseTemplateIds] = useState<string[]>([]);
-  const selectedIncomeTemplateIdsRef = useRef<string[]>([]);
-  const selectedExpenseTemplateIdsRef = useRef<string[]>([]);
-  const [categoryStage, setCategoryStage] = useState<"income" | "expenses">("income");
-  const [accountDrafts, setAccountDrafts] = useState<AccountDraft[]>([]);
-  const [completedExpenseDrafts, setCompletedExpenseDrafts] = useState<ExpenseDraft[]>([]);
-  const [currentExpenseDraft, setCurrentExpenseDraft] = useState<ExpenseDraft | null>(null);
+  const [expenseDraft, setExpenseDraft] = useState<ExpenseDraft | null>(null);
   const [expenseFieldErrors, setExpenseFieldErrors] = useState<ExpenseFieldErrors>({});
-  const [expenseCategories, setExpenseCategories] = useState<CategoryReactDto[]>([]);
-  const [isInitialBalanceKeypadOpen, setIsInitialBalanceKeypadOpen] = useState(false);
   const [isExpenseAmountKeypadOpen, setIsExpenseAmountKeypadOpen] = useState(false);
-
-  const updateIncomeSelection = useCallback((nextSelection: string[]) => {
-    selectedIncomeTemplateIdsRef.current = nextSelection;
-    setSelectedIncomeTemplateIds(nextSelection);
-  }, []);
-
-  const updateExpenseSelection = useCallback((nextSelection: string[]) => {
-    selectedExpenseTemplateIdsRef.current = nextSelection;
-    setSelectedExpenseTemplateIds(nextSelection);
-  }, []);
 
   const handleUnauthorized = useCallback(async () => {
     await clearAuthSession();
     router.replace("/login");
   }, [router]);
 
-  const loadState = useCallback(async () => {
+  const loadSession = useCallback(async () => {
     setIsLoading(true);
     setScreenError(null);
     try {
-      const nextState = await getOnboardingState();
-      setState(nextState);
+      const nextSession = await getOnboardingSession(detectDeviceLocale());
+      setSession(nextSession);
     } catch (rawError) {
       const apiError = rawError as ApiError;
       if (apiError.status === 401) {
@@ -225,356 +129,117 @@ export default function OnboardingScreen() {
     }
   }, [handleUnauthorized]);
 
-  const reconcileStateAfterFailedSave = useCallback(
-    async (step: OnboardingStep) => {
-      const refreshedState = await getOnboardingState();
-      if (hasStepActuallyAdvanced(step, refreshedState)) {
-        setState(refreshedState);
-        return true;
-      }
-
-      return false;
-    },
-    [],
-  );
-
-
-  const autoAdvanceHiddenStep = useCallback(
-    async (onboardingState: OnboardingStateResponse) => {
-      const fallbackCurrency = (onboardingState.user.baseCurrency ?? onboardingState.supportedCurrencies[0] ?? "USD") as CurrencyCode;
-
-      if (onboardingState.currentStep === "LANGUAGE") {
-        const language = onboardingState.user.language ?? onboardingState.supportedLanguages[0]?.code ?? "en";
-        return saveStepWithObservedProgress("LANGUAGE", { step: "LANGUAGE", language });
-      }
-
-      if (onboardingState.currentStep === "CATEGORIES") {
-        const allTemplateIds = [
-          ...(onboardingState.categoryTemplates.income ?? []),
-          ...(onboardingState.categoryTemplates.expenses ?? []),
-        ].map(getTemplateSelectionKey);
-
-        return saveStepWithObservedProgress("CATEGORIES", {
-          step: "CATEGORIES",
-          selectedCategoryTemplateIds: allTemplateIds,
-        });
-      }
-
-      if (onboardingState.currentStep === "ACCOUNTS") {
-        const language = onboardingState.user.language ?? "ua";
-        const defaultAccountName = language.startsWith("en") ? "Cash" : "Наличные";
-        return saveStepWithObservedProgress("ACCOUNTS", {
-          step: "ACCOUNTS",
-          accounts: [
-            {
-              clientId: nextClientId("account"),
-              name: defaultAccountName,
-              type: "CASH",
-              currency: fallbackCurrency,
-              initialBalance: 0,
-            },
-          ],
-        });
-      }
-
-      return onboardingState;
-    },
-    [saveStepWithObservedProgress],
-  );
+  useEffect(() => {
+    void loadSession();
+  }, [loadSession]);
 
   useEffect(() => {
-    void loadState();
-  }, [loadState]);
-
-  useEffect(() => {
-    if (!state) {
+    if (!session) {
       return;
     }
 
-    const user = state.user ?? {};
-    const supportedCurrencies = state.supportedCurrencies ?? [];
-    const supportedLanguages = state.supportedLanguages ?? [];
-    const fallbackCurrency = (user.baseCurrency ?? supportedCurrencies[0] ?? "USD") as CurrencyCode;
-
-    setSelectedCurrency(state.currentStep === "BASE_CURRENCY" ? null : (user.baseCurrency ?? fallbackCurrency));
-    setSelectedLanguage(user.language ?? supportedLanguages[0]?.code ?? "en");
-    const previousStep = previousStepRef.current;
-    previousStepRef.current = state.currentStep;
-
-    if (state.currentStep === "CATEGORIES" && previousStep !== "CATEGORIES") {
-      updateIncomeSelection([]);
-      updateExpenseSelection([]);
-      setCategoryStage("income");
-    }
-
-    const accounts = state.accounts ?? [];
-    const firstExpenses = state.firstExpenses ?? [];
-
-    setAccountDrafts(
-      accounts.length > 0
-        ? [toAccountDraft(accounts[0], fallbackCurrency)]
-        : [
-            {
-              clientId: nextClientId("account"),
-              name: "",
-              type: "CARD",
-              currency: fallbackCurrency,
-              initialBalance: "0",
-            },
-          ],
-    );
-
-    setCompletedExpenseDrafts(firstExpenses.map((item) => toExpenseDraft(item, fallbackCurrency)));
-    setCurrentExpenseDraft(createEmptyExpenseDraft(fallbackCurrency, accounts[0]?.id));
-    setExpenseFieldErrors({});
-    setIsInitialBalanceKeypadOpen(false);
-    setIsExpenseAmountKeypadOpen(false);
-  }, [state, updateExpenseSelection, updateIncomeSelection]);
-
-  useEffect(() => {
-    if (!state) {
-      return;
-    }
-
-    void (async () => {
-      const hasSelectedBaseCurrency = await getOnboardingBaseCurrencySelected();
-      setShouldForceBaseCurrencyStep(!state.completed && !hasSelectedBaseCurrency);
-      setIsBaseCurrencyGateLoading(false);
-    })();
-  }, [state]);
-
-  useEffect(() => {
-    if (!state || shouldForceBaseCurrencyStep || state.completed) {
-      return;
-    }
-
-    if (
-      state.currentStep !== "LANGUAGE" &&
-      state.currentStep !== "CATEGORIES" &&
-      state.currentStep !== "ACCOUNTS"
-    ) {
-      return;
-    }
-
-    if (hiddenStepTransitionRef.current) {
-      return;
-    }
-
-    hiddenStepTransitionRef.current = true;
-
-    void (async () => {
-      try {
-        setIsSaving(true);
-        setScreenError(null);
-        const nextState = await autoAdvanceHiddenStep(state);
-        setState(nextState);
-      } catch (rawError) {
-        const apiError = rawError as ApiError;
-        if (apiError.status === 401) {
-          await handleUnauthorized();
-          return;
-        }
-        if ((apiError.status === 408 || apiError.status === 0) && state.currentStep) {
-          try {
-            const reconciled = await reconcileStateAfterFailedSave(state.currentStep);
-            if (reconciled) {
-              setScreenError(null);
-              return;
-            }
-          } catch (refreshError) {
-            const refreshApiError = refreshError as ApiError;
-            if (refreshApiError.status === 401) {
-              await handleUnauthorized();
-              return;
-            }
-          }
-        }
-        setScreenError(apiError.message ?? "Не удалось подготовить onboarding.");
-      } finally {
-        hiddenStepTransitionRef.current = false;
-        setIsSaving(false);
-      }
-    })();
-  }, [autoAdvanceHiddenStep, handleUnauthorized, reconcileStateAfterFailedSave, shouldForceBaseCurrencyStep, state]);
-
-  useEffect(() => {
-    if (!state || state.currentStep !== "FIRST_EXPENSES") {
-      return;
-    }
-
-    void (async () => {
-      try {
-        const token = await getToken();
-        if (!token) {
-          await handleUnauthorized();
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/v2/categories/tree?type=EXPENSES`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.status === 401) {
-          await handleUnauthorized();
-          return;
-        }
-
-        if (!response.ok) {
-          return;
-        }
-
-        const payload = (await response.json()) as CategoryReactDto[];
-        setExpenseCategories(flattenSelectableCategories(payload));
-      } catch {
-        // keep onboarding usable even if category preload fails
-      }
-    })();
-  }, [handleUnauthorized, state]);
-
-  useEffect(() => {
-    if (state?.completed) {
+    if (session.completed || session.nextAction === "MAIN_APP") {
       router.replace("/(tabs)");
+      return;
     }
-  }, [router, state?.completed]);
 
-  const isPreparingFirstExpense =
-    !shouldForceBaseCurrencyStep &&
-    !state?.completed &&
-    state?.currentStep !== null &&
-    state?.currentStep !== "BASE_CURRENCY" &&
-    state?.currentStep !== "FIRST_EXPENSES";
+    if (session.screen === "BASE_CURRENCY" && isBaseCurrencyPayload(session.payload)) {
+      const payload = session.payload;
+      setSelectedLanguage(payload.language || session.user.language || payload.supportedLanguages[0]?.code || "en");
+      setSelectedCurrency(payload.baseCurrency || session.user.baseCurrency || payload.supportedCurrencies[0] || null);
+      return;
+    }
 
-  const currentStep = shouldForceBaseCurrencyStep
-    ? "BASE_CURRENCY"
-    : state?.completed
-      ? null
-      : "FIRST_EXPENSES";
-  const stepIndex = currentStep === "BASE_CURRENCY" ? 0 : currentStep === "FIRST_EXPENSES" ? 1 : -1;
-  const stateAccounts = state?.accounts ?? [];
-  const stateIncomeTemplates = state?.categoryTemplates?.income ?? [];
-  const stateExpenseTemplates = state?.categoryTemplates?.expenses ?? [];
+    if (session.screen === "FIRST_EXPENSE" && isFirstExpensePayload(session.payload)) {
+      setExpenseDraft(buildDefaultExpenseDraft(session.payload));
+      setExpenseFieldErrors({});
+      setIsExpenseAmountKeypadOpen(false);
+    }
+  }, [router, session]);
 
+  const basePayload = isBaseCurrencyPayload(session?.payload) ? session.payload : null;
+  const expensePayload = isFirstExpensePayload(session?.payload) ? session.payload : null;
+
+  const languageOptions = useMemo(
+    () => (basePayload?.supportedLanguages ?? []).map((item) => ({ value: item.code, label: item.label })),
+    [basePayload?.supportedLanguages],
+  );
   const currencyOptions = useMemo(
-    () => (state?.supportedCurrencies ?? []).map((item) => ({ value: item, label: item })),
-    [state?.supportedCurrencies],
+    () => (basePayload?.supportedCurrencies ?? []).map((item) => ({ value: item, label: item })),
+    [basePayload?.supportedCurrencies],
   );
-
   const accountOptions = useMemo(
-    () =>
-      (stateAccounts.length
-        ? stateAccounts.map((item) => ({
-            value: item.id ?? item.clientId ?? "",
-            label: item.name || "Без названия",
-          }))
-        : accountDrafts.map((item) => ({
-            value: item.clientId,
-            label: item.name || "Без названия",
-          })))
-        .filter((item) => Boolean(item.value)),
-    [accountDrafts, stateAccounts],
+    () => (expensePayload?.accountOptions ?? []).map((item) => ({ value: item.id, label: item.name })),
+    [expensePayload?.accountOptions],
   );
 
-  const isAnyAmountKeypadOpen = isInitialBalanceKeypadOpen || isExpenseAmountKeypadOpen;
-
-  const submitStep = async (step: OnboardingStep) => {
-    if (!state) {
+  const submitBaseCurrency = async () => {
+    if (!selectedLanguage) {
+      setScreenError("Выберите язык интерфейса.");
+      return;
+    }
+    if (!selectedCurrency) {
+      setScreenError("Выберите базовую валюту.");
       return;
     }
 
     try {
       setIsSaving(true);
       setScreenError(null);
-
-      if (step === "BASE_CURRENCY") {
-        if (!selectedCurrency) {
-          setScreenError("Выберите базовую валюту.");
-          return;
-        }
-        const nextState = await saveStepWithObservedProgress(step, { step, baseCurrency: selectedCurrency });
-        await setOnboardingBaseCurrencySelected();
-        setShouldForceBaseCurrencyStep(false);
-        setState(nextState);
-        return;
-      }
-
-      if (!currentExpenseDraft) {
-        setScreenError("Не удалось подготовить форму расхода.");
-        return;
-      }
-
-      const validation = validateExpenseDraft(currentExpenseDraft);
-      if (!validation.isValid) {
-        setExpenseFieldErrors(validation.errors);
-        setScreenError("Расход не отправлен: заполните обязательные поля.");
-        if (__DEV__) {
-          console.log("[onboarding] first_expenses:validation_failed", {
-            draft: currentExpenseDraft,
-            errors: validation.errors,
-          });
-        }
-        return;
-      }
-      setExpenseFieldErrors({});
-
-      const nextState = await saveStepWithObservedProgress("FIRST_EXPENSES", {
-        step: "FIRST_EXPENSES",
-        expenses: [validation.parsedExpense],
+      const nextSession = await submitOnboardingBaseCurrency({
+        language: selectedLanguage,
+        baseCurrency: selectedCurrency,
       });
-      setState(nextState);
-      const completion = await completeOnboardingWithRetry();
-      if (completion.completed) {
-        router.replace("/(tabs)");
-        return;
-      }
-
-      if (Array.isArray(completion.accounts) || Array.isArray(completion.firstExpenses)) {
-        setState((previous) => ({
-          ...(previous ?? nextState),
-          ...completion,
-          accounts: Array.isArray(completion.accounts) ? completion.accounts : previous?.accounts ?? nextState.accounts,
-          firstExpenses: Array.isArray(completion.firstExpenses)
-            ? completion.firstExpenses
-            : previous?.firstExpenses ?? nextState.firstExpenses,
-          categoryTemplates: completion.categoryTemplates ?? previous?.categoryTemplates ?? nextState.categoryTemplates,
-          requiredSteps: completion.requiredSteps ?? previous?.requiredSteps ?? nextState.requiredSteps,
-          optionalSteps: completion.optionalSteps ?? previous?.optionalSteps ?? nextState.optionalSteps,
-          completedSteps: completion.completedSteps ?? previous?.completedSteps ?? nextState.completedSteps,
-          supportedCurrencies: completion.supportedCurrencies ?? previous?.supportedCurrencies ?? nextState.supportedCurrencies,
-          supportedLanguages: completion.supportedLanguages ?? previous?.supportedLanguages ?? nextState.supportedLanguages,
-          user: completion.user ?? previous?.user ?? nextState.user,
-        }));
-      }
-
-      setScreenError("Backend пока не завершает onboarding после первого расхода. Сейчас он все еще возвращает незавершенный onboarding.");
-      return;
+      setSession(nextSession);
     } catch (rawError) {
       const apiError = rawError as ApiError;
       if (apiError.status === 401) {
         await handleUnauthorized();
         return;
       }
-      if (apiError.status === 408 || apiError.status === 0) {
-        try {
-          const reconciled = await reconcileStateAfterFailedSave(step);
-          if (reconciled) {
-            setScreenError(null);
-            return;
-          }
-        } catch (refreshError) {
-          const refreshApiError = refreshError as ApiError;
-          if (refreshApiError.status === 401) {
-            await handleUnauthorized();
-            return;
-          }
-        }
-      }
-      setScreenError(apiError.message ?? "Не удалось сохранить шаг onboarding.");
+      setScreenError(apiError.message ?? "Не удалось сохранить язык и валюту.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading || isBaseCurrencyGateLoading) {
+  const submitFirstExpense = async () => {
+    if (!expenseDraft) {
+      setScreenError("Не удалось подготовить форму расхода.");
+      return;
+    }
+
+    const validation = validateExpenseDraft(expenseDraft);
+    if (!validation.isValid) {
+      setExpenseFieldErrors(validation.errors);
+      setScreenError("Расход не отправлен: заполните обязательные поля.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setScreenError(null);
+      const nextSession = await submitOnboardingFirstExpense({
+        date: expenseDraft.date.trim(),
+        categoryId: expenseDraft.categoryId,
+        accountId: expenseDraft.accountId,
+        amount: validation.amount,
+        comment: expenseDraft.comment.trim() || null,
+      });
+      setSession(nextSession);
+    } catch (rawError) {
+      const apiError = rawError as ApiError;
+      if (apiError.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+      setScreenError(apiError.message ?? "Не удалось сохранить первый расход.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
@@ -585,16 +250,19 @@ export default function OnboardingScreen() {
     );
   }
 
-  if (!state) {
+  if (!session) {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
           <Text>{screenError ?? "Не удалось открыть onboarding."}</Text>
-          <Button title="Повторить" onPress={() => void loadState()} />
+          <Button title="Повторить" onPress={() => void loadSession()} />
         </View>
       </ScreenContainer>
     );
   }
+
+  const stepIndex = session.screen === "BASE_CURRENCY" ? 0 : session.screen === "FIRST_EXPENSE" ? 1 : -1;
+  const isAnyAmountKeypadOpen = isExpenseAmountKeypadOpen;
 
   return (
     <ScreenContainer>
@@ -605,8 +273,8 @@ export default function OnboardingScreen() {
         <View style={styles.header}>
           <Text variant="title">Первичная настройка</Text>
           <Text variant="caption">
-            {currentStep
-              ? `Шаг ${stepIndex + 1} из 2: ${currentStep}`
+            {session.screen
+              ? `Шаг ${stepIndex + 1} из 2: ${session.screen}`
               : "Все шаги заполнены"}
           </Text>
         </View>
@@ -617,62 +285,62 @@ export default function OnboardingScreen() {
           </Card>
         ) : null}
 
-        {currentStep === "BASE_CURRENCY" ? (
+        {session.screen === "BASE_CURRENCY" ? (
           <Card style={styles.card}>
-            <Text variant="subtitle">Базовая валюта</Text>
-            <Text variant="caption">Эта валюта будет использоваться как основная для аналитики и бюджетов.</Text>
-            <Button title={isSaving ? "Сохраняем..." : "Продолжить"} onPress={() => void submitStep("BASE_CURRENCY")} disabled={isSaving || !selectedCurrency} />
+            <Text variant="subtitle">Язык и базовая валюта</Text>
+            <Text variant="caption">Выберите язык интерфейса и валюту для аналитики.</Text>
+            <Select
+              value={selectedLanguage}
+              options={languageOptions}
+              onChange={(value) => setSelectedLanguage(value)}
+              placeholder="Язык интерфейса"
+            />
             <Select
               value={selectedCurrency}
               options={currencyOptions}
               onChange={(value) => setSelectedCurrency(value as CurrencyCode)}
               placeholder="Выберите валюту"
             />
+            <Button
+              title={isSaving ? "Сохраняем..." : "Продолжить"}
+              onPress={() => void submitBaseCurrency()}
+              disabled={isSaving || !selectedLanguage || !selectedCurrency}
+            />
           </Card>
         ) : null}
 
-        {isPreparingFirstExpense ? (
+        {session.screen === "FIRST_EXPENSE" ? (
           <Card style={styles.card}>
-            <Text variant="subtitle">Подготавливаем стартовые данные</Text>
-            <Text variant="caption">Создаем стартовые категории и дефолтный счет, чтобы можно было сразу добавить первый расход.</Text>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </Card>
-        ) : null}
-
-        {currentStep === "FIRST_EXPENSES" ? (
-          <Card style={styles.card}>
-            <>
-              <Text variant="subtitle">Добавьте первый расход</Text>
-              <Text variant="caption">Это займет меньше минуты.</Text>
-            {currentExpenseDraft ? (
-              <View key={currentExpenseDraft.clientId} style={styles.block}>
+            <Text variant="subtitle">Добавьте первый расход</Text>
+            <Text variant="caption">Это займет меньше минуты.</Text>
+            {expenseDraft ? (
+              <View style={styles.block}>
                 <Input
                   placeholder="Дата YYYY-MM-DD"
-                  value={currentExpenseDraft.date}
+                  value={expenseDraft.date}
                   onChangeText={(value) => {
-                    setCurrentExpenseDraft((prev) => (prev ? { ...prev, date: value } : prev));
+                    setExpenseDraft((prev) => (prev ? { ...prev, date: value } : prev));
                     setExpenseFieldErrors((prev) => ({ ...prev, date: undefined }));
                   }}
                 />
                 {expenseFieldErrors.date ? <Text style={styles.fieldErrorText}>{expenseFieldErrors.date}</Text> : null}
                 <CategoryPickerField
-                  value={currentExpenseDraft.categoryId}
+                  value={expenseDraft.categoryId}
                   defaultType="EXPENSES"
-                  placeholder="Категория"
-                  categoriesOverride={expenseCategories.length > 0 ? expenseCategories : undefined}
                   lockType
                   preferFlatList
+                  placeholder="Категория"
                   onChange={(value) => {
-                    setCurrentExpenseDraft((prev) => (prev ? { ...prev, categoryId: value } : prev));
+                    setExpenseDraft((prev) => (prev ? { ...prev, categoryId: value } : prev));
                     setExpenseFieldErrors((prev) => ({ ...prev, categoryId: undefined }));
                   }}
                 />
                 {expenseFieldErrors.categoryId ? <Text style={styles.fieldErrorText}>{expenseFieldErrors.categoryId}</Text> : null}
                 <Select
-                  value={currentExpenseDraft.accountId}
+                  value={expenseDraft.accountId}
                   options={accountOptions}
                   onChange={(value) => {
-                    setCurrentExpenseDraft((prev) => (prev ? { ...prev, accountId: value } : prev));
+                    setExpenseDraft((prev) => (prev ? { ...prev, accountId: value } : prev));
                     setExpenseFieldErrors((prev) => ({ ...prev, accountId: undefined }));
                   }}
                   placeholder="Счет"
@@ -682,7 +350,7 @@ export default function OnboardingScreen() {
                   <Input
                     placeholder="Сумма"
                     keyboardType="numeric"
-                    value={currentExpenseDraft.amount}
+                    value={expenseDraft.amount}
                     editable={false}
                     showSoftInputOnFocus={false}
                     onPressIn={() => setIsExpenseAmountKeypadOpen(true)}
@@ -691,20 +359,23 @@ export default function OnboardingScreen() {
                 {expenseFieldErrors.amount ? <Text style={styles.fieldErrorText}>{expenseFieldErrors.amount}</Text> : null}
                 <Input
                   placeholder="Комментарий"
-                  value={currentExpenseDraft.comment}
-                  onChangeText={(value) => setCurrentExpenseDraft((prev) => (prev ? { ...prev, comment: value } : prev))}
+                  value={expenseDraft.comment}
+                  onChangeText={(value) => setExpenseDraft((prev) => (prev ? { ...prev, comment: value } : prev))}
                 />
               </View>
             ) : null}
-              <Button title={isSaving ? "Сохраняем..." : "Сохранить и продолжить"} onPress={() => void submitStep("FIRST_EXPENSES")} disabled={isSaving} />
-            </>
+            <Button
+              title={isSaving ? "Сохраняем..." : "Сохранить и продолжить"}
+              onPress={() => void submitFirstExpense()}
+              disabled={isSaving}
+            />
           </Card>
         ) : null}
       </ScrollView>
-      {isExpenseAmountKeypadOpen && currentExpenseDraft ? (
+      {isExpenseAmountKeypadOpen && expenseDraft ? (
         <AmountKeypad
-          value={currentExpenseDraft.amount}
-          onChange={(value) => setCurrentExpenseDraft((prev) => (prev ? { ...prev, amount: value } : prev))}
+          value={expenseDraft.amount}
+          onChange={(value) => setExpenseDraft((prev) => (prev ? { ...prev, amount: value } : prev))}
           onDone={() => setIsExpenseAmountKeypadOpen(false)}
         />
       ) : null}
@@ -744,47 +415,5 @@ const styles = StyleSheet.create({
   fieldErrorText: {
     color: colors.danger,
     fontSize: 13,
-  },
-  selectionSummary: {
-    gap: spacing.xs,
-  },
-  bulkActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  templateList: {
-    gap: spacing.sm,
-  },
-  templateCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-  },
-  templateCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: "#edf8f6",
-  },
-  templateIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surfaceMuted,
-  },
-  templateText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  templateSelectedLabel: {
-    color: colors.primary,
-  },
-  templateUnselectedLabel: {
-    color: colors.textSecondary,
   },
 });

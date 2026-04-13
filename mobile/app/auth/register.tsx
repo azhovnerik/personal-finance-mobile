@@ -1,10 +1,11 @@
-import {useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {Pressable, StyleSheet, View} from "react-native";
 import {useRouter} from "expo-router";
 
-import {register as registerRequest} from "../../src/features/auth/api";
+import {getRegistrationSupportedLanguages, register as registerRequest} from "../../src/features/auth/api";
 import type {ApiError} from "../../src/features/auth/api";
-import {Button, Card, Input, ScreenContainer, Text, colors, spacing} from "../../src/shared/ui";
+import type {SupportedLanguage} from "../../src/features/auth/types";
+import {Button, Card, Input, ScreenContainer, Select, Text, colors, spacing} from "../../src/shared/ui";
 
 export default function RegisterScreen() {
     const router = useRouter();
@@ -17,6 +18,36 @@ export default function RegisterScreen() {
     const [language, setLanguage] = useState("uk");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>([
+        {code: "uk", label: "Українська"},
+        {code: "en", label: "English"},
+    ]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        void (async () => {
+            try {
+                const fromBackend = await getRegistrationSupportedLanguages();
+                if (!isMounted || fromBackend.length === 0) {
+                    return;
+                }
+                setSupportedLanguages(fromBackend);
+                setLanguage((prev) => (fromBackend.some((item) => item.code === prev) ? prev : fromBackend[0]!.code));
+            } catch {
+                // keep local fallback options
+            }
+        })();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const languageOptions = useMemo(
+        () => supportedLanguages.map((item) => ({value: item.code, label: item.label})),
+        [supportedLanguages],
+    );
 
     const onSubmit = async () => {
         if (!email.trim() || !name.trim() || !password) {
@@ -96,8 +127,12 @@ export default function RegisterScreen() {
                         </Text>
                     </Pressable>
                 </View>
-                <Input placeholder="Язык интерфейса (uk/en)" autoCapitalize="none" value={language}
-                       onChangeText={setLanguage}/>
+                <Select
+                    value={language}
+                    options={languageOptions}
+                    onChange={(value) => setLanguage(value)}
+                    placeholder="Язык интерфейса"
+                />
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <Button title={isSubmitting ? "Создаем..." : "Создать аккаунт"} onPress={() => void onSubmit()}
                         disabled={isSubmitting}/>

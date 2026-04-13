@@ -4,10 +4,12 @@ import type {
   ApiErrorResponse,
   AuthResponse,
   EmailActionResponse,
-  OnboardingStateResponse,
+  OnboardingSessionResponse,
   PasswordResetResponse,
   RegisterResponse,
-  SaveOnboardingStepPayload,
+  SubmitOnboardingBaseCurrencyPayload,
+  SubmitOnboardingFirstExpensePayload,
+  SupportedLanguage,
   UserResponse,
   VerifyEmailResponse,
 } from "./types";
@@ -48,6 +50,7 @@ const requestJson = async <T>(
     body?: unknown;
     token?: string | null;
     timeoutMs?: number;
+    headers?: Record<string, string>;
   },
 ): Promise<T> => {
   const url = `${API_BASE_URL}${path}`;
@@ -71,6 +74,7 @@ const requestJson = async <T>(
       headers: {
         ...(options?.body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(options?.token ? { Authorization: `Bearer ${options.token}` } : {}),
+        ...(options?.headers ?? {}),
       },
       body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
@@ -152,6 +156,11 @@ export const register = async (payload: { email: string; name: string; password:
     body: payload,
   });
 
+export const getRegistrationSupportedLanguages = async () =>
+  requestJson<SupportedLanguage[]>("/api/v2/user/auth/supported-languages", {
+    method: "GET",
+  });
+
 export const verifyEmail = async (token: string) =>
   requestJson<VerifyEmailResponse>("/api/v2/user/auth/verify-email", {
     method: "POST",
@@ -187,46 +196,42 @@ export const getCurrentUser = async (token?: string | null) => {
   });
 };
 
-export const getOnboardingState = async () => {
+export const getOnboardingSession = async (clientLocale?: string | null) => {
   const token = await getToken();
   if (!token) {
     throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
   }
-  return requestJson<OnboardingStateResponse>("/api/v2/onboarding/state", {
+  return requestJson<OnboardingSessionResponse>("/api/v2/onboarding/session", {
     method: "GET",
     token,
+    headers: clientLocale ? { "X-Client-Locale": clientLocale } : undefined,
   });
 };
 
-export const saveOnboardingStep = async (payload: SaveOnboardingStepPayload) => {
+export const submitOnboardingBaseCurrency = async (payload: SubmitOnboardingBaseCurrencyPayload) => {
   const token = await getToken();
   if (!token) {
     throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
   }
-  return requestJson<OnboardingStateResponse>("/api/v2/onboarding/state", {
-    method: "PATCH",
+  return requestJson<OnboardingSessionResponse>("/api/v2/onboarding/base-currency", {
+    method: "POST",
     token,
     body: payload,
     timeoutMs: 60000,
   });
 };
 
-export const completeOnboarding = async () => {
+export const submitOnboardingFirstExpense = async (payload: SubmitOnboardingFirstExpensePayload) => {
   const token = await getToken();
   if (!token) {
     throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
   }
-  return requestJson<
-    { completed: boolean; user?: UserResponse | null; nextAction?: string | null } & Partial<OnboardingStateResponse>
-  >(
-    "/api/v2/onboarding/complete",
-    {
-      method: "POST",
-      token,
-      body: {},
-      timeoutMs: 60000,
-    },
-  );
+  return requestJson<OnboardingSessionResponse>("/api/v2/onboarding/first-expense", {
+    method: "POST",
+    token,
+    body: payload,
+    timeoutMs: 60000,
+  });
 };
 
 export const updateLanguagePreference = async (language: string) => {

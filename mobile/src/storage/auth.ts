@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "auth_token";
+const ONBOARDING_BASE_CURRENCY_SELECTED_KEY = "onboarding_base_currency_selected";
 
 const isSecureStoreAvailable = async () => {
   try {
@@ -42,4 +43,30 @@ export const removeToken = async (): Promise<void> => {
   }
 
   getFallbackStorage()?.removeItem(TOKEN_KEY);
+};
+
+export const removeOnboardingBaseCurrencySelected = async (): Promise<void> => {
+  if (await isSecureStoreAvailable()) {
+    await SecureStore.deleteItemAsync(ONBOARDING_BASE_CURRENCY_SELECTED_KEY);
+    return;
+  }
+
+  getFallbackStorage()?.removeItem(ONBOARDING_BASE_CURRENCY_SELECTED_KEY);
+};
+
+export const getOnboardingBaseCurrencySelected = async (): Promise<boolean> => {
+  if (await isSecureStoreAvailable()) {
+    return (await SecureStore.getItemAsync(ONBOARDING_BASE_CURRENCY_SELECTED_KEY)) === "true";
+  }
+
+  return getFallbackStorage()?.getItem(ONBOARDING_BASE_CURRENCY_SELECTED_KEY) === "true";
+};
+
+export const setOnboardingBaseCurrencySelected = async (): Promise<void> => {
+  if (await isSecureStoreAvailable()) {
+    await SecureStore.setItemAsync(ONBOARDING_BASE_CURRENCY_SELECTED_KEY, "true");
+    return;
+  }
+
+  getFallbackStorage()?.setItem(ONBOARDING_BASE_CURRENCY_SELECTED_KEY, "true");
 };

@@ -62,7 +62,8 @@ export function CategoryPickerField({
   onResolvedCategoryChange,
 }: CategoryPickerFieldProps) {
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
-  const shouldUseRemoteCategories = !categoriesOverride || categoriesOverride.length === 0;
+  const safeCategoriesOverride = Array.isArray(categoriesOverride) ? categoriesOverride : [];
+  const shouldUseRemoteCategories = safeCategoriesOverride.length === 0;
 
   const { categories: expenseCategories, refresh: refreshExpenseCategories } = useCategories(
     { type: "EXPENSES" },
@@ -72,13 +73,15 @@ export function CategoryPickerField({
     { type: "INCOME" },
     { enabled: isCategoryPickerOpen && shouldUseRemoteCategories },
   );
+  const safeExpenseCategories = Array.isArray(expenseCategories) ? expenseCategories : [];
+  const safeIncomeCategories = Array.isArray(incomeCategories) ? incomeCategories : [];
 
   const categories = useMemo(() => {
-    if (categoriesOverride && categoriesOverride.length > 0) {
-      return categoriesOverride;
+    if (safeCategoriesOverride.length > 0) {
+      return safeCategoriesOverride;
     }
-    return [...expenseCategories, ...incomeCategories];
-  }, [categoriesOverride, expenseCategories, incomeCategories]);
+    return [...safeExpenseCategories, ...safeIncomeCategories];
+  }, [safeCategoriesOverride, safeExpenseCategories, safeIncomeCategories]);
 
   const allowedIdsSet = useMemo(
     () => new Set((allowedCategoryIds ?? []).filter(Boolean)),

@@ -84,6 +84,11 @@ export const useTransactions = (
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const visibleTransactions = useCallback(
+    (items: TransactionDto[]) => items.filter((transaction) => transaction.type !== "CHANGE_BALANCE"),
+    [],
+  );
+
   const loadTransactions = useCallback(async (nextFilters?: TransactionFilters) => {
     setIsLoading(true);
     setError(null);
@@ -98,7 +103,7 @@ export const useTransactions = (
       }
 
       if (useMocks) {
-        setTransactions([...mockTransactions]);
+        setTransactions(visibleTransactions([...mockTransactions]));
         return;
       }
 
@@ -119,7 +124,7 @@ export const useTransactions = (
         setTransactions([]);
         setError("Не удалось загрузить транзакции.");
       } else {
-        setTransactions(data as TransactionDto[]);
+        setTransactions(visibleTransactions(data as TransactionDto[]));
       }
     } catch {
       setTransactions([]);
@@ -127,7 +132,7 @@ export const useTransactions = (
     } finally {
       setIsLoading(false);
     }
-  }, [filters, router, useMocks]);
+  }, [filters, router, useMocks, visibleTransactions]);
 
   useEffect(() => {
     void loadTransactions();

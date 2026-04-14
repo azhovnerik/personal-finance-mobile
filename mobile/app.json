@@ -2,6 +2,7 @@
   "expo": {
     "name": "moneydrive.me",
     "slug": "moneydrive.me",
+    "scheme": "moneydrive",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,12 +15,37 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile"
+      "bundleIdentifier": "com.anonymous.mobile",
+      "associatedDomains": [
+        "applinks:app.moneydrive.me"
+      ]
     },
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.mobile"
+      "package": "com.anonymous.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.moneydrive.me",
+              "pathPrefix": "/auth/verify"
+            },
+            {
+              "scheme": "https",
+              "host": "app.moneydrive.me",
+              "pathPrefix": "/auth/reset-password"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router"

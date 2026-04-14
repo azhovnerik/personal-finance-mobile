@@ -1,38 +1,27 @@
 import { useCallback, useState } from "react";
 
-import client from "../../shared/lib/api/client";
-import { setToken } from "../../storage/auth";
+import { login as loginRequest, persistAuthTokenFromResponse } from "./api";
+import type { ApiError } from "./api";
+import type { AuthResponse } from "./types";
 
 export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<AuthResponse | null> => {
     setIsLoading(true);
     setError(null);
+    setErrorCode(null);
     try {
-      const { data, error: apiError } = await client.POST(
-        "/api/v2/user/auth/login",
-        {
-          body: { email, password },
-        }
-      );
-
-      if (apiError || !data) {
-        const typedError = apiError as { data?: { message?: string } } | null;
-        const apiMessage =
-          typeof typedError?.data?.message === "string"
-            ? typedError.data.message
-            : null;
-        setError(apiMessage ?? "Не удалось войти. Проверьте данные.");
-        return false;
-      }
-
-      await setToken(data.token);
-      return true;
-    } catch {
-      setError("Не удалось войти. Попробуйте еще раз.");
-      return false;
+      const response = await loginRequest(email, password);
+      await persistAuthTokenFromResponse(response);
+      return response;
+    } catch (rawError) {
+      const apiError = rawError as ApiError;
+      setError(apiError.message ?? "Не удалось войти. Попробуйте еще раз.");
+      setErrorCode(apiError.code ?? null);
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -42,5 +31,6 @@ export const useLogin = () => {
     login,
     isLoading,
     error,
+    errorCode,
   };
 };

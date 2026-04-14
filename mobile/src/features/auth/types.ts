@@ -1,4 +1,4 @@
-import type { AccountType, CategoryType, CurrencyCode } from "../../shared/api/dto";
+import type { AccountType, CurrencyCode } from "../../shared/api/dto";
 
 export type AuthErrorCode =
   | "VALIDATION_ERROR"
@@ -19,6 +19,8 @@ export type AuthNextAction = "MAIN_APP" | "VERIFY_EMAIL" | "SET_BASE_CURRENCY" |
 
 export type OnboardingStep =
   | "BASE_CURRENCY"
+  | "FIRST_EXPENSE"
+  // legacy values kept for compatibility with old auth payloads
   | "LANGUAGE"
   | "CATEGORIES"
   | "ACCOUNTS"
@@ -69,66 +71,61 @@ export type SupportedLanguage = {
   label: string;
 };
 
-export type OnboardingCategoryTemplate = {
-  id?: string;
-  templateId: string;
-  name: string;
-  type: CategoryType;
-  icon?: string | null;
-  selectedByDefault?: boolean;
-};
+export type OnboardingScreen = "BASE_CURRENCY" | "FIRST_EXPENSE" | null;
 
-export type OnboardingAccount = {
-  id?: string;
-  clientId?: string;
+export type OnboardingFirstExpenseAccountOption = {
+  id: string;
   name: string;
   type: AccountType;
   currency: CurrencyCode;
-  initialBalance?: number | null;
 };
 
-export type OnboardingExpense = {
-  id?: string;
-  clientId?: string;
+export type OnboardingFirstExpenseCategoryOption = {
+  id: string;
+  name: string;
+};
+
+export type OnboardingBaseCurrencyPayload = {
+  supportedCurrencies: CurrencyCode[];
+  supportedLanguages: SupportedLanguage[];
+  language: string;
+  baseCurrency: CurrencyCode;
+};
+
+export type OnboardingFirstExpensePayload = {
+  defaultDate: string;
+  accountOptions: OnboardingFirstExpenseAccountOption[];
+  categoryOptions: OnboardingFirstExpenseCategoryOption[];
+};
+
+export type OnboardingPayload = OnboardingBaseCurrencyPayload | OnboardingFirstExpensePayload;
+
+export type OnboardingSessionResponse = {
+  completed: boolean;
+  screen: OnboardingScreen;
+  nextAction?: "MAIN_APP" | null;
+  user: {
+    baseCurrency: CurrencyCode | null;
+    language: string | null;
+  };
+  payload: OnboardingPayload | null;
+};
+
+export type SubmitOnboardingBaseCurrencyPayload = {
+  language: string;
+  baseCurrency: CurrencyCode;
+};
+
+export type SubmitOnboardingFirstExpensePayload = {
   date: string;
   categoryId: string;
   accountId: string;
   amount: number;
-  currency: CurrencyCode;
   comment?: string | null;
 };
-
-export type OnboardingStateResponse = {
-  completed: boolean;
-  currentStep: OnboardingStep | null;
-  requiredSteps: OnboardingStep[];
-  optionalSteps: string[];
-  completedSteps: OnboardingStep[];
-  user: {
-    baseCurrency?: CurrencyCode | null;
-    language?: string | null;
-    telegramUsername?: string | null;
-  };
-  supportedCurrencies: CurrencyCode[];
-  supportedLanguages: SupportedLanguage[];
-  categoryTemplates: {
-    income: OnboardingCategoryTemplate[];
-    expenses: OnboardingCategoryTemplate[];
-  };
-  accounts: OnboardingAccount[];
-  firstExpenses: OnboardingExpense[];
-};
-
-export type SaveOnboardingStepPayload =
-  | { step: "BASE_CURRENCY"; baseCurrency: CurrencyCode }
-  | { step: "LANGUAGE"; language: string }
-  | { step: "CATEGORIES"; selectedCategoryTemplateIds: string[] }
-  | { step: "ACCOUNTS"; accounts: OnboardingAccount[] }
-  | { step: "FIRST_EXPENSES"; expenses: OnboardingExpense[] };
 
 export type ApiErrorResponse = {
   code?: AuthErrorCode | string;
   message?: string;
   details?: Record<string, unknown>;
 };
-

@@ -233,6 +233,22 @@ export default function OnboardingScreen() {
         await handleUnauthorized();
         return;
       }
+      if (apiError.status === 408) {
+        try {
+          const reconciledSession = await getOnboardingSession(detectDeviceLocale());
+          setSession(reconciledSession);
+
+          if (reconciledSession.completed || reconciledSession.nextAction === "MAIN_APP" || reconciledSession.screen !== "FIRST_EXPENSE") {
+            return;
+          }
+        } catch (reconciliationError) {
+          const reconciliationApiError = reconciliationError as ApiError;
+          if (reconciliationApiError.status === 401) {
+            await handleUnauthorized();
+            return;
+          }
+        }
+      }
       setScreenError(apiError.message ?? "Не удалось сохранить первый расход.");
     } finally {
       setIsSaving(false);

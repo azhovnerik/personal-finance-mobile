@@ -1,11 +1,61 @@
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useState} from "react";
 import {Pressable, StyleSheet, View} from "react-native";
 import {useRouter} from "expo-router";
 
 import {getRegistrationSupportedLanguages, register as registerRequest} from "../../src/features/auth/api";
 import type {ApiError} from "../../src/features/auth/api";
 import type {SupportedLanguage} from "../../src/features/auth/types";
-import {Button, Card, Input, ScreenContainer, Select, Text, colors, spacing} from "../../src/shared/ui";
+import {Button, Card, Input, ScreenContainer, Text, colors, spacing} from "../../src/shared/ui";
+
+const FALLBACK_SUPPORTED_LANGUAGES: SupportedLanguage[] = [
+    {code: "ua", label: "Українська"},
+    {code: "en", label: "English"},
+];
+
+const detectDeviceLocale = () => {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().locale ?? null;
+    } catch {
+        return null;
+    }
+};
+
+const resolveLanguageFromSupported = (supportedLanguages: SupportedLanguage[], deviceLocale: string | null, current?: string) => {
+    if (supportedLanguages.length === 0) {
+        return current ?? "en";
+    }
+
+    const byCode = new Map(supportedLanguages.map((item) => [item.code.toLowerCase(), item.code]));
+    const candidates: string[] = [];
+
+    if (current) {
+        candidates.push(current.toLowerCase());
+    }
+
+    const normalizedLocale = deviceLocale?.replace("_", "-").toLowerCase();
+    if (normalizedLocale) {
+        candidates.push(normalizedLocale);
+        const base = normalizedLocale.split("-")[0] ?? normalizedLocale;
+        candidates.push(base);
+        if (base === "uk") {
+            candidates.push("ua");
+        }
+        if (base === "ua") {
+            candidates.push("uk");
+        }
+    }
+
+    candidates.push("ua", "uk", "en");
+
+    for (const candidate of candidates) {
+        const exact = byCode.get(candidate);
+        if (exact) {
+            return exact;
+        }
+    }
+
+    return supportedLanguages[0]!.code;
+};
 
 export default function RegisterScreen() {
     const router = useRouter();
@@ -15,13 +65,10 @@ export default function RegisterScreen() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-    const [language, setLanguage] = useState("uk");
+    const [language, setLanguage] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>([
-        {code: "uk", label: "Українська"},
-        {code: "en", label: "English"},
-    ]);
+    const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>(FALLBACK_SUPPORTED_LANGUAGES);
 
     useEffect(() => {
         let isMounted = true;
@@ -33,9 +80,10 @@ export default function RegisterScreen() {
                     return;
                 }
                 setSupportedLanguages(fromBackend);
-                setLanguage((prev) => (fromBackend.some((item) => item.code === prev) ? prev : fromBackend[0]!.code));
+                setLanguage((prev) => resolveLanguageFromSupported(fromBackend, detectDeviceLocale(), prev));
             } catch {
                 // keep local fallback options
+                setLanguage((prev) => resolveLanguageFromSupported(FALLBACK_SUPPORTED_LANGUAGES, detectDeviceLocale(), prev));
             }
         })();
 
@@ -44,10 +92,12 @@ export default function RegisterScreen() {
         };
     }, []);
 
-    const languageOptions = useMemo(
-        () => supportedLanguages.map((item) => ({value: item.code, label: item.label})),
-        [supportedLanguages],
-    );
+    useEffect(() => {
+        if (language) {
+            return;
+        }
+        setLanguage(resolveLanguageFromSupported(supportedLanguages, detectDeviceLocale()));
+    }, [language, supportedLanguages]);
 
     const onSubmit = async () => {
         if (!email.trim() || !name.trim() || !password) {
@@ -62,11 +112,12 @@ export default function RegisterScreen() {
         setIsSubmitting(true);
         setError(null);
         try {
+            const languageForSubmit = resolveLanguageFromSupported(supportedLanguages, detectDeviceLocale(), language);
             const response = await registerRequest({
                 email: email.trim(),
                 name: name.trim(),
                 password,
-                language: language.trim() || undefined,
+                language: languageForSubmit.trim() || undefined,
             });
             router.replace({
                 pathname: "/auth/registration-success",
@@ -127,12 +178,6 @@ export default function RegisterScreen() {
                         </Text>
                     </Pressable>
                 </View>
-                <Select
-                    value={language}
-                    options={languageOptions}
-                    onChange={(value) => setLanguage(value)}
-                    placeholder="Язык интерфейса"
-                />
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <Button title={isSubmitting ? "Создаем..." : "Создать аккаунт"} onPress={() => void onSubmit()}
                         disabled={isSubmitting}/>

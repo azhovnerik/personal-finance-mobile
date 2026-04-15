@@ -107,10 +107,10 @@ const PieSlice = ({
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const thisMonth = useMemo(() => getThisMonthPeriod(), []);
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("THIS_MONTH");
-  const [customStartDate, setCustomStartDate] = useState(thisMonth.startDate);
-  const [customEndDate, setCustomEndDate] = useState(thisMonth.endDate);
+  const [initialThisMonthPeriod] = useState(() => getThisMonthPeriod());
+  const [customStartDate, setCustomStartDate] = useState(initialThisMonthPeriod.startDate);
+  const [customEndDate, setCustomEndDate] = useState(initialThisMonthPeriod.endDate);
   const [breakdownType, setBreakdownType] = useState<"expenses" | "income">("expenses");
 
   const filters = useMemo(() => {
@@ -123,8 +123,8 @@ export default function DashboardScreen() {
         endDate: customEndDate || null,
       };
     }
-    return thisMonth;
-  }, [customEndDate, customStartDate, periodPreset, thisMonth]);
+    return getThisMonthPeriod();
+  }, [customEndDate, customStartDate, periodPreset]);
 
   const { summary, isLoading, isRefreshing, error, refresh } = useDashboardSummary(filters);
 

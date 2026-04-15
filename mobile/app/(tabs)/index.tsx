@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useDashboardSummary } from "../../src/features/dashboard/useDashboardSummary";
 import { clearAuthSession } from "../../src/features/auth/api";
@@ -127,6 +128,12 @@ export default function DashboardScreen() {
   }, [customEndDate, customStartDate, periodPreset, thisMonth]);
 
   const { summary, isLoading, isRefreshing, error, refresh } = useDashboardSummary(filters);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const breakdownList = useMemo(() => {
     if (!summary) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useLogin } from "../src/features/auth/useLogin";
@@ -11,6 +11,7 @@ export default function LoginScreen() {
   const { login, isLoading, error, errorCode } = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleLogin = async () => {
     const response = await login(email.trim(), password);
@@ -39,12 +40,23 @@ export default function LoginScreen() {
         />
         <Input
           placeholder="Password"
-          secureTextEntry
+          secureTextEntry={!isPasswordVisible}
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="current-password"
           textContentType="password"
           value={password}
           onChangeText={setPassword}
           editable={!isLoading}
         />
+        <Pressable
+          onPress={() => setIsPasswordVisible((prev) => !prev)}
+          disabled={isLoading}
+          style={styles.passwordToggle}
+        >
+          <Text style={styles.passwordToggleText}>{isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}</Text>
+        </Pressable>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
           title={isLoading ? "Входим..." : "Войти"}
@@ -121,5 +133,14 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
+  },
+  passwordToggle: {
+    alignSelf: "flex-end",
+    paddingVertical: 2,
+  },
+  passwordToggleText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

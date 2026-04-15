@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
@@ -210,11 +210,9 @@ export const useDashboardSummary = (filters: DashboardSummaryFilters) => {
     refetchOnMount: "always",
   });
 
-  const refresh = useMemo(() => {
-    return async () => {
-      await query.refetch();
-    };
-  }, [query]);
+  const refresh = useCallback(async () => {
+    await query.refetch();
+  }, [query.refetch]);
 
   return {
     summary: query.data ?? null,

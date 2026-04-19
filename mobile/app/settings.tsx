@@ -48,6 +48,8 @@ export default function SettingsScreen() {
   const [telegramUsername, setTelegramUsername] = useState("");
   const [language, setLanguage] = useState<string>("");
   const [baseCurrency, setBaseCurrency] = useState<CurrencyCode | null>(null);
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
+  const [isProfileDirty, setIsProfileDirty] = useState(false);
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -66,12 +68,17 @@ export default function SettingsScreen() {
       return;
     }
 
+    if (isFormInitialized && isProfileDirty) {
+      return;
+    }
+
     setName(profileResponse.profile.name ?? "");
     setEmail(profileResponse.profile.email ?? "");
     setTelegramUsername(profileResponse.profile.telegramUsername ?? "");
     setLanguage(profileResponse.profile.language ?? "");
     setBaseCurrency(profileResponse.profile.baseCurrency ?? null);
-  }, [profileResponse]);
+    setIsFormInitialized(true);
+  }, [isFormInitialized, isProfileDirty, profileResponse]);
 
   const languageOptions = useMemo(() => {
     return (profileResponse?.options.supportedLanguages ?? []).map((item) => ({
@@ -133,6 +140,7 @@ export default function SettingsScreen() {
           ? (result.message ?? "Нужна верификация нового email.")
           : "Профиль сохранен.",
       );
+      setIsProfileDirty(false);
       setFieldErrors({});
       setFormError(null);
     } catch (mutationError) {
@@ -147,7 +155,11 @@ export default function SettingsScreen() {
 
     try {
       const response = await resendEmailMutation.mutateAsync();
-      setSuccessMessage(`Письмо отправлено повторно. Cooldown: ${response.cooldownSeconds}с.`);
+      if (response.sent) {
+        setSuccessMessage(`Письмо отправлено повторно. Cooldown: ${response.cooldownSeconds}с.`);
+        return;
+      }
+      setFormError(`Письмо не было отправлено. Попробуйте позже (cooldown ${response.cooldownSeconds}с).`);
     } catch (mutationError) {
       setFormError(getErrorMessage(mutationError, "Не удалось отправить письмо повторно."));
     }
@@ -241,16 +253,35 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          <Input placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+          <Input
+            placeholder="Email"
+            value={email}
+            onChangeText={(value) => {
+              setEmail(value);
+              setIsProfileDirty(true);
+            }}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
           {fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
 
-          <Input placeholder="Name" value={name} onChangeText={setName} />
+          <Input
+            placeholder="Name"
+            value={name}
+            onChangeText={(value) => {
+              setName(value);
+              setIsProfileDirty(true);
+            }}
+          />
           {fieldErrors.name ? <Text style={styles.errorText}>{fieldErrors.name}</Text> : null}
 
           <Input
             placeholder="Telegram username"
             value={telegramUsername}
-            onChangeText={setTelegramUsername}
+            onChangeText={(value) => {
+              setTelegramUsername(value);
+              setIsProfileDirty(true);
+            }}
             autoCapitalize="none"
           />
           {fieldErrors.telegramUsername ? <Text style={styles.errorText}>{fieldErrors.telegramUsername}</Text> : null}
@@ -259,7 +290,10 @@ export default function SettingsScreen() {
             placeholder="Interface language"
             value={language}
             options={languageOptions}
-            onChange={(value) => setLanguage(value)}
+            onChange={(value) => {
+              setLanguage(value);
+              setIsProfileDirty(true);
+            }}
           />
           {fieldErrors.language ? <Text style={styles.errorText}>{fieldErrors.language}</Text> : null}
 
@@ -267,7 +301,10 @@ export default function SettingsScreen() {
             placeholder="Base currency"
             value={baseCurrency}
             options={effectiveCurrencyOptions}
-            onChange={(value) => setBaseCurrency(value as CurrencyCode)}
+            onChange={(value) => {
+              setBaseCurrency(value as CurrencyCode);
+              setIsProfileDirty(true);
+            }}
           />
           {!canChangeBaseCurrency ? (
             <Text style={styles.warningText}>Изменение базовой валюты недоступно: уже есть бюджеты или транзакции.</Text>

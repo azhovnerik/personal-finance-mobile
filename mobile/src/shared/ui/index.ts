@@ -6,4 +6,5 @@ export { Input } from "./Input";
 export { Chip } from "./Chip";
 export { Select } from "./Select";
 export { DateInput } from "./DateInput";
+export { AppIcon } from "./AppIcon";
 export { colors, radius, spacing } from "./theme";

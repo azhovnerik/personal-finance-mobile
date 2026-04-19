@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 
 import { Text, colors, spacing } from "../../src/shared/ui";
 import { CreateTransactionModal } from "../../src/features/transactions/create/CreateTransactionModal";
+import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 export default function TabsLayout() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -17,14 +18,51 @@ export default function TabsLayout() {
             tabBarStyle: styles.tabBar,
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.textSecondary,
+            tabBarLabelStyle: styles.tabBarLabel,
           }}
         >
-          <Tabs.Screen name="index" options={{ title: "Главная" }} />
-          <Tabs.Screen name="transactions" options={{ title: "Транзакции" }} />
-          <Tabs.Screen name="budgets" options={{ title: "Бюджеты" }} />
-          <Tabs.Screen name="categories" options={{ title: "Категории" }} />
-          <Tabs.Screen name="accounts" options={{ title: "Счета" }} />
-          <Tabs.Screen name="more" options={{ title: "Ещё" }} />
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: "Главная",
+              tabBarIcon: ({ size }) => <CategoryIcon name="expense.home" size={size} />,
+            }}
+          />
+          <Tabs.Screen
+            name="transactions"
+            options={{
+              title: "Транзакции",
+              tabBarIcon: ({ size }) => <CategoryIcon name="transfer.between_accounts" size={size} />,
+            }}
+          />
+          <Tabs.Screen
+            name="budgets"
+            options={{
+              title: "Бюджеты",
+              tabBarIcon: ({ size }) => <CategoryIcon name="income.interest" size={size} />,
+            }}
+          />
+          <Tabs.Screen
+            name="categories"
+            options={{
+              title: "Категории",
+              tabBarIcon: ({ size }) => <CategoryIcon name="expense.shopping" size={size} />,
+            }}
+          />
+          <Tabs.Screen
+            name="accounts"
+            options={{
+              title: "Счета",
+              tabBarIcon: ({ size }) => <CategoryIcon name="transfer.to_savings" size={size} />,
+            }}
+          />
+          <Tabs.Screen
+            name="more"
+            options={{
+              title: "Ещё",
+              tabBarIcon: ({ size }) => <CategoryIcon name="expense.entertainment" size={size} />,
+            }}
+          />
           <Tabs.Screen name="add" options={{ href: null }} />
         </Tabs>
         <Pressable style={styles.addButtonWrapper} onPress={() => setIsCreateOpen(true)}>
@@ -49,6 +87,10 @@ const styles = StyleSheet.create({
     height: 74,
     paddingBottom: spacing.md,
     paddingTop: spacing.sm,
+  },
+  tabBarLabel: {
+    fontSize: 11,
+    fontWeight: "600",
   },
   addButtonWrapper: {
     position: "absolute",

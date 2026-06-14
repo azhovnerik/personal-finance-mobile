@@ -15,7 +15,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile",
+      "bundleIdentifier": "me.moneydrive.app",
       "associatedDomains": [
         "applinks:app.moneydrive.me"
       ]
@@ -48,7 +48,16 @@
       ]
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "react-native-iap",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.2.0"
+          }
+        }
+      ]
     ],
     "expo-router": {
       "typedRoutes": true

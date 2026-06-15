@@ -167,6 +167,7 @@ export default function SubscriptionsScreen() {
       {
         externalProductId: product.externalProductId,
         productCode: product.productCode,
+        storeProduct: product.storeProduct,
       },
       {
         onSuccess: () => {

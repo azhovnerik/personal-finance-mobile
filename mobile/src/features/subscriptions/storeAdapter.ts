@@ -143,6 +143,36 @@ const normalizeStoreError = (error: unknown) => {
 const firstPurchase = (result: Purchase | Purchase[] | null | undefined) =>
   Array.isArray(result) ? result[0] : result;
 
+const getAndroidSubscriptionOffer = (product: StoreProduct | null | undefined) => {
+  if (!product) {
+    return null;
+  }
+
+  const raw = product.raw as
+    | {
+        subscriptionOffers?: { offerToken?: unknown; sku?: unknown }[] | null;
+        subscriptionOfferDetailsAndroid?: { offerToken?: unknown }[] | null;
+      }
+    | null
+    | undefined;
+
+  const standardizedOffer = raw?.subscriptionOffers?.find(
+    (offer) => offer && typeof offer.offerToken === "string" && offer.offerToken.trim(),
+  );
+  if (standardizedOffer && typeof standardizedOffer.offerToken === "string") {
+    return { sku: product.id, offerToken: standardizedOffer.offerToken };
+  }
+
+  const legacyOffer = raw?.subscriptionOfferDetailsAndroid?.find(
+    (offer) => offer && typeof offer.offerToken === "string" && offer.offerToken.trim(),
+  );
+  if (legacyOffer && typeof legacyOffer.offerToken === "string") {
+    return { sku: product.id, offerToken: legacyOffer.offerToken };
+  }
+
+  return null;
+};
+
 export const loadStoreProducts = async (productIds: string[]) => {
   if (!productIds.length) {
     return [];
@@ -173,7 +203,7 @@ export const getStorefrontCode = async () => {
   }
 };
 
-export const purchase = async (productId: string): Promise<StorePurchasePayload> => {
+export const purchase = async (productId: string, product?: StoreProduct): Promise<StorePurchasePayload> => {
   await ensureConnection();
 
   return new Promise((resolve, reject) => {
@@ -204,6 +234,8 @@ export const purchase = async (productId: string): Promise<StorePurchasePayload>
       settle(() => reject(normalizeStoreError(error)));
     });
 
+    const androidSubscriptionOffer = getAndroidSubscriptionOffer(product);
+
     requestPurchase({
       request: {
         apple: {
@@ -212,6 +244,7 @@ export const purchase = async (productId: string): Promise<StorePurchasePayload>
         },
         google: {
           skus: [productId],
+          subscriptionOffers: androidSubscriptionOffer ? [androidSubscriptionOffer] : undefined,
         },
       },
       type: "subs",

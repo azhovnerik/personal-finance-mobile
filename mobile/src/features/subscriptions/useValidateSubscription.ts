@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { validateAndroidSubscription, validateIosSubscription } from "./api";
 import { finish, purchase } from "./storeAdapter";
-import type { AndroidValidateRequest, IosValidateRequest, StorePurchasePayload } from "./types";
+import type { AndroidValidateRequest, IosValidateRequest, StoreProduct, StorePurchasePayload } from "./types";
 import { StorePurchaseCancelledError, SubscriptionsApiError } from "./types";
 import { trackSubscriptionEvent } from "./analytics";
 import { useSubscriptionAuth } from "./useSubscriptionAuth";
@@ -45,13 +45,13 @@ export const useValidateSubscription = () => {
   const { withSubscriptionAuth } = useSubscriptionAuth();
 
   return useMutation({
-    mutationFn: async (input: { externalProductId: string; productCode: string }) => {
+    mutationFn: async (input: { externalProductId: string; productCode: string; storeProduct?: StoreProduct }) => {
       trackSubscriptionEvent("subscription_purchase_started", {
         externalProductId: input.externalProductId,
         productCode: input.productCode,
       });
 
-      const storePayload = await purchase(input.externalProductId);
+      const storePayload = await purchase(input.externalProductId, input.storeProduct);
 
       trackSubscriptionEvent("subscription_purchase_store_success", {
         platform: storePayload.platform,

@@ -46,6 +46,7 @@ export interface Account {
   description?: string | null;
   type: AccountType;
   currency?: CurrencyCode | null;
+  defaultAccount?: boolean | null;
 }
 
 export interface CategoryDto {
@@ -88,6 +89,7 @@ export interface AccountDto {
   balance?: number | null;
   balanceInBase?: number | null;
   currency?: CurrencyCode | null;
+  defaultAccount?: boolean | null;
 }
 
 export interface TransferDto {

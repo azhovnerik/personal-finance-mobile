@@ -1,7 +1,7 @@
 export type SubscriptionPlatform = "IOS" | "ANDROID" | "WEB";
 export type SubscriptionProvider = "APPLE" | "GOOGLE" | "LIQPAY";
 export type SubscriptionState = "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED" | "PENDING";
-export type ManageAction = "APP_STORE" | "GOOGLE_PLAY" | "WEB" | "NONE";
+export type ManageAction = "APP_STORE" | "GOOGLE_PLAY" | "WEB" | "LIQPAY" | "NONE";
 
 export type BillingPeriod = "MONTHLY" | "YEARLY" | string;
 

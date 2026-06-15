@@ -16,6 +16,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "me.moneydrive.app",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Allow moneydrive.me to connect to the local development server while debugging.",
+        "NSBonjourServices": [
+          "_expo._tcp"
+        ]
+      },
       "associatedDomains": [
         "applinks:app.moneydrive.me"
       ]

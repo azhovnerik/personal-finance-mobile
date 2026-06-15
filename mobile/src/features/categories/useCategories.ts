@@ -10,6 +10,7 @@ import { API_BASE_URL } from "../../shared/lib/api/config";
 import { CategoryIconOption, FALLBACK_CATEGORY_ICONS, normalizeCategoryIcon } from "./categoryIcons";
 
 export const CATEGORIES_QUERY_KEY = ["categories"] as const;
+export const FREQUENT_CATEGORIES_QUERY_KEY = ["categories", "frequent"] as const;
 export const CATEGORY_ICONS_QUERY_KEY = ["categories", "icons"] as const;
 
 export type CategoriesFilters = {
@@ -147,6 +148,76 @@ export const useCategories = (filters?: CategoriesFilters, options?: UseCategori
         return query.error instanceof Error
             ? query.error.message
             : "Не удалось загрузить категории.";
+    }, [query.error]);
+
+    const refresh = useCallback(async () => {
+        await query.refetch();
+    }, [query.refetch]);
+
+    return {
+        categories: query.data ?? [],
+        isLoading: query.isLoading,
+        isRefreshing: query.isFetching,
+        error: errorMessage,
+        refresh,
+    };
+};
+
+export const useFrequentCategories = (
+    filters: CategoriesFilters,
+    limit = 5,
+    options?: UseCategoriesOptions,
+): UseCategoriesResult => {
+    const router = useRouter();
+    const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
+    const enabled = options?.enabled ?? true;
+
+    const queryParams = useMemo(() => ({
+        ...(toQueryFilters(filters) ?? {}),
+        limit: String(limit),
+    }), [filters, limit]);
+
+    const query = useQuery({
+        queryKey: [...FREQUENT_CATEGORIES_QUERY_KEY, queryParams],
+        enabled,
+        refetchOnMount: "always",
+        refetchOnReconnect: true,
+        queryFn: async () => {
+            if (useMocks) {
+                const filtered = filters.type
+                    ? mockCategories.filter((category) => category.type === filters.type)
+                    : mockCategories;
+                return filtered.slice(0, limit);
+            }
+
+            const token = await getToken();
+            if (!token) {
+                await removeToken();
+                router.replace("/login");
+                throw new Error("Сессия истекла. Войдите снова.");
+            }
+
+            const { data, error } = await client.GET(
+                "/api/v2/categories/frequent" as any,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: { query: queryParams },
+                }
+            );
+
+            if (error || !data) {
+                throw new Error("Не удалось загрузить частые категории.");
+            }
+
+            return data as CategoryReactDto[];
+        },
+    });
+
+    const errorMessage = useMemo(() => {
+        if (!query.error) return null;
+        return query.error instanceof Error
+            ? query.error.message
+            : "Не удалось загрузить частые категории.";
     }, [query.error]);
 
     const refresh = useCallback(async () => {

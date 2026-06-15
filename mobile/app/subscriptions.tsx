@@ -86,6 +86,9 @@ const sourceTitle = (source: SubscriptionSourceDto | null) => {
   return `${source.provider} · ${statusLabels[source.status] ?? source.status}`;
 };
 
+const isWebManageAction = (source: SubscriptionSourceDto | null) =>
+  source?.manageAction === "WEB" || source?.manageAction === "LIQPAY";
+
 const openManageAction = async (source: SubscriptionSourceDto | null) => {
   if (!source || source.manageAction === "NONE") {
     Alert.alert("Subscription management", "No external management action is available.");
@@ -97,7 +100,14 @@ const openManageAction = async (source: SubscriptionSourceDto | null) => {
       ? ["itms-apps://apps.apple.com/account/subscriptions", "https://apps.apple.com/account/subscriptions"]
       : source.manageAction === "GOOGLE_PLAY"
         ? ["https://play.google.com/store/account/subscriptions"]
-        : ["https://app.moneydrive.me/subscriptions"];
+        : isWebManageAction(source)
+          ? ["https://app.moneydrive.me/subscriptions"]
+          : [];
+
+  if (urls.length === 0) {
+    Alert.alert("Subscription management", "No external management action is available.");
+    return;
+  }
 
   for (const url of urls) {
     try {
@@ -236,7 +246,7 @@ export default function SubscriptionsScreen() {
               {premiumActive ? (
                 <View style={styles.actionRow}>
                   <Button
-                    title={activeSource?.manageAction === "WEB" ? "Manage on web" : "Manage subscription"}
+                    title={isWebManageAction(activeSource) ? "Manage on web" : "Manage subscription"}
                     onPress={() => openManageAction(activeSource)}
                   />
                 </View>

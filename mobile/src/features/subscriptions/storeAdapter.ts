@@ -8,6 +8,7 @@ import {
   purchaseErrorListener,
   purchaseUpdatedListener,
   requestPurchase,
+  type AndroidSubscriptionOfferInput,
   type ProductOrSubscription,
   type Purchase,
   type PurchaseError,
@@ -143,7 +144,9 @@ const normalizeStoreError = (error: unknown) => {
 const firstPurchase = (result: Purchase | Purchase[] | null | undefined) =>
   Array.isArray(result) ? result[0] : result;
 
-const getAndroidSubscriptionOffer = (product: StoreProduct | null | undefined) => {
+const getAndroidSubscriptionOffer = (
+  product: StoreProduct | null | undefined,
+): AndroidSubscriptionOfferInput | null => {
   if (!product) {
     return null;
   }
@@ -234,7 +237,15 @@ export const purchase = async (productId: string, product?: StoreProduct): Promi
       settle(() => reject(normalizeStoreError(error)));
     });
 
-    const androidSubscriptionOffer = getAndroidSubscriptionOffer(product);
+    const androidSubscriptionOffer =
+      Platform.OS === "android" ? getAndroidSubscriptionOffer(product) : null;
+
+    if (Platform.OS === "android" && !androidSubscriptionOffer) {
+      settle(() =>
+        reject(new Error("Missing Android subscription offer token for selected product.")),
+      );
+      return;
+    }
 
     requestPurchase({
       request: {

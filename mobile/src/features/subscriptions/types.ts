@@ -141,3 +141,13 @@ export class StoreAccountUnavailableError extends Error {
     this.code = "STORE_ACCOUNT_UNAVAILABLE";
   }
 }
+
+export class StoreDuplicatePurchaseError extends Error {
+  code: string;
+
+  constructor(message = "Purchase already processed") {
+    super(message);
+    this.name = "StoreDuplicatePurchaseError";
+    this.code = "DUPLICATE_PURCHASE";
+  }
+}

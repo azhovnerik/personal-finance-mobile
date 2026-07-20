@@ -12,6 +12,7 @@ import { useValidateSubscription } from "../src/features/subscriptions/useValida
 import { trackSubscriptionEvent } from "../src/features/subscriptions/analytics";
 import {
   StoreAccountUnavailableError,
+  StoreDuplicatePurchaseError,
   StorePurchaseCancelledError,
   SubscriptionsApiError,
   type SubscriptionSourceDto,
@@ -38,6 +39,10 @@ const userErrorMessage = (error: unknown) => {
 
   if (error instanceof StoreAccountUnavailableError) {
     return "На устройстве не подключен App Store Sandbox account. Добавьте sandbox tester в Settings > App Store > Sandbox Account.";
+  }
+
+  if (error instanceof StoreDuplicatePurchaseError) {
+    return "Эта покупка уже была получена. Нажмите Restore purchases, чтобы восстановить подписку.";
   }
 
   const rawMessage = error instanceof Error ? error.message : typeof error === "string" ? error : "";

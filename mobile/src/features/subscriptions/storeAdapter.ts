@@ -15,7 +15,7 @@ import {
 } from "react-native-iap";
 
 import type { StoreProduct, StorePurchasePayload } from "./types";
-import { StoreAccountUnavailableError, StorePurchaseCancelledError } from "./types";
+import { StoreAccountUnavailableError, StoreDuplicatePurchaseError, StorePurchaseCancelledError } from "./types";
 
 let connectionPromise: Promise<boolean> | null = null;
 
@@ -131,9 +131,17 @@ const isStoreAccountUnavailable = (error: unknown) => {
   );
 };
 
+const isDuplicatePurchase = (error: unknown) => {
+  const code = typeof error === "object" && error && "code" in error ? String((error as { code: unknown }).code) : "";
+  return code === "duplicate-purchase" || code === "DuplicatePurchase";
+};
+
 const normalizeStoreError = (error: unknown) => {
   if (isUserCancelled(error)) {
     return new StorePurchaseCancelledError();
+  }
+  if (isDuplicatePurchase(error)) {
+    return new StoreDuplicatePurchaseError();
   }
   if (isStoreAccountUnavailable(error)) {
     return new StoreAccountUnavailableError();
@@ -143,6 +151,41 @@ const normalizeStoreError = (error: unknown) => {
 
 const firstPurchase = (result: Purchase | Purchase[] | null | undefined) =>
   Array.isArray(result) ? result[0] : result;
+
+const purchaseTimestamp = (purchase: Purchase) => {
+  const raw = purchase as unknown as Record<string, unknown>;
+  const expirationDate = raw.expirationDateIOS;
+  const transactionDate = raw.transactionDate;
+
+  if (typeof expirationDate === "number") {
+    return expirationDate;
+  }
+  if (typeof expirationDate === "string") {
+    return Number(expirationDate) || 0;
+  }
+  if (typeof transactionDate === "number") {
+    return transactionDate;
+  }
+  if (typeof transactionDate === "string") {
+    return Number(transactionDate) || 0;
+  }
+  return 0;
+};
+
+const latestPurchaseForProduct = (purchases: Purchase[], productId: string) =>
+  purchases
+    .filter((purchase) => purchase.productId === productId)
+    .sort((left, right) => purchaseTimestamp(right) - purchaseTimestamp(left))[0] ?? null;
+
+const getLatestAvailablePurchase = async (productId: string, onlyIncludeActiveItemsIOS = true) => {
+  const purchases = await getAvailablePurchases(
+    Platform.OS === "ios" ? { onlyIncludeActiveItemsIOS } : undefined,
+  );
+  return latestPurchaseForProduct(purchases ?? [], productId);
+};
+
+const getLatestAvailablePurchaseForDuplicate = async (productId: string) =>
+  (await getLatestAvailablePurchase(productId, true)) ?? (await getLatestAvailablePurchase(productId, false));
 
 const getAndroidSubscriptionOffer = (
   product: StoreProduct | null | undefined,
@@ -234,7 +277,24 @@ export const purchase = async (productId: string, product?: StoreProduct): Promi
     });
 
     errorSubscription = purchaseErrorListener((error) => {
-      settle(() => reject(normalizeStoreError(error)));
+      const normalizedError = normalizeStoreError(error);
+      if (normalizedError instanceof StoreDuplicatePurchaseError) {
+        void getLatestAvailablePurchaseForDuplicate(productId)
+          .then((availablePurchase) => {
+            settle(() => {
+              if (availablePurchase) {
+                resolve(toStorePurchasePayload(availablePurchase));
+                return;
+              }
+              reject(normalizedError);
+            });
+          })
+          .catch((restoreError) => {
+            settle(() => reject(normalizeStoreError(restoreError)));
+          });
+        return;
+      }
+      settle(() => reject(normalizedError));
     });
 
     const androidSubscriptionOffer =

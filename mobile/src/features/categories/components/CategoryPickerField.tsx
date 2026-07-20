@@ -3,7 +3,7 @@ import { Keyboard, Pressable, StyleSheet, View } from "react-native";
 
 import { Text, colors, spacing } from "../../../shared/ui";
 import { CategoryReactDto, CategoryType } from "../../../shared/api/dto";
-import { useCategories } from "../useCategories";
+import { useCategories, useFrequentCategories } from "../useCategories";
 import { CategoryPickerModal } from "../../transactions/create/CategoryPickerModal";
 import { getCategoryChildren, isCategoryGroup, isCategorySelectable } from "../categoryTree";
 import { CategoryIcon } from "./CategoryIcon";
@@ -73,8 +73,20 @@ export function CategoryPickerField({
     { type: "INCOME" },
     { enabled: isCategoryPickerOpen && shouldUseRemoteCategories },
   );
+  const { categories: frequentExpenseCategories, refresh: refreshFrequentExpenseCategories } = useFrequentCategories(
+    { type: "EXPENSES" },
+    5,
+    { enabled: isCategoryPickerOpen && shouldUseRemoteCategories },
+  );
+  const { categories: frequentIncomeCategories, refresh: refreshFrequentIncomeCategories } = useFrequentCategories(
+    { type: "INCOME" },
+    5,
+    { enabled: isCategoryPickerOpen && shouldUseRemoteCategories },
+  );
   const safeExpenseCategories = Array.isArray(expenseCategories) ? expenseCategories : [];
   const safeIncomeCategories = Array.isArray(incomeCategories) ? incomeCategories : [];
+  const safeFrequentExpenseCategories = Array.isArray(frequentExpenseCategories) ? frequentExpenseCategories : [];
+  const safeFrequentIncomeCategories = Array.isArray(frequentIncomeCategories) ? frequentIncomeCategories : [];
 
   const categories = useMemo(() => {
     if (safeCategoriesOverride.length > 0) {
@@ -160,7 +172,34 @@ export function CategoryPickerField({
     [flatCategories],
   );
 
-  const topCategories = useMemo(() => leafCategories.slice(0, 5), [leafCategories]);
+  const frequentCategories = useMemo(
+    () => [...safeFrequentExpenseCategories, ...safeFrequentIncomeCategories],
+    [safeFrequentExpenseCategories, safeFrequentIncomeCategories],
+  );
+
+  const topCategories = useMemo(() => {
+    if (!shouldUseRemoteCategories) {
+      return leafCategories.slice(0, 5);
+    }
+
+    return frequentCategories.filter((category) => {
+      const isAllowed = allowedIdsSet.size === 0 || allowedIdsSet.has(category.id);
+      const isExcluded =
+        excludedIdsSet.has(category.id) ||
+        (category.categoryTemplateId ? excludedTemplateIdsSet.has(category.categoryTemplateId) : false) ||
+        excludedNamesSet.has(normalizeCategoryName(category.name));
+
+      return !isExcluded && isAllowed && isCategorySelectable(category);
+    });
+  }, [
+    allowedIdsSet,
+    excludedIdsSet,
+    excludedNamesSet,
+    excludedTemplateIdsSet,
+    frequentCategories,
+    leafCategories,
+    shouldUseRemoteCategories,
+  ]);
 
   const modalCategories = useMemo(
     () => (preferFlatList ? leafCategories : sortedTreeCategories),
@@ -188,6 +227,8 @@ export function CategoryPickerField({
     if (shouldUseRemoteCategories) {
       void refreshExpenseCategories();
       void refreshIncomeCategories();
+      void refreshFrequentExpenseCategories();
+      void refreshFrequentIncomeCategories();
     }
   };
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -68,12 +68,12 @@ const toBackendDateTime = (date: string) => {
   return formatDateTime(localDate);
 };
 
-const getInitialFormState = (): TransactionFormState => ({
+const getInitialFormState = (accountId: string | null = null): TransactionFormState => ({
   amount: "0",
   categoryId: null,
   note: "",
   date: toYmd(new Date()),
-  accountId: null,
+  accountId,
 });
 
 const toCategory = (category: Category): Category => ({
@@ -122,10 +122,23 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
     [accounts],
   );
 
+  const defaultAccountId = useMemo(
+    () => accounts.find((account) => account.defaultAccount && account.id)?.id ?? null,
+    [accounts],
+  );
+
   const selectedAccount = useMemo(
     () => toAccount(accounts.find((account) => account.id === formState.accountId)),
     [accounts, formState.accountId],
   );
+
+  useEffect(() => {
+    if (!visible || !defaultAccountId) {
+      return;
+    }
+
+    setFormState((prev) => (prev.accountId ? prev : { ...prev, accountId: defaultAccountId }));
+  }, [defaultAccountId, visible]);
 
   const updateAmount = (value: string) => {
     setFormState((prev) => ({ ...prev, amount: value }));
@@ -136,7 +149,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
   };
 
   const resetForm = () => {
-    setFormState(getInitialFormState());
+    setFormState(getInitialFormState(defaultAccountId));
     setSelectedCategory(null);
     setErrorMessage(null);
   };

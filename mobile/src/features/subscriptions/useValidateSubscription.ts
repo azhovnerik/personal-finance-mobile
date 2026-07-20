@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { validateAndroidSubscription, validateIosSubscription } from "./api";
 import { finish, purchase } from "./storeAdapter";
 import type { AndroidValidateRequest, IosValidateRequest, StoreProduct, StorePurchasePayload } from "./types";
-import { StorePurchaseCancelledError, SubscriptionsApiError } from "./types";
+import { SubscriptionsApiError } from "./types";
 import { trackSubscriptionEvent } from "./analytics";
 import { useSubscriptionAuth } from "./useSubscriptionAuth";
 import { SUBSCRIPTION_PRODUCTS_QUERY_KEY } from "./useSubscriptionProducts";
@@ -85,11 +85,6 @@ export const useValidateSubscription = () => {
       await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_STATUS_QUERY_KEY });
       await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_PRODUCTS_QUERY_KEY });
     },
-    retry: (failureCount, error) => {
-      if (error instanceof StorePurchaseCancelledError) {
-        return false;
-      }
-      return failureCount < 1;
-    },
+    retry: false,
   });
 };

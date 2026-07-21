@@ -1,15 +1,20 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import Svg, { Circle } from "react-native-svg";
 
 import { useDashboardSummary } from "../../src/features/dashboard/useDashboardSummary";
 import { clearAuthSession } from "../../src/features/auth/api";
+import { subscribeTransactionsChanged } from "../../src/shared/lib/events/transactions";
 import { Button, Card, Chip, DateInput, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
 
 const CHART_SIZE = 160;
 const CHART_RADIUS = CHART_SIZE / 2;
+const DONUT_STROKE_WIDTH = 44;
+const DONUT_RADIUS = (CHART_SIZE - DONUT_STROKE_WIDTH) / 2;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 
 type PeriodPreset = "THIS_MONTH" | "LAST_30_DAYS" | "CUSTOM";
 
@@ -50,62 +55,6 @@ const getLast30DaysPeriod = () => {
   };
 };
 
-const PieSlice = ({
-  size,
-  startAngle,
-  sweepAngle,
-  color,
-}: {
-  size: number;
-  startAngle: number;
-  sweepAngle: number;
-  color: string;
-}) => {
-  if (sweepAngle <= 0) {
-    return null;
-  }
-
-  const radius = size / 2;
-  const angle = Math.min(sweepAngle, 180);
-
-  return (
-    <View style={[styles.sliceContainer, { width: size, height: size, transform: [{ rotate: `${startAngle}deg` }] }]}>
-      <View style={[styles.halfCircleContainer, styles.rightHalf, { width: radius, height: size }]}>
-        <View
-          style={[
-            styles.halfCircle,
-            styles.halfCircleRight,
-            {
-              width: size,
-              height: size,
-              borderRadius: radius,
-              backgroundColor: color,
-              transform: [{ rotate: `${angle}deg` }],
-            },
-          ]}
-        />
-      </View>
-      {sweepAngle > 180 ? (
-        <View style={[styles.halfCircleContainer, styles.leftHalf, { width: radius, height: size }]}>
-          <View
-            style={[
-              styles.halfCircle,
-              styles.halfCircleLeft,
-              {
-                width: size,
-                height: size,
-                borderRadius: radius,
-                backgroundColor: color,
-                transform: [{ rotate: `${sweepAngle - 180}deg` }],
-              },
-            ]}
-          />
-        </View>
-      ) : null}
-    </View>
-  );
-};
-
 export default function DashboardScreen() {
   const router = useRouter();
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("THIS_MONTH");
@@ -128,6 +77,12 @@ export default function DashboardScreen() {
   }, [customEndDate, customStartDate, periodPreset]);
 
   const { summary, isLoading, isRefreshing, error, refresh } = useDashboardSummary(filters);
+
+  useEffect(() => {
+    return subscribeTransactionsChanged(() => {
+      void refresh();
+    });
+  }, [refresh]);
 
   useFocusEffect(
     useCallback(() => {
@@ -157,6 +112,7 @@ export default function DashboardScreen() {
         color: CHART_COLORS[index % CHART_COLORS.length],
         startAngle,
         endAngle,
+        ratio,
       };
     });
   }, [breakdownList]);
@@ -245,17 +201,22 @@ export default function DashboardScreen() {
               ) : (
                 <View style={styles.pieRow}>
                   <View style={styles.pieChartWrapper}>
-                    <View style={styles.pieChart}>
+                    <Svg width={CHART_SIZE} height={CHART_SIZE} viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`}>
                       {categorySegments.map((segment) => (
-                        <PieSlice
+                        <Circle
                           key={`${segment.categoryId}-${segment.name}`}
-                          size={CHART_SIZE}
-                          startAngle={segment.startAngle}
-                          sweepAngle={segment.endAngle - segment.startAngle}
-                          color={segment.color}
+                          cx={CHART_RADIUS}
+                          cy={CHART_RADIUS}
+                          r={DONUT_RADIUS}
+                          stroke={segment.color}
+                          strokeWidth={DONUT_STROKE_WIDTH}
+                          fill="none"
+                          strokeDasharray={`${segment.ratio * DONUT_CIRCUMFERENCE} ${DONUT_CIRCUMFERENCE}`}
+                          strokeDashoffset={-(segment.startAngle / 360) * DONUT_CIRCUMFERENCE}
+                          transform={`rotate(-90 ${CHART_RADIUS} ${CHART_RADIUS})`}
                         />
                       ))}
-                    </View>
+                    </Svg>
                     <View style={styles.pieCenter}>
                       <Text variant="caption">Всего</Text>
                       <Text style={styles.pieTotal}>{formatCurrency(totalAmount, baseCurrency)}</Text>
@@ -482,13 +443,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pieChart: {
-    width: CHART_SIZE,
-    height: CHART_SIZE,
-    borderRadius: CHART_RADIUS,
-    overflow: "hidden",
-    position: "relative",
-  },
   pieCenter: {
     position: "absolute",
     width: 86,
@@ -505,30 +459,6 @@ const styles = StyleSheet.create({
   chartLegend: {
     flex: 1,
     gap: spacing.md,
-  },
-  sliceContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-  },
-  halfCircleContainer: {
-    position: "absolute",
-    overflow: "hidden",
-  },
-  rightHalf: {
-    right: 0,
-  },
-  leftHalf: {
-    left: 0,
-  },
-  halfCircle: {
-    position: "absolute",
-  },
-  halfCircleRight: {
-    right: 0,
-  },
-  halfCircleLeft: {
-    left: 0,
   },
   legendRow: {
     flexDirection: "row",

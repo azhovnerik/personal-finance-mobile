@@ -92,7 +92,10 @@ const sourceTitle = (source: SubscriptionSourceDto | null) => {
 };
 
 const isWebManageAction = (source: SubscriptionSourceDto | null) =>
-  source?.manageAction === "WEB" || source?.manageAction === "LIQPAY";
+  source?.manageAction === "WEB";
+
+const isLiqPaySource = (source: SubscriptionSourceDto | null) =>
+  source?.provider === "LIQPAY" || source?.manageAction === "LIQPAY";
 
 const openManageAction = async (source: SubscriptionSourceDto | null) => {
   if (!source || source.manageAction === "NONE") {
@@ -249,7 +252,11 @@ export default function SubscriptionsScreen() {
               <Text style={styles.planName}>{statusLabels[status.statusResponse?.status ?? ""] ?? "Inactive"}</Text>
               <Text variant="caption">Access until: {formatDate(status.statusResponse?.effectiveTo)}</Text>
               <Text variant="caption">{sourceTitle(activeSource)}</Text>
-              {premiumActive ? (
+              {premiumActive && isLiqPaySource(activeSource) ? (
+                <Text variant="caption">
+                  LiqPay subscription can be cancelled only in the web version of the app.
+                </Text>
+              ) : premiumActive ? (
                 <View style={styles.actionRow}>
                   <Button
                     title={isWebManageAction(activeSource) ? "Manage on web" : "Manage subscription"}

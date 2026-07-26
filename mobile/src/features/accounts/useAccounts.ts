@@ -42,7 +42,7 @@ const fetchAccounts = async (onUnauthorized: () => Promise<void>): Promise<Accou
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await onUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }
@@ -205,7 +205,7 @@ export const useAccounts = (): UseAccountsResult => {
           initialBalance: payload.balance,
         }),
       });
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -237,7 +237,7 @@ export const useAccounts = (): UseAccountsResult => {
         },
         body: JSON.stringify(payload),
       });
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -265,7 +265,7 @@ export const useAccounts = (): UseAccountsResult => {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -306,7 +306,7 @@ export const useAccounts = (): UseAccountsResult => {
           body: JSON.stringify({ newBalance }),
         });
       }
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         await handleUnauthorized();
         setActionError("Сессия истекла. Войдите снова.");
         return false;
@@ -325,7 +325,7 @@ export const useAccounts = (): UseAccountsResult => {
           const verifyResponse = await fetchWithTimeout(`${API_BASE_URL}/api/v2/accounts`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          if (verifyResponse.status === 401 || verifyResponse.status === 403) {
+          if (verifyResponse.status === 401) {
             await handleUnauthorized();
             setActionError("Сессия истекла. Войдите снова.");
             return false;

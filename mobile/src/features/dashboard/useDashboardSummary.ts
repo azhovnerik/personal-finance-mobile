@@ -173,7 +173,7 @@ const fetchDashboardSummary = async (
     },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await onUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }

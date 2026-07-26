@@ -96,7 +96,7 @@ const fetchBudgets = async (handleUnauthorized: () => Promise<void>): Promise<Bu
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await handleUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }
@@ -123,7 +123,7 @@ const fetchBudgetDetails = async (
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await handleUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }
@@ -185,7 +185,7 @@ const updateBudgetCategory = async (
     body: JSON.stringify(buildBudgetCategoryMutationBody(payload)),
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await handleUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }
@@ -217,7 +217,7 @@ const deleteBudgetCategory = async (
     }),
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await handleUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }
@@ -247,7 +247,7 @@ const addBudgetCategory = async (
     }),
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await handleUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }
@@ -328,7 +328,7 @@ const createBudget = async (month: string, handleUnauthorized: () => Promise<voi
     body: JSON.stringify({ month }),
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     await handleUnauthorized();
     throw new Error("Сессия истекла. Войдите снова.");
   }

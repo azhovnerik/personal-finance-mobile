@@ -20,6 +20,7 @@ import {
 import { Button, Card, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
 
 const statusLabels: Record<string, string> = {
+  TRIAL: "Trial",
   ACTIVE: "Active",
   EXPIRED: "Expired",
   PAST_DUE: "Payment issue",
@@ -252,6 +253,21 @@ export default function SubscriptionsScreen() {
               <Text style={styles.planName}>{statusLabels[status.statusResponse?.status ?? ""] ?? "Inactive"}</Text>
               <Text variant="caption">Access until: {formatDate(status.statusResponse?.effectiveTo)}</Text>
               <Text variant="caption">{sourceTitle(activeSource)}</Text>
+              {status.statusResponse?.status === "PAST_DUE" ? (
+                <Text style={styles.warningText}>
+                  The payment is overdue. Premium access remains available through the grace-period date above.
+                </Text>
+              ) : null}
+              {status.statusResponse?.status === "EXPIRED" ? (
+                <Text variant="caption">
+                  Your account and data are safe. Buy a new subscription to restore business features.
+                </Text>
+              ) : null}
+              {status.statusResponse?.status === "EXPIRED" && isLiqPaySource(activeSource) ? (
+                <Text variant="caption">
+                  To renew with LiqPay, open the web version and complete a new checkout.
+                </Text>
+              ) : null}
               {premiumActive && isLiqPaySource(activeSource) ? (
                 <Text variant="caption">
                   LiqPay subscription can be cancelled only in the web version of the app.

@@ -91,7 +91,7 @@ export default function IndexScreen() {
       const status = typeof error === "object" && error !== null && "status" in error
         ? Number((error as { status?: number }).status ?? 0)
         : 0;
-      if (status === 401 || status === 403) {
+      if (status === 401) {
         try {
           await clearAuthSession();
         } catch {

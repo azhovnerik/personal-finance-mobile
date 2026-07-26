@@ -7,12 +7,13 @@ import { useSubscriptionAuth } from "./useSubscriptionAuth";
 
 export const SUBSCRIPTION_STATUS_QUERY_KEY = ["subscription", "status"] as const;
 
-export const useSubscriptionStatus = () => {
+export const useSubscriptionStatus = (enabled = true) => {
   const { withSubscriptionAuth } = useSubscriptionAuth();
 
   const query = useQuery({
     queryKey: SUBSCRIPTION_STATUS_QUERY_KEY,
     queryFn: () => withSubscriptionAuth(getSubscriptionStatus),
+    enabled,
     staleTime: 0,
     refetchOnMount: "always",
   });

@@ -32,7 +32,7 @@ export const useValidateSubscription = () => {
 
       try {
         const response = await withSubscriptionAuth(() => validateStorePurchase(storePayload));
-        if (!response.premiumActive || response.status !== "ACTIVE") {
+        if (response.status === "EXPIRED") {
           throw new SubscriptionsApiError("Период этой покупки уже истек.", {
             code: "RECEIPT_EXPIRED",
           });

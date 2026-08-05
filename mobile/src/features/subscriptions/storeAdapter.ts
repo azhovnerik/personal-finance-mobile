@@ -15,9 +15,36 @@ import {
 } from "react-native-iap";
 
 import type { StoreProduct, StorePurchasePayload } from "./types";
-import { StoreAccountUnavailableError, StoreDuplicatePurchaseError, StorePurchaseCancelledError } from "./types";
+import {
+  StoreAccountUnavailableError,
+  StoreDuplicatePurchaseError,
+  StoreProductMismatchError,
+  StorePurchaseCancelledError,
+} from "./types";
+
+const PURCHASE_TIMEOUT_MS = 120_000;
 
 let connectionPromise: Promise<boolean> | null = null;
+let purchaseUpdateSubscription: { remove: () => void } | null = null;
+let purchaseErrorSubscription: { remove: () => void } | null = null;
+
+type PendingPurchaseRequest = {
+  productId: string;
+  subscriptionGroupId: string | null;
+  resolve: (payload: StorePurchasePayload) => void;
+  reject: (error: unknown) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+};
+
+type ObservedPurchaseHandler = (payload: StorePurchasePayload) => Promise<void>;
+
+let pendingPurchaseRequest: PendingPurchaseRequest | null = null;
+let observedPurchaseHandler: ObservedPurchaseHandler | null = null;
+let observedPurchaseErrorHandler: ((error: unknown) => void) | null = null;
+const inFlightObservedPurchases = new Set<string>();
+const completedObservedPurchases = new Set<string>();
+const manuallyClaimedPurchases = new Set<string>();
+let observedPurchaseQueue: Promise<void> = Promise.resolve();
 
 const ensureConnection = async () => {
   if (!connectionPromise) {
@@ -37,6 +64,38 @@ const toPlatform = () => {
 };
 
 const maybeString = (value: unknown) => (typeof value === "string" && value.trim() ? value : null);
+
+const iosPendingProductId = (raw: Record<string, unknown>) => {
+  const renewalInfo = raw.renewalInfoIOS;
+  if (!renewalInfo || typeof renewalInfo !== "object") {
+    return null;
+  }
+
+  const typedRenewalInfo = renewalInfo as Record<string, unknown>;
+  return maybeString(typedRenewalInfo.pendingUpgradeProductId)
+    ?? maybeString(typedRenewalInfo.autoRenewPreference);
+};
+
+const iosSubscriptionGroupIdFromProduct = (product: StoreProduct | null | undefined) => {
+  if (!product?.raw || typeof product.raw !== "object") {
+    return null;
+  }
+
+  const raw = product.raw as Record<string, unknown>;
+  const directGroupId = maybeString(raw.subscriptionGroupIdIOS);
+  if (directGroupId) {
+    return directGroupId;
+  }
+
+  const subscriptionInfo = raw.subscriptionInfoIOS;
+  if (!subscriptionInfo || typeof subscriptionInfo !== "object") {
+    return null;
+  }
+  return maybeString((subscriptionInfo as Record<string, unknown>).subscriptionGroupId);
+};
+
+const iosTransactionReason = (raw: Record<string, unknown>) =>
+  maybeString(raw.transactionReasonIOS) ?? maybeString(raw.reasonStringRepresentationIOS);
 
 const toStoreProduct = (product: ProductOrSubscription): StoreProduct => ({
   id: product.id,
@@ -58,6 +117,7 @@ export const toStorePurchasePayload = (purchase: Purchase): StorePurchasePayload
       transactionId: maybeString(raw.transactionId) ?? purchase.id,
       originalTransactionId: maybeString(raw.originalTransactionIdentifierIOS) ?? maybeString(raw.transactionId) ?? purchase.id,
       signedTransactionInfo: maybeString(purchase.purchaseToken) ?? maybeString(raw.jwsRepresentationIOS),
+      pendingProductId: iosPendingProductId(raw),
       raw: purchase,
     };
   }
@@ -133,7 +193,10 @@ const isStoreAccountUnavailable = (error: unknown) => {
 
 const isDuplicatePurchase = (error: unknown) => {
   const code = typeof error === "object" && error && "code" in error ? String((error as { code: unknown }).code) : "";
-  return code === "duplicate-purchase" || code === "DuplicatePurchase";
+  return error instanceof StoreDuplicatePurchaseError
+    || code === "duplicate-purchase"
+    || code === "DuplicatePurchase"
+    || code === "DUPLICATE_PURCHASE";
 };
 
 const normalizeStoreError = (error: unknown) => {
@@ -149,8 +212,132 @@ const normalizeStoreError = (error: unknown) => {
   return error;
 };
 
-const firstPurchase = (result: Purchase | Purchase[] | null | undefined) =>
-  Array.isArray(result) ? result[0] : result;
+const isExpiredIosSubscriptionPurchase = (purchase: Purchase) => {
+  if (Platform.OS !== "ios") {
+    return false;
+  }
+  const expirationDate = (purchase as unknown as Record<string, unknown>).expirationDateIOS;
+  const expirationTimestamp = typeof expirationDate === "number"
+    ? expirationDate
+    : typeof expirationDate === "string"
+      ? Number(expirationDate)
+      : Number.NaN;
+  return Number.isFinite(expirationTimestamp) && expirationTimestamp <= Date.now();
+};
+
+const observedPurchaseKey = (payload: StorePurchasePayload) =>
+  payload.transactionId ?? payload.orderId ?? payload.purchaseToken ?? `${payload.platform}:${payload.externalProductId}`;
+
+const dispatchObservedPurchase = (payload: StorePurchasePayload) => {
+  const handler = observedPurchaseHandler;
+  if (!handler) {
+    return;
+  }
+
+  const key = observedPurchaseKey(payload);
+  if (
+    manuallyClaimedPurchases.has(key) ||
+    inFlightObservedPurchases.has(key) ||
+    completedObservedPurchases.has(key)
+  ) {
+    return;
+  }
+  inFlightObservedPurchases.add(key);
+
+  observedPurchaseQueue = observedPurchaseQueue
+    .catch(() => undefined)
+    .then(() => handler(payload))
+    .then(() => {
+      completedObservedPurchases.add(key);
+    })
+    .catch((error) => observedPurchaseErrorHandler?.(error))
+    .finally(() => inFlightObservedPurchases.delete(key));
+};
+
+const settlePendingPurchase = (
+  callback: (pending: PendingPurchaseRequest) => void,
+) => {
+  const pending = pendingPurchaseRequest;
+  if (!pending) {
+    return;
+  }
+  pendingPurchaseRequest = null;
+  clearTimeout(pending.timeoutId);
+  callback(pending);
+};
+
+const handlePurchaseUpdate = (updatedPurchase: Purchase) => {
+  const pending = pendingPurchaseRequest;
+  const raw = updatedPurchase as unknown as Record<string, unknown>;
+  const pendingProductId = iosPendingProductId(raw);
+  const matchesRequestedProduct = pending
+    && (
+      pending.productId === updatedPurchase.productId
+      || pending.productId === pendingProductId
+    );
+  if (
+    pending
+    && matchesRequestedProduct
+    && !isExpiredIosSubscriptionPurchase(updatedPurchase)
+  ) {
+    const payload = toStorePurchasePayload(updatedPurchase);
+    manuallyClaimedPurchases.add(observedPurchaseKey(payload));
+    settlePendingPurchase((request) => request.resolve(payload));
+    return;
+  }
+
+  const payload = toStorePurchasePayload(updatedPurchase);
+  const isMismatchedIosPurchase = Platform.OS === "ios"
+    && pending
+    && pending.subscriptionGroupId !== null
+    && pending.subscriptionGroupId === maybeString(raw.subscriptionGroupIdIOS)
+    && iosTransactionReason(raw)?.toUpperCase() === "PURCHASE"
+    && !isExpiredIosSubscriptionPurchase(updatedPurchase);
+
+  dispatchObservedPurchase(payload);
+  if (isMismatchedIosPurchase) {
+    settlePendingPurchase((request) =>
+      request.reject(new StoreProductMismatchError(request.productId, updatedPurchase.productId)),
+    );
+  }
+};
+
+const handlePurchaseError = (error: PurchaseError | Error | unknown) => {
+  const normalizedError = normalizeStoreError(error);
+  const pending = pendingPurchaseRequest;
+  if (!pending) {
+    observedPurchaseErrorHandler?.(normalizedError);
+    return;
+  }
+
+  if (normalizedError instanceof StoreDuplicatePurchaseError) {
+    void getLatestAvailablePurchaseForDuplicate(pending.productId)
+      .then((availablePurchase) => {
+        settlePendingPurchase((request) => {
+          if (availablePurchase) {
+            request.resolve(toStorePurchasePayload(availablePurchase));
+            return;
+          }
+          request.reject(normalizedError);
+        });
+      })
+      .catch((restoreError) => {
+        settlePendingPurchase((request) => request.reject(normalizeStoreError(restoreError)));
+      });
+    return;
+  }
+
+  settlePendingPurchase((request) => request.reject(normalizedError));
+};
+
+const ensurePurchaseListeners = () => {
+  if (!purchaseUpdateSubscription) {
+    purchaseUpdateSubscription = purchaseUpdatedListener(handlePurchaseUpdate);
+  }
+  if (!purchaseErrorSubscription) {
+    purchaseErrorSubscription = purchaseErrorListener(handlePurchaseError);
+  }
+};
 
 const purchaseTimestamp = (purchase: Purchase) => {
   const raw = purchase as unknown as Record<string, unknown>;
@@ -185,7 +372,7 @@ const getLatestAvailablePurchase = async (productId: string, onlyIncludeActiveIt
 };
 
 const getLatestAvailablePurchaseForDuplicate = async (productId: string) =>
-  (await getLatestAvailablePurchase(productId, true)) ?? (await getLatestAvailablePurchase(productId, false));
+  getLatestAvailablePurchase(productId, true);
 
 const getAndroidSubscriptionOffer = (
   product: StoreProduct | null | undefined,
@@ -251,63 +438,38 @@ export const getStorefrontCode = async () => {
 
 export const purchase = async (productId: string, product?: StoreProduct): Promise<StorePurchasePayload> => {
   await ensureConnection();
+  ensurePurchaseListeners();
 
   return new Promise((resolve, reject) => {
-    let settled = false;
-    let updatedSubscription: { remove: () => void } = { remove: () => undefined };
-    let errorSubscription: { remove: () => void } = { remove: () => undefined };
-    const cleanup = () => {
-      updatedSubscription.remove();
-      errorSubscription.remove();
-    };
-    const settle = (callback: () => void) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      cleanup();
-      callback();
-    };
+    if (pendingPurchaseRequest) {
+      reject(new Error("Another store purchase is already in progress."));
+      return;
+    }
 
-    updatedSubscription = purchaseUpdatedListener((updatedPurchase) => {
-      if (updatedPurchase.productId !== productId) {
-        return;
-      }
-      settle(() => resolve(toStorePurchasePayload(updatedPurchase)));
-    });
-
-    errorSubscription = purchaseErrorListener((error) => {
-      const normalizedError = normalizeStoreError(error);
-      if (normalizedError instanceof StoreDuplicatePurchaseError) {
-        void getLatestAvailablePurchaseForDuplicate(productId)
-          .then((availablePurchase) => {
-            settle(() => {
-              if (availablePurchase) {
-                resolve(toStorePurchasePayload(availablePurchase));
-                return;
-              }
-              reject(normalizedError);
-            });
-          })
-          .catch((restoreError) => {
-            settle(() => reject(normalizeStoreError(restoreError)));
-          });
-        return;
-      }
-      settle(() => reject(normalizedError));
-    });
+    const timeoutId = setTimeout(() => {
+      settlePendingPurchase((request) =>
+        request.reject(new Error("Покупка не была подтверждена магазином. Попробуйте еще раз.")),
+      );
+    }, PURCHASE_TIMEOUT_MS);
+    pendingPurchaseRequest = {
+      productId,
+      subscriptionGroupId: iosSubscriptionGroupIdFromProduct(product),
+      resolve,
+      reject,
+      timeoutId,
+    };
 
     const androidSubscriptionOffer =
       Platform.OS === "android" ? getAndroidSubscriptionOffer(product) : null;
 
     if (Platform.OS === "android" && !androidSubscriptionOffer) {
-      settle(() =>
-        reject(new Error("Missing Android subscription offer token for selected product.")),
+      settlePendingPurchase((request) =>
+        request.reject(new Error("Missing Android subscription offer token for selected product.")),
       );
       return;
     }
 
-    requestPurchase({
+    void requestPurchase({
       request: {
         apple: {
           sku: productId,
@@ -320,16 +482,27 @@ export const purchase = async (productId: string, product?: StoreProduct): Promi
       },
       type: "subs",
     })
-      .then((result) => {
-        const directPurchase = firstPurchase(result);
-        if (directPurchase) {
-          settle(() => resolve(toStorePurchasePayload(directPurchase)));
-        }
-      })
-      .catch((error) => {
-        settle(() => reject(normalizeStoreError(error)));
-      });
+      .catch(handlePurchaseError);
   });
+};
+
+export const observeStorePurchases = (
+  onPurchase: ObservedPurchaseHandler,
+  onError?: (error: unknown) => void,
+) => {
+  observedPurchaseHandler = onPurchase;
+  observedPurchaseErrorHandler = onError ?? null;
+
+  void ensureConnection()
+    .then(ensurePurchaseListeners)
+    .catch((error) => observedPurchaseErrorHandler?.(normalizeStoreError(error)));
+
+  return () => {
+    if (observedPurchaseHandler === onPurchase) {
+      observedPurchaseHandler = null;
+      observedPurchaseErrorHandler = null;
+    }
+  };
 };
 
 export const restore = async () => {
@@ -349,4 +522,9 @@ export const finish = async (payload: StorePurchasePayload) => {
     purchase: payload.raw as Purchase,
     isConsumable: false,
   });
+  manuallyClaimedPurchases.delete(observedPurchaseKey(payload));
+};
+
+export const releasePurchase = (payload: StorePurchasePayload) => {
+  manuallyClaimedPurchases.delete(observedPurchaseKey(payload));
 };

@@ -1,6 +1,6 @@
 export type SubscriptionPlatform = "IOS" | "ANDROID" | "WEB";
 export type SubscriptionProvider = "APPLE" | "GOOGLE" | "LIQPAY";
-export type SubscriptionState = "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED" | "PENDING";
+export type SubscriptionState = "TRIAL" | "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED" | "PENDING";
 export type ManageAction = "APP_STORE" | "GOOGLE_PLAY" | "WEB" | "LIQPAY" | "NONE";
 
 export type BillingPeriod = "MONTHLY" | "YEARLY" | string;
@@ -34,7 +34,7 @@ export type SubscriptionSourceDto = {
 
 export type SubscriptionStatusResponse = {
   premiumActive: boolean;
-  status: SubscriptionState;
+  status: SubscriptionState | null;
   effectiveTo: string | null;
   autoRenew: boolean;
   sources: SubscriptionSourceDto[];
@@ -116,6 +116,7 @@ export type StorePurchasePayload = {
   transactionId?: string | null;
   originalTransactionId?: string | null;
   signedTransactionInfo?: string | null;
+  pendingProductId?: string | null;
   purchaseToken?: string | null;
   orderId?: string | null;
   packageName?: string | null;
@@ -149,5 +150,17 @@ export class StoreDuplicatePurchaseError extends Error {
     super(message);
     this.name = "StoreDuplicatePurchaseError";
     this.code = "DUPLICATE_PURCHASE";
+  }
+}
+
+export class StoreProductMismatchError extends Error {
+  requestedProductId: string;
+  actualProductId: string;
+
+  constructor(requestedProductId: string, actualProductId: string) {
+    super(`App Store returned ${actualProductId} instead of ${requestedProductId}.`);
+    this.name = "StoreProductMismatchError";
+    this.requestedProductId = requestedProductId;
+    this.actualProductId = actualProductId;
   }
 }

@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
 import type {
@@ -12,7 +11,8 @@ import type {
   TrendPoint,
 } from "../../shared/api/dto";
 import { API_BASE_URL } from "../../shared/lib/api/config";
-import { getToken, removeToken } from "../../storage/auth";
+import { getToken } from "../../storage/auth";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 
 export type DashboardSummaryFilters = {
   startDate?: string | null;
@@ -196,12 +196,7 @@ const fetchDashboardSummary = async (
 };
 
 export const useDashboardSummary = (filters: DashboardSummaryFilters) => {
-  const router = useRouter();
-
-  const handleUnauthorized = useCallback(async () => {
-    await removeToken();
-    router.replace("/login");
-  }, [router]);
+  const handleUnauthorized = useUnauthorizedRedirect();
 
   const query = useQuery({
     queryKey: ["dashboard-summary", filters.startDate ?? null, filters.endDate ?? null],

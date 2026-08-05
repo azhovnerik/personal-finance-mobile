@@ -1,5 +1,6 @@
 export { Text } from "./Text";
 export { Button } from "./Button";
+export { GoogleIcon } from "./GoogleIcon";
 export { ScreenContainer } from "./ScreenContainer";
 export { Card } from "./Card";
 export { Input } from "./Input";

@@ -1,13 +1,13 @@
 import { useCallback, useMemo } from "react";
-import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import client from "../../shared/lib/api/client";
-import { getToken, removeToken } from "../../storage/auth";
+import { getToken } from "../../storage/auth";
 import { mockCategories } from "../../shared/mocks";
 import { CategoryDto, CategoryReactDto, CategoryType } from "../../shared/api/dto";
 import { API_BASE_URL } from "../../shared/lib/api/config";
 import { CategoryIconOption, FALLBACK_CATEGORY_ICONS, normalizeCategoryIcon } from "./categoryIcons";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 
 export const CATEGORIES_QUERY_KEY = ["categories"] as const;
 export const FREQUENT_CATEGORIES_QUERY_KEY = ["categories", "frequent"] as const;
@@ -84,11 +84,10 @@ const parseMessage = async (response: Response, fallback: string, debugContext?:
     return fallback;
 };
 
-const getAuthorizedHeaders = async (router: ReturnType<typeof useRouter>) => {
+const getAuthorizedHeaders = async (handleUnauthorized: () => Promise<void>) => {
     const token = await getToken();
     if (!token) {
-        await removeToken();
-        router.replace("/login");
+        await handleUnauthorized();
         throw new Error("Сессия истекла. Войдите снова.");
     }
     return {
@@ -103,7 +102,7 @@ const normalizeCategoryMutationPayload = (payload: CategoryMutationPayload): Cat
 });
 
 export const useCategories = (filters?: CategoriesFilters, options?: UseCategoriesOptions): UseCategoriesResult => {
-    const router = useRouter();
+    const handleUnauthorized = useUnauthorizedRedirect();
     const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
     const enabled = options?.enabled ?? true;
 
@@ -122,8 +121,7 @@ export const useCategories = (filters?: CategoriesFilters, options?: UseCategori
 
             const token = await getToken();
             if (!token) {
-                await removeToken();
-                router.replace("/login");
+                await handleUnauthorized();
                 throw new Error("Сессия истекла. Войдите снова.");
             }
 
@@ -168,7 +166,7 @@ export const useFrequentCategories = (
     limit = 5,
     options?: UseCategoriesOptions,
 ): UseCategoriesResult => {
-    const router = useRouter();
+    const handleUnauthorized = useUnauthorizedRedirect();
     const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
     const enabled = options?.enabled ?? true;
 
@@ -192,8 +190,7 @@ export const useFrequentCategories = (
 
             const token = await getToken();
             if (!token) {
-                await removeToken();
-                router.replace("/login");
+                await handleUnauthorized();
                 throw new Error("Сессия истекла. Войдите снова.");
             }
 
@@ -234,7 +231,7 @@ export const useFrequentCategories = (
 };
 
 export const useCategoryIcons = (options?: UseCategoriesOptions): UseCategoryIconsResult => {
-    const router = useRouter();
+    const handleUnauthorized = useUnauthorizedRedirect();
     const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
     const enabled = options?.enabled ?? true;
 
@@ -250,8 +247,7 @@ export const useCategoryIcons = (options?: UseCategoriesOptions): UseCategoryIco
 
             const token = await getToken();
             if (!token) {
-                await removeToken();
-                router.replace("/login");
+                await handleUnauthorized();
                 throw new Error("Сессия истекла. Войдите снова.");
             }
 
@@ -294,8 +290,8 @@ export const useCategoryIcons = (options?: UseCategoriesOptions): UseCategoryIco
 };
 
 export const useCategoryActions = () => {
-    const router = useRouter();
     const queryClient = useQueryClient();
+    const handleUnauthorized = useUnauthorizedRedirect();
 
     const createMutation = useMutation({
         mutationFn: async (payload: CategoryMutationPayload) => {
@@ -303,7 +299,7 @@ export const useCategoryActions = () => {
             const body = normalizeCategoryMutationPayload(payload);
             const response = await fetch(url, {
                 method: "POST",
-                headers: await getAuthorizedHeaders(router),
+                headers: await getAuthorizedHeaders(handleUnauthorized),
                 body: JSON.stringify(body),
             });
 
@@ -327,7 +323,7 @@ export const useCategoryActions = () => {
             const body = normalizeCategoryMutationPayload(payload);
             const response = await fetch(url, {
                 method: "PUT",
-                headers: await getAuthorizedHeaders(router),
+                headers: await getAuthorizedHeaders(handleUnauthorized),
                 body: JSON.stringify(body),
             });
 
@@ -351,7 +347,7 @@ export const useCategoryActions = () => {
             const url = `${API_BASE_URL}/api/v2/categories/${id}`;
             const response = await fetch(url, {
                 method: "DELETE",
-                headers: await getAuthorizedHeaders(router),
+                headers: await getAuthorizedHeaders(handleUnauthorized),
             });
 
             if (!response.ok) {

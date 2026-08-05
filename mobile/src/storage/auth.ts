@@ -3,6 +3,20 @@ import * as SecureStore from "expo-secure-store";
 const TOKEN_KEY = "auth_token";
 const ONBOARDING_BASE_CURRENCY_SELECTED_KEY = "onboarding_base_currency_selected";
 
+let unauthorizedTransitionClaimed = false;
+
+export const claimUnauthorizedTransition = () => {
+  if (unauthorizedTransitionClaimed) {
+    return false;
+  }
+  unauthorizedTransitionClaimed = true;
+  return true;
+};
+
+export const resetUnauthorizedTransition = () => {
+  unauthorizedTransitionClaimed = false;
+};
+
 const isSecureStoreAvailable = async () => {
   try {
     return await SecureStore.isAvailableAsync();
@@ -28,6 +42,7 @@ export const getToken = async (): Promise<string | null> => {
 };
 
 export const setToken = async (token: string): Promise<void> => {
+  resetUnauthorizedTransition();
   if (await isSecureStoreAvailable()) {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     return;

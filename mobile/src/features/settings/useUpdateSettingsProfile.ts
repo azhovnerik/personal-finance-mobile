@@ -1,20 +1,13 @@
-import { useCallback } from "react";
-import { useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { clearAuthSession } from "../auth/api";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 import { updateSettingsProfile } from "./api";
 import { SETTINGS_PROFILE_QUERY_KEY } from "./useSettingsProfile";
 import { SettingsApiError, type UpdateProfileRequest } from "./types";
 
 export const useUpdateSettingsProfile = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
-
-  const handleUnauthorized = useCallback(async () => {
-    await clearAuthSession();
-    router.replace("/login");
-  }, [router]);
+  const handleUnauthorized = useUnauthorizedRedirect();
 
   return useMutation({
     mutationFn: async (payload: UpdateProfileRequest) => {

@@ -150,6 +150,12 @@ export const login = async (email: string, password: string) =>
     body: { email, password },
   });
 
+export const loginWithGoogle = async (idToken: string) =>
+  requestJson<AuthResponse>("/api/v2/user/auth/google", {
+    method: "POST",
+    body: { idToken },
+  });
+
 export const register = async (payload: { email: string; name: string; password: string; language?: string }) =>
   requestJson<RegisterResponse>("/api/v2/user/auth/register", {
     method: "POST",

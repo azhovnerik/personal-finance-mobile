@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
-import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { AccountDto, AccountType, CurrencyCode } from "../../shared/api/dto";
 import { API_BASE_URL } from "../../shared/lib/api/config";
-import { getToken, removeToken } from "../../storage/auth";
+import { getToken } from "../../storage/auth";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 
 const ACCOUNTS_QUERY_KEY = ["accounts"];
 const REQUEST_TIMEOUT_MS = 15000;
@@ -110,15 +110,10 @@ const fetchAccounts = async (onUnauthorized: () => Promise<void>): Promise<Accou
 };
 
 export const useAccounts = (): UseAccountsResult => {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const handleUnauthorized = useCallback(async () => {
-    await removeToken();
-    router.replace("/login");
-  }, [router]);
+  const handleUnauthorized = useUnauthorizedRedirect();
 
   const query = useQuery({
     queryKey: ACCOUNTS_QUERY_KEY,

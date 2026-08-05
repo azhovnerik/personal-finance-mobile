@@ -5,7 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Circle } from "react-native-svg";
 
 import { useDashboardSummary } from "../../src/features/dashboard/useDashboardSummary";
-import { clearAuthSession } from "../../src/features/auth/api";
+import { logout } from "../../src/features/auth/logout";
 import { subscribeTransactionsChanged } from "../../src/shared/lib/events/transactions";
 import { Button, Card, Chip, DateInput, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { formatCurrency, formatDateRange } from "../../src/shared/utils/format";
@@ -123,7 +123,7 @@ export default function DashboardScreen() {
 
   const handleLogout = useCallback(async () => {
     try {
-      await clearAuthSession();
+      await logout();
     } finally {
       router.replace("/login");
     }

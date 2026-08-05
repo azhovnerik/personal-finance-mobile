@@ -3,12 +3,14 @@ import { Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { useLogin } from "../src/features/auth/useLogin";
-import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
+import { useGoogleLogin } from "../src/features/auth/useGoogleLogin";
+import { Button, Card, GoogleIcon, Input, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
 import { resolveRouteFromAuthResult } from "../src/features/auth/routing";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isLoading, error, errorCode } = useLogin();
+  const googleLogin = useGoogleLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -19,6 +21,15 @@ export default function LoginScreen() {
       router.replace(resolveRouteFromAuthResult(response));
     }
   };
+
+  const handleGoogleLogin = async () => {
+    const response = await googleLogin.login();
+    if (response) {
+      router.replace(resolveRouteFromAuthResult(response));
+    }
+  };
+
+  const isAnyLoginLoading = isLoading || googleLogin.isLoading;
 
   return (
     <ScreenContainer style={styles.screen}>
@@ -36,7 +47,7 @@ export default function LoginScreen() {
           textContentType="username"
           value={email}
           onChangeText={setEmail}
-          editable={!isLoading}
+          editable={!isAnyLoginLoading}
         />
         <Input
           placeholder="Password"
@@ -48,20 +59,20 @@ export default function LoginScreen() {
           textContentType="password"
           value={password}
           onChangeText={setPassword}
-          editable={!isLoading}
+          editable={!isAnyLoginLoading}
         />
         <Pressable
           onPress={() => setIsPasswordVisible((prev) => !prev)}
-          disabled={isLoading}
+          disabled={isAnyLoginLoading}
           style={styles.passwordToggle}
         >
           <Text style={styles.passwordToggleText}>{isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}</Text>
         </Pressable>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error || googleLogin.error ? <Text style={styles.error}>{error ?? googleLogin.error}</Text> : null}
         <Button
           title={isLoading ? "Входим..." : "Войти"}
           onPress={handleLogin}
-          disabled={isLoading || !email.trim() || !password}
+          disabled={isAnyLoginLoading || !email.trim() || !password}
           size="lg"
         />
         <Button
@@ -70,6 +81,15 @@ export default function LoginScreen() {
           tone="primary"
           size="lg"
           onPress={() => router.push("/auth/register")}
+        />
+        <Button
+          title={googleLogin.isLoading ? "Входим через Google..." : "Login with Google"}
+          variant="outline"
+          tone="secondary"
+          size="lg"
+          leftIcon={<GoogleIcon />}
+          onPress={handleGoogleLogin}
+          disabled={!googleLogin.isAvailable || isAnyLoginLoading}
         />
         <Button
           title="Забыли пароль?"
@@ -92,13 +112,6 @@ export default function LoginScreen() {
             }
           />
         ) : null}
-        <Button
-          title="Login with Google"
-          variant="outline"
-          tone="secondary"
-          size="lg"
-          disabled
-        />
       </Card>
     </ScreenContainer>
   );

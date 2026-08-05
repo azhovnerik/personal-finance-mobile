@@ -3,7 +3,7 @@ import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View 
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { clearAuthSession } from "../src/features/auth/api";
+import { logout } from "../src/features/auth/logout";
 import { useRestoreSubscriptions } from "../src/features/subscriptions/useRestoreSubscriptions";
 import {
   useSubscriptionProducts,
@@ -250,7 +250,7 @@ export default function SubscriptionsScreen() {
 
   const handleLogout = async () => {
     try {
-      await clearAuthSession();
+      await logout();
     } finally {
       queryClient.clear();
       router.replace("/login");

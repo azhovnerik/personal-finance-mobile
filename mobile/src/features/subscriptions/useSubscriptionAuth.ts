@@ -1,16 +1,10 @@
 import { useCallback } from "react";
-import { useRouter } from "expo-router";
 
-import { clearAuthSession } from "../auth/api";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 import { SubscriptionsApiError } from "./types";
 
 export const useSubscriptionAuth = () => {
-  const router = useRouter();
-
-  const handleUnauthorized = useCallback(async () => {
-    await clearAuthSession();
-    router.replace("/login");
-  }, [router]);
+  const handleUnauthorized = useUnauthorizedRedirect();
 
   const withSubscriptionAuth = useCallback(
     async <T,>(operation: () => Promise<T>) => {

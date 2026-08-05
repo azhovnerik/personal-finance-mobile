@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { BudgetDetailedDto, BudgetDto, BudgetCategoryDetailedDto } from "../../shared/api/dto";
 import { API_BASE_URL } from "../../shared/lib/api/config";
-import { getToken, removeToken } from "../../storage/auth";
+import { getToken } from "../../storage/auth";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 
 const BUDGETS_QUERY_KEY = ["budgets"];
 
@@ -76,13 +76,7 @@ const normalizeBudgetDetails = (payload: unknown): BudgetDetailedDto | null => {
 };
 
 const useUnauthorizedHandler = () => {
-  const router = useRouter();
-  return useMemo(() => {
-    return async () => {
-      await removeToken();
-      router.replace("/login");
-    };
-  }, [router]);
+  return useUnauthorizedRedirect();
 };
 
 const fetchBudgets = async (handleUnauthorized: () => Promise<void>): Promise<BudgetDto[]> => {

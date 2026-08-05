@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { Stack, usePathname, useRouter } from "expo-router";
+import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
+import { useStorePurchaseObserver } from "../src/features/subscriptions/useStorePurchaseObserver";
 import { getToken } from "../src/storage/auth";
 
-const isSubscriptionExemptPath = (pathname: string) =>
-  pathname === "/" ||
+const isSubscriptionExemptPath = (pathname: string, firstSegment: string | undefined) =>
+  (pathname === "/" && firstSegment !== "(tabs)") ||
   pathname.startsWith("/login") ||
   pathname.startsWith("/auth/") ||
   pathname.startsWith("/onboarding") ||
@@ -14,9 +15,10 @@ const isSubscriptionExemptPath = (pathname: string) =>
 
 const SubscriptionGate = () => {
   const pathname = usePathname();
+  const segments = useSegments();
   const router = useRouter();
   const [hasToken, setHasToken] = useState(false);
-  const exempt = isSubscriptionExemptPath(pathname);
+  const exempt = isSubscriptionExemptPath(pathname, segments[0]);
   const status = useSubscriptionStatus(hasToken && !exempt);
 
   useEffect(() => {
@@ -38,6 +40,11 @@ const SubscriptionGate = () => {
   return null;
 };
 
+const StorePurchaseObserver = () => {
+  useStorePurchaseObserver();
+  return null;
+};
+
 export default function RootLayout() {
   const [queryClient] = useState(
     () =>
@@ -53,6 +60,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <StorePurchaseObserver />
       <SubscriptionGate />
       <Stack
         screenOptions={{

@@ -1,44 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { validateAndroidSubscription, validateIosSubscription } from "./api";
-import { finish, purchase } from "./storeAdapter";
-import type { AndroidValidateRequest, IosValidateRequest, StoreProduct, StorePurchasePayload } from "./types";
+import { finish, purchase, releasePurchase } from "./storeAdapter";
+import type { StoreProduct } from "./types";
 import { SubscriptionsApiError } from "./types";
 import { trackSubscriptionEvent } from "./analytics";
 import { useSubscriptionAuth } from "./useSubscriptionAuth";
 import { SUBSCRIPTION_PRODUCTS_QUERY_KEY } from "./useSubscriptionProducts";
 import { SUBSCRIPTION_STATUS_QUERY_KEY } from "./useSubscriptionStatus";
-
-const assertString = (value: string | null | undefined, message: string) => {
-  if (!value) {
-    throw new Error(message);
-  }
-  return value;
-};
-
-const toIosValidateRequest = (payload: StorePurchasePayload): IosValidateRequest => ({
-  externalProductId: payload.externalProductId,
-  transactionId: assertString(payload.transactionId, "Store transaction is missing transactionId."),
-  originalTransactionId: assertString(
-    payload.originalTransactionId,
-    "Store transaction is missing originalTransactionId.",
-  ),
-  signedTransactionInfo: assertString(payload.signedTransactionInfo, "Store transaction is missing signed payload."),
-});
-
-const toAndroidValidateRequest = (payload: StorePurchasePayload): AndroidValidateRequest => ({
-  externalProductId: payload.externalProductId,
-  purchaseToken: assertString(payload.purchaseToken, "Store transaction is missing purchaseToken."),
-  orderId: assertString(payload.orderId, "Store transaction is missing orderId."),
-  packageName: assertString(payload.packageName, "Store transaction is missing packageName."),
-});
-
-const validatePurchase = (payload: StorePurchasePayload) => {
-  if (payload.platform === "IOS") {
-    return validateIosSubscription(toIosValidateRequest(payload));
-  }
-  return validateAndroidSubscription(toAndroidValidateRequest(payload));
-};
+import { validateStorePurchase } from "./validateStorePurchase";
 
 export const useValidateSubscription = () => {
   const queryClient = useQueryClient();
@@ -52,6 +21,8 @@ export const useValidateSubscription = () => {
       });
 
       const storePayload = await purchase(input.externalProductId, input.storeProduct);
+      const planChangeScheduled = storePayload.externalProductId !== input.externalProductId
+        && storePayload.pendingProductId === input.externalProductId;
 
       trackSubscriptionEvent("subscription_purchase_store_success", {
         platform: storePayload.platform,
@@ -60,7 +31,12 @@ export const useValidateSubscription = () => {
       });
 
       try {
-        const response = await withSubscriptionAuth(() => validatePurchase(storePayload));
+        const response = await withSubscriptionAuth(() => validateStorePurchase(storePayload));
+        if (!response.premiumActive || response.status !== "ACTIVE") {
+          throw new SubscriptionsApiError("Период этой покупки уже истек.", {
+            code: "RECEIPT_EXPIRED",
+          });
+        }
         await finish(storePayload);
 
         trackSubscriptionEvent("subscription_purchase_validate_success", {
@@ -70,8 +46,19 @@ export const useValidateSubscription = () => {
           status: response.status,
         });
 
-        return response;
+        return { ...response, planChangeScheduled };
       } catch (error) {
+        if (
+          error instanceof SubscriptionsApiError
+          && (error.code === "RECEIPT_EXPIRED" || error.code === "PURCHASE_ALREADY_LINKED")
+        ) {
+          try {
+            await finish(storePayload);
+          } catch (finishError) {
+            console.warn("Unable to finish rejected store purchase.", finishError);
+          }
+        }
+        releasePurchase(storePayload);
         trackSubscriptionEvent("subscription_purchase_validate_failed", {
           platform: storePayload.platform,
           externalProductId: storePayload.externalProductId,

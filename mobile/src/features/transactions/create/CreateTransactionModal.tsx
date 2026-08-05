@@ -76,6 +76,17 @@ const getInitialFormState = (accountId: string | null = null): TransactionFormSt
   accountId,
 });
 
+const getApiErrorMessage = (apiError: unknown, fallback: string) => {
+  if (apiError && typeof apiError === "object" && "message" in apiError) {
+    const message = (apiError as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
 const toCategory = (category: Category): Category => ({
   id: category.id,
   name: category.name,
@@ -251,23 +262,21 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
         transfer: null,
       };
 
-      const { data, error: apiError } = await client.POST("/api/v2/transactions" as any, {
+      const { data, error: apiError, response } = await client.POST("/api/v2/transactions" as any, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         body: payload,
       });
 
-      const status = (apiError as { status?: number } | undefined)?.status;
-      if (status === 401) {
+      if (response.status === 401) {
         await handleUnauthorized();
         setErrorMessage("Сессия истекла. Войдите снова.");
         return;
       }
 
       if (apiError || !data) {
-        const apiMessage = (apiError as { data?: { message?: string } } | undefined)?.data?.message;
-        setErrorMessage(apiMessage ?? "Не удалось сохранить транзакцию.");
+        setErrorMessage(getApiErrorMessage(apiError, "Не удалось сохранить транзакцию."));
         return;
       }
 

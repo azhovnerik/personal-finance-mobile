@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { clearAuthSession } from "../src/features/auth/api";
 import { useRestoreSubscriptions } from "../src/features/subscriptions/useRestoreSubscriptions";
 import {
   useSubscriptionProducts,
@@ -13,6 +15,7 @@ import { trackSubscriptionEvent } from "../src/features/subscriptions/analytics"
 import {
   StoreAccountUnavailableError,
   StoreDuplicatePurchaseError,
+  StoreProductMismatchError,
   StorePurchaseCancelledError,
   SubscriptionsApiError,
   type SubscriptionSourceDto,
@@ -46,6 +49,10 @@ const userErrorMessage = (error: unknown) => {
     return "Эта покупка уже была получена. Нажмите Restore purchases, чтобы восстановить подписку.";
   }
 
+  if (error instanceof StoreProductMismatchError) {
+    return `App Store сохранил ${error.actualProductId} вместо ${error.requestedProductId}. Проверьте текущий план в настройках подписок App Store.`;
+  }
+
   const rawMessage = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   if (rawMessage.includes("No active account") || rawMessage.includes("ASDErrorDomain Code=509")) {
     return "На устройстве не подключен App Store Sandbox account. Добавьте sandbox tester в Settings > App Store > Sandbox Account.";
@@ -60,6 +67,8 @@ const userErrorMessage = (error: unknown) => {
         return "Покупка не подтверждена. Попробуйте еще раз.";
       case "RECEIPT_EXPIRED":
         return "Период этой покупки уже истек. Выберите актуальную подписку.";
+      case "PURCHASE_ALREADY_LINKED":
+        return "Эта покупка уже привязана к другому аккаунту MoneyDrive. Войдите в связанный аккаунт или используйте другой App Store Sandbox account.";
       default:
         return error.message;
     }
@@ -89,7 +98,10 @@ const sourceTitle = (source: SubscriptionSourceDto | null) => {
   if (!source) {
     return "No active store source";
   }
-  return `${source.provider} · ${statusLabels[source.status] ?? source.status}`;
+  const sourceStatus = source.status === "ACTIVE" && !source.autoRenew
+    ? "Auto-renew off"
+    : statusLabels[source.status] ?? source.status;
+  return `${source.provider} · ${sourceStatus}`;
 };
 
 const isWebManageAction = (source: SubscriptionSourceDto | null) =>
@@ -137,16 +149,21 @@ const openManageAction = async (source: SubscriptionSourceDto | null) => {
 
 export default function SubscriptionsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const status = useSubscriptionStatus();
   const premiumActive = status.statusResponse?.premiumActive ?? false;
-  const products = useSubscriptionProducts(!status.isLoadingStatus && !premiumActive);
+  const isTrial = status.statusResponse?.status === "TRIAL";
+  const renewalCanceled = status.statusResponse?.status === "ACTIVE"
+    && status.statusResponse.autoRenew === false;
+  const canPurchaseSubscription = !premiumActive || isTrial;
+  const products = useSubscriptionProducts(!status.isLoadingStatus && canPurchaseSubscription);
   const validateSubscription = useValidateSubscription();
   const restoreSubscriptions = useRestoreSubscriptions();
   const trackedScreenOpen = useRef(false);
 
   const activeSource = status.statusResponse?.sources?.[0] ?? null;
   const isBusy = validateSubscription.isPending || restoreSubscriptions.isPending;
-  const showProducts = !status.isLoadingStatus && !premiumActive;
+  const showProducts = !status.isLoadingStatus && canPurchaseSubscription;
   const showStoreProductsUnavailable =
     showProducts &&
     !products.isLoadingProducts &&
@@ -179,8 +196,15 @@ export default function SubscriptionsScreen() {
         storeProduct: product.storeProduct,
       },
       {
-        onSuccess: () => {
-          Alert.alert("Subscription", "Premium is active.");
+        onSuccess: (response) => {
+          Alert.alert(
+            "Subscription",
+            response.premiumActive && response.status === "ACTIVE"
+              ? response.planChangeScheduled
+                ? "Premium is active. The plan change will take effect on the next App Store renewal."
+                : "Premium is active."
+              : "The verified purchase is not active.",
+          );
         },
         onError: (error) => {
           const message = userErrorMessage(error);
@@ -211,8 +235,25 @@ export default function SubscriptionsScreen() {
 
   const handleRefresh = async () => {
     await status.refresh();
-    if (!premiumActive) {
+    if (canPurchaseSubscription) {
       await products.refetchProducts();
+    }
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await clearAuthSession();
+    } finally {
+      queryClient.clear();
+      router.replace("/login");
     }
   };
 
@@ -233,7 +274,18 @@ export default function SubscriptionsScreen() {
             <Text variant="title">Subscription</Text>
             <Text variant="caption">Manage premium access</Text>
           </View>
-          <Button title="Back" variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
+          {!status.isLoadingStatus && !premiumActive ? (
+            <Button
+              title="Logout"
+              variant="outline"
+              tone="danger"
+              size="sm"
+              disabled={isBusy}
+              onPress={() => void handleLogout()}
+            />
+          ) : (
+            <Button title="Back" variant="outline" tone="secondary" size="sm" onPress={handleBack} />
+          )}
         </View>
 
         <Card style={styles.card}>
@@ -250,9 +302,18 @@ export default function SubscriptionsScreen() {
             <Text variant="caption">Loading subscription status...</Text>
           ) : (
             <>
-              <Text style={styles.planName}>{statusLabels[status.statusResponse?.status ?? ""] ?? "Inactive"}</Text>
+              <Text style={styles.planName}>
+                {renewalCanceled
+                  ? "Renewal canceled"
+                  : statusLabels[status.statusResponse?.status ?? ""] ?? "Inactive"}
+              </Text>
               <Text variant="caption">Access until: {formatDate(status.statusResponse?.effectiveTo)}</Text>
               <Text variant="caption">{sourceTitle(activeSource)}</Text>
+              {renewalCanceled ? (
+                <Text variant="caption">
+                  Auto-renewal is off. Premium access remains available through the date above.
+                </Text>
+              ) : null}
               {status.statusResponse?.status === "PAST_DUE" ? (
                 <Text style={styles.warningText}>
                   The payment is overdue. Premium access remains available through the grace-period date above.
@@ -268,7 +329,9 @@ export default function SubscriptionsScreen() {
                   To renew with LiqPay, open the web version and complete a new checkout.
                 </Text>
               ) : null}
-              {premiumActive && isLiqPaySource(activeSource) ? (
+              {isTrial ? (
+                <Text variant="caption">Choose an App Store or Google Play product below.</Text>
+              ) : premiumActive && isLiqPaySource(activeSource) ? (
                 <Text variant="caption">
                   LiqPay subscription can be cancelled only in the web version of the app.
                 </Text>

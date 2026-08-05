@@ -74,6 +74,17 @@ const toQueryFilters = (filters?: TransactionFilters) => {
   return Object.keys(query).length > 0 ? query : undefined;
 };
 
+const getApiErrorMessage = (apiError: unknown, fallback: string) => {
+  if (apiError && typeof apiError === "object" && "message" in apiError) {
+    const message = (apiError as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
 export const useTransactions = (
   filters?: TransactionFilters,
 ): UseTransactionsResult => {
@@ -109,20 +120,19 @@ export const useTransactions = (
 
       const headers = { Authorization: `Bearer ${token}` };
       const query = toQueryFilters(nextFilters ?? filters);
-      const { data, error: apiError } = await client.GET("/api/v2/transactions" as any, {
+      const { data, error: apiError, response } = await client.GET("/api/v2/transactions" as any, {
         headers,
         params: query ? { query } : undefined,
       });
       if (apiError || !data) {
-        const status = (apiError as { status?: number } | undefined)?.status;
-        if (status === 401) {
+        if (response.status === 401) {
           await removeToken();
           setError("Сессия истекла. Войдите снова.");
           router.replace("/login");
           return;
         }
         setTransactions([]);
-        setError("Не удалось загрузить транзакции.");
+        setError(getApiErrorMessage(apiError, "Не удалось загрузить транзакции."));
       } else {
         setTransactions(visibleTransactions(data as TransactionDto[]));
       }

@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "me.moneydrive.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Allow moneydrive.me to connect to the local development server while debugging.",
         "NSBonjourServices": [
@@ -55,6 +56,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       "react-native-iap",
       [
         "expo-build-properties",

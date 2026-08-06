@@ -5,11 +5,11 @@ import { useRouter } from "expo-router";
 import type { CurrencyCode } from "../../src/shared/api/dto";
 import {
   ApiError,
-  clearAuthSession,
   getOnboardingSession,
   submitOnboardingBaseCurrency,
   submitOnboardingFirstExpense,
 } from "../../src/features/auth/api";
+import { useUnauthorizedRedirect } from "../../src/features/auth/useUnauthorizedRedirect";
 import type {
   OnboardingBaseCurrencyPayload,
   OnboardingFirstExpensePayload,
@@ -106,10 +106,7 @@ export default function OnboardingScreen() {
   const [expenseFieldErrors, setExpenseFieldErrors] = useState<ExpenseFieldErrors>({});
   const [isExpenseAmountKeypadOpen, setIsExpenseAmountKeypadOpen] = useState(false);
 
-  const handleUnauthorized = useCallback(async () => {
-    await clearAuthSession();
-    router.replace("/login");
-  }, [router]);
+  const handleUnauthorized = useUnauthorizedRedirect();
 
   const loadSession = useCallback(async () => {
     setIsLoading(true);

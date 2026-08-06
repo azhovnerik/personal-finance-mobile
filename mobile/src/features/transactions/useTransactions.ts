@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "expo-router";
 
 import client from "../../shared/lib/api/client";
 import { notifyTransactionsChanged, subscribeTransactionsChanged } from "../../shared/lib/events/transactions";
 
-import { getToken, removeToken } from "../../storage/auth";
+import { getToken } from "../../storage/auth";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 import {
   CurrencyCode,
   TransactionDirection,
@@ -90,7 +90,7 @@ export const useTransactions = (
 ): UseTransactionsResult => {
   const useMocks =
     __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
-  const router = useRouter();
+  const handleUnauthorized = useUnauthorizedRedirect();
   const [transactions, setTransactions] = useState<TransactionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +109,7 @@ export const useTransactions = (
       if (!token) {
         setTransactions([]);
         setError("Сессия истекла. Войдите снова.");
-        router.replace("/login");
+        await handleUnauthorized();
         return;
       }
 
@@ -126,9 +126,8 @@ export const useTransactions = (
       });
       if (apiError || !data) {
         if (response.status === 401) {
-          await removeToken();
           setError("Сессия истекла. Войдите снова.");
-          router.replace("/login");
+          await handleUnauthorized();
           return;
         }
         setTransactions([]);
@@ -142,7 +141,7 @@ export const useTransactions = (
     } finally {
       setIsLoading(false);
     }
-  }, [filters, router, useMocks, visibleTransactions]);
+  }, [filters, handleUnauthorized, useMocks, visibleTransactions]);
 
   useEffect(() => {
     void loadTransactions();
@@ -166,7 +165,7 @@ export const useTransactions = (
         const token = await getToken();
         if (!token) {
           setError("Сессия истекла. Войдите снова.");
-          router.replace("/login");
+          await handleUnauthorized();
           return false;
         }
 
@@ -184,9 +183,8 @@ export const useTransactions = (
         });
 
         if (response.status === 401) {
-          await removeToken();
           setError("Сессия истекла. Войдите снова.");
-          router.replace("/login");
+          await handleUnauthorized();
           return false;
         }
 
@@ -203,7 +201,7 @@ export const useTransactions = (
         return false;
       }
     },
-    [router, useMocks],
+    [handleUnauthorized, useMocks],
   );
 
   const editTransaction = useCallback(
@@ -214,7 +212,7 @@ export const useTransactions = (
         const token = await getToken();
         if (!token) {
           setError("Сессия истекла. Войдите снова.");
-          router.replace("/login");
+          await handleUnauthorized();
           return false;
         }
 
@@ -238,9 +236,8 @@ export const useTransactions = (
         });
 
         if (response.status === 401) {
-          await removeToken();
           setError("Сессия истекла. Войдите снова.");
-          router.replace("/login");
+          await handleUnauthorized();
           return false;
         }
 
@@ -261,7 +258,7 @@ export const useTransactions = (
         return false;
       }
     },
-    [router, useMocks],
+    [handleUnauthorized, useMocks],
   );
 
   return {

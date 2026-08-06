@@ -1,20 +1,14 @@
 import { useCallback } from "react";
-import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { clearAuthSession } from "../auth/api";
+import { useUnauthorizedRedirect } from "../auth/useUnauthorizedRedirect";
 import { getSettingsProfile } from "./api";
 import { SettingsApiError } from "./types";
 
 export const SETTINGS_PROFILE_QUERY_KEY = ["settings", "profile"] as const;
 
 export const useSettingsProfile = () => {
-  const router = useRouter();
-
-  const handleUnauthorized = useCallback(async () => {
-    await clearAuthSession();
-    router.replace("/login");
-  }, [router]);
+  const handleUnauthorized = useUnauthorizedRedirect();
 
   const query = useQuery({
     queryKey: SETTINGS_PROFILE_QUERY_KEY,

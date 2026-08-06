@@ -3,6 +3,8 @@ import type { AccountType, CurrencyCode } from "../../shared/api/dto";
 export type AuthErrorCode =
   | "VALIDATION_ERROR"
   | "INVALID_CREDENTIALS"
+  | "GOOGLE_AUTH_INVALID"
+  | "APPLE_AUTH_INVALID"
   | "EMAIL_NOT_VERIFIED"
   | "ACCOUNT_LOCKED"
   | "TOKEN_EXPIRED"

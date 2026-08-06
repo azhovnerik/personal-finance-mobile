@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "expo-router";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,7 +16,8 @@ import {
 } from "../../../shared/api/dto";
 import client from "../../../shared/lib/api/client";
 import { notifyTransactionsChanged } from "../../../shared/lib/events/transactions";
-import { getToken, removeToken } from "../../../storage/auth";
+import { getToken } from "../../../storage/auth";
+import { useUnauthorizedRedirect } from "../../auth/useUnauthorizedRedirect";
 
 import { AmountKeypad } from "../components/AmountKeypad";
 import { CategoryPickerField } from "../../categories/components/CategoryPickerField";
@@ -114,7 +114,7 @@ const toAccount = (
 };
 
 export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionModalProps) => {
-  const router = useRouter();
+  const handleUnauthorized = useUnauthorizedRedirect();
   const insets = useSafeAreaInsets();
   const [formState, setFormState] = useState<TransactionFormState>(() => getInitialFormState());
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -176,11 +176,6 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
       return globalThis.crypto.randomUUID();
     }
     return `${Date.now()}-${Math.random()}`;
-  };
-
-  const handleUnauthorized = async () => {
-    await removeToken();
-    router.replace("/login");
   };
 
   const handleSave = async () => {

@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
   Text as RNText,
+  View,
   ViewStyle,
   PressableProps,
 } from "react-native";
@@ -16,6 +18,7 @@ type ButtonProps = PressableProps & {
   variant?: "primary" | "secondary" | "ghost" | "outline";
   tone?: ButtonTone;
   size?: ButtonSize;
+  leftIcon?: ReactNode;
   style?: ViewStyle;
 };
 
@@ -32,10 +35,23 @@ export function Button({
   variant = "primary",
   tone = "primary",
   size = "md",
+  leftIcon,
   style,
   ...props
 }: ButtonProps) {
   const toneColor = toneColors[tone];
+  const label = (
+    <RNText
+      style={[
+        styles.text,
+        styles[`text${size}`],
+        styles[`${variant}Text`],
+        variant === "outline" && { color: toneColor },
+      ]}
+    >
+      {title}
+    </RNText>
+  );
 
   return (
     <Pressable
@@ -49,16 +65,7 @@ export function Button({
       ]}
       {...props}
     >
-      <RNText
-        style={[
-          styles.text,
-          styles[`text${size}`],
-          styles[`${variant}Text`],
-          variant === "outline" && { color: toneColor },
-        ]}
-      >
-        {title}
-      </RNText>
+      {leftIcon ? <View style={styles.content}>{leftIcon}{label}</View> : label}
     </Pressable>
   );
 }
@@ -70,6 +77,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "transparent",
+  },
+  content: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "center",
   },
   sizesm: {
     paddingVertical: spacing.xs,

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
-import * as Crypto from "expo-crypto";
 
-import { ApiError, loginWithApple, persistAuthTokenFromResponse } from "./api";
+import { ApiError, createAppleLoginNonce, loginWithApple, persistAuthTokenFromResponse } from "./api";
 import type { AuthResponse } from "./types";
 
 type AppleAuthenticationError = {
@@ -50,7 +49,7 @@ export const useAppleLogin = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const nonce = Crypto.randomUUID();
+      const { nonce } = await createAppleLoginNonce();
       const credential = await AppleAuthentication.signInAsync({
         nonce,
         requestedScopes: [

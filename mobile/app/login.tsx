@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import { useLogin } from "../src/features/auth/useLogin";
+import { useAppleLogin } from "../src/features/auth/useAppleLogin";
 import { useGoogleLogin } from "../src/features/auth/useGoogleLogin";
 import { Button, Card, GoogleIcon, Input, ScreenContainer, Text, colors, spacing } from "../src/shared/ui";
 import { resolveRouteFromAuthResult } from "../src/features/auth/routing";
@@ -10,6 +12,7 @@ import { resolveRouteFromAuthResult } from "../src/features/auth/routing";
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isLoading, error, errorCode } = useLogin();
+  const appleLogin = useAppleLogin();
   const googleLogin = useGoogleLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +32,14 @@ export default function LoginScreen() {
     }
   };
 
-  const isAnyLoginLoading = isLoading || googleLogin.isLoading;
+  const handleAppleLogin = async () => {
+    const response = await appleLogin.login();
+    if (response) {
+      router.replace(resolveRouteFromAuthResult(response));
+    }
+  };
+
+  const isAnyLoginLoading = isLoading || googleLogin.isLoading || appleLogin.isLoading;
 
   return (
     <ScreenContainer style={styles.screen}>
@@ -68,7 +78,9 @@ export default function LoginScreen() {
         >
           <Text style={styles.passwordToggleText}>{isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}</Text>
         </Pressable>
-        {error || googleLogin.error ? <Text style={styles.error}>{error ?? googleLogin.error}</Text> : null}
+        {error || googleLogin.error || appleLogin.error ? (
+          <Text style={styles.error}>{error ?? googleLogin.error ?? appleLogin.error}</Text>
+        ) : null}
         <Button
           title={isLoading ? "Входим..." : "Войти"}
           onPress={handleLogin}
@@ -91,6 +103,17 @@ export default function LoginScreen() {
           onPress={handleGoogleLogin}
           disabled={!googleLogin.isAvailable || isAnyLoginLoading}
         />
+        {appleLogin.isAvailable ? (
+          <View pointerEvents={isAnyLoginLoading ? "none" : "auto"} style={isAnyLoginLoading ? styles.disabled : null}>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={10}
+              style={styles.appleButton}
+              onPress={handleAppleLogin}
+            />
+          </View>
+        ) : null}
         <Button
           title="Забыли пароль?"
           variant="ghost"
@@ -155,5 +178,12 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: "600",
+  },
+  appleButton: {
+    width: "100%",
+    height: 50,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

@@ -156,6 +156,17 @@ export const loginWithGoogle = async (idToken: string) =>
     body: { idToken },
   });
 
+export const createAppleLoginNonce = async () =>
+  requestJson<{ nonce: string; expiresAt: string }>("/api/v2/user/auth/apple/nonce", {
+    method: "POST",
+  });
+
+export const loginWithApple = async (identityToken: string, nonce: string, name: string | null) =>
+  requestJson<AuthResponse>("/api/v2/user/auth/apple", {
+    method: "POST",
+    body: { identityToken, nonce, name },
+  });
+
 export const register = async (payload: { email: string; name: string; password: string; language?: string }) =>
   requestJson<RegisterResponse>("/api/v2/user/auth/register", {
     method: "POST",

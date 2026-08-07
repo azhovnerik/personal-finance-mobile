@@ -1,12 +1,12 @@
 import { localizeSystemMessage, translate } from "../../src/localization";
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {Pressable, StyleSheet, View} from "react-native";
 import {useRouter} from "expo-router";
 
 import {getRegistrationSupportedLanguages, register as registerRequest} from "../../src/features/auth/api";
 import type {ApiError} from "../../src/features/auth/api";
 import type {SupportedLanguage} from "../../src/features/auth/types";
-import {Button, Card, Input, ScreenContainer, Text, colors, spacing} from "../../src/shared/ui";
+import {Button, Card, Input, ScreenContainer, Select, Text, colors, spacing} from "../../src/shared/ui";
 
 const FALLBACK_SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     {code: "ua", label: "Ukrainian"},
@@ -70,6 +70,10 @@ export default function RegisterScreen() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>(FALLBACK_SUPPORTED_LANGUAGES);
+    const languageOptions = useMemo(
+        () => supportedLanguages.map((item) => ({value: item.code, label: item.label})),
+        [supportedLanguages],
+    );
 
     useEffect(() => {
         let isMounted = true;
@@ -146,6 +150,13 @@ export default function RegisterScreen() {
                 <Input placeholder={translate("Email")} autoCapitalize="none" keyboardType="email-address" value={email}
                        onChangeText={setEmail}/>
                 <Input placeholder={translate("Name")} value={name} onChangeText={setName}/>
+                <Text variant="caption">{translate("Interface language")}</Text>
+                <Select
+                    value={language}
+                    options={languageOptions}
+                    placeholder={translate("Interface language")}
+                    onChange={setLanguage}
+                />
                 <View style={styles.passwordField}>
                     <Input
                         placeholder={translate("Password")}

@@ -1,4 +1,5 @@
 import { localizeSystemMessage, translate } from "../src/localization";
+import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -39,6 +40,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const { profileResponse, isLoading, isRefreshing, error, refresh } = useSettingsProfile();
   const updateProfileMutation = useUpdateSettingsProfile();
   const resendEmailMutation = useResendPendingEmail();
@@ -141,6 +143,7 @@ export default function SettingsScreen() {
           ? localizeSystemMessage(result.message, "The new email must be verified.")
           : translate("Profile saved."),
       );
+      setLocale(result.profile.language);
       setIsProfileDirty(false);
       setFieldErrors({});
       setFormError(null);

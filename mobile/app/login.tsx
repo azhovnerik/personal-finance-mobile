@@ -1,4 +1,5 @@
 import { translate } from "../src/localization";
+import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -12,6 +13,7 @@ import { resolveRouteFromAuthResult } from "../src/features/auth/routing";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const { login, isLoading, error, errorCode } = useLogin();
   const appleLogin = useAppleLogin();
   const googleLogin = useGoogleLogin();
@@ -22,6 +24,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     const response = await login(email.trim(), password);
     if (response) {
+      setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
     }
   };
@@ -29,6 +32,7 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     const response = await googleLogin.login();
     if (response) {
+      setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
     }
   };
@@ -36,6 +40,7 @@ export default function LoginScreen() {
   const handleAppleLogin = async () => {
     const response = await appleLogin.login();
     if (response) {
+      setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
     }
   };

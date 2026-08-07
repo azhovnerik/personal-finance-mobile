@@ -1,4 +1,5 @@
 import { translate } from "../src/localization";
+import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -36,6 +37,7 @@ const getTokenExp = (token: string): number | null => {
 
 export default function IndexScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const [isChecking, setIsChecking] = useState(true);
   const [hasNetworkError, setHasNetworkError] = useState(false);
   const isMountedRef = useRef(true);
@@ -84,6 +86,7 @@ export default function IndexScreen() {
 
     try {
       const me = await getCurrentUser(token);
+      setLocale(me.language);
       updateIfMounted(() => {
         router.replace(resolveRouteFromUser(me));
       });
@@ -113,7 +116,7 @@ export default function IndexScreen() {
     updateIfMounted(() => {
       router.replace("/login");
     });
-  }, [router]);
+  }, [router, setLocale]);
 
   useEffect(() => {
     isMountedRef.current = true;

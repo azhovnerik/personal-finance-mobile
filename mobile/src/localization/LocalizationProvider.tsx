@@ -10,7 +10,7 @@ import {
 
 type LocalizationContextValue = {
   locale: AvailableLocale;
-  setLocale: (locale: string) => void;
+  setLocale: (locale?: string | null) => void;
   t: typeof translate;
 };
 
@@ -19,7 +19,7 @@ const LocalizationContext = createContext<LocalizationContextValue | null>(null)
 export function LocalizationProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<AvailableLocale>(() => setI18nLocale(DEFAULT_LOCALE));
 
-  const setLocale = useCallback((nextLocale: string) => {
+  const setLocale = useCallback((nextLocale?: string | null) => {
     const normalized = normalizeLocale(nextLocale);
     setI18nLocale(normalized);
     setLocaleState(normalized);

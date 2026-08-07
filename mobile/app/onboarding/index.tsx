@@ -1,4 +1,5 @@
 import { localizeSystemMessage, translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
@@ -97,6 +98,7 @@ const validateExpenseDraft = (expense: ExpenseDraft): { errors: ExpenseFieldErro
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const [session, setSession] = useState<OnboardingSessionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -188,6 +190,7 @@ export default function OnboardingScreen() {
         language: selectedLanguage,
         baseCurrency: selectedCurrency,
       });
+      setLocale(nextSession.user.language ?? selectedLanguage);
       setSession(nextSession);
     } catch (rawError) {
       const apiError = rawError as ApiError;

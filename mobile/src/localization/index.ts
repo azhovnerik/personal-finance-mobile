@@ -2,11 +2,27 @@ import { I18n } from "i18n-js";
 import type { TranslateOptions } from "i18n-js/typings/typing";
 
 export const DEFAULT_LOCALE = "en";
-export const AVAILABLE_LOCALES = ["en"] as const;
+export const AVAILABLE_LOCALES = [
+  "en",
+  "ua",
+  "es",
+  "pt",
+  "fr",
+  "pl",
+  "de",
+  "it-IT",
+  "nl-NL",
+  "tr-TR",
+  "ja-JP",
+  "ko-KR",
+  "zh-CN",
+  "zh-TW",
+  "pt-BR",
+] as const;
 
 export type AvailableLocale = (typeof AVAILABLE_LOCALES)[number];
 
-const i18n = new I18n({ en: {} });
+const i18n = new I18n(Object.fromEntries(AVAILABLE_LOCALES.map((locale) => [locale, {}])));
 i18n.defaultLocale = DEFAULT_LOCALE;
 i18n.locale = DEFAULT_LOCALE;
 i18n.enableFallback = true;
@@ -20,9 +36,44 @@ export const normalizeLocale = (locale?: string | null): AvailableLocale => {
   }
 
   const normalized = locale.replace("_", "-").toLowerCase();
-  if (normalized === "en" || normalized.startsWith("en-")) {
-    return "en";
+  const aliases: Record<string, AvailableLocale> = {
+    en: "en",
+    "en-us": "en",
+    "en-gb": "en",
+    ua: "ua",
+    uk: "ua",
+    "uk-ua": "ua",
+    ru: "ua",
+    "ru-ru": "ua",
+    es: "es",
+    "es-es": "es",
+    pt: "pt",
+    "pt-pt": "pt",
+    fr: "fr",
+    "fr-fr": "fr",
+    pl: "pl",
+    "pl-pl": "pl",
+    de: "de",
+    "de-de": "de",
+    it: "it-IT",
+    "it-it": "it-IT",
+    nl: "nl-NL",
+    "nl-nl": "nl-NL",
+    tr: "tr-TR",
+    "tr-tr": "tr-TR",
+    ja: "ja-JP",
+    "ja-jp": "ja-JP",
+    ko: "ko-KR",
+    "ko-kr": "ko-KR",
+    zh: "zh-CN",
+    "zh-cn": "zh-CN",
+    "zh-tw": "zh-TW",
+    "pt-br": "pt-BR",
+  };
+  if (aliases[normalized]) {
+    return aliases[normalized];
   }
+
   return DEFAULT_LOCALE;
 };
 
@@ -54,6 +105,20 @@ export const getCurrentLocale = (): AvailableLocale => normalizeLocale(i18n.loca
 
 const intlLocales: Record<AvailableLocale, string> = {
   en: "en-US",
+  ua: "uk-UA",
+  es: "es",
+  pt: "pt-PT",
+  fr: "fr",
+  pl: "pl",
+  de: "de",
+  "it-IT": "it-IT",
+  "nl-NL": "nl-NL",
+  "tr-TR": "tr-TR",
+  "ja-JP": "ja-JP",
+  "ko-KR": "ko-KR",
+  "zh-CN": "zh-CN",
+  "zh-TW": "zh-TW",
+  "pt-BR": "pt-BR",
 };
 
 export const getCurrentIntlLocale = (): string => intlLocales[getCurrentLocale()];

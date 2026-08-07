@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken, removeOnboardingBaseCurrencySelected, removeToken, setToken } from "../../storage/auth";
 import type {
@@ -33,7 +34,7 @@ const isDevLoggingEnabled = __DEV__;
 const parseErrorResponse = async (response: Response, fallback: string) => {
   try {
     const body = (await response.json()) as ApiErrorResponse;
-    return new ApiError(body.message ?? fallback, {
+    return new ApiError(localizeSystemMessage(body.message, fallback), {
       code: typeof body.code === "string" ? body.code : null,
       details: body.details ?? null,
       status: response.status,
@@ -91,7 +92,7 @@ const requestJson = async <T>(
       });
     }
     if (error instanceof Error && error.name === "AbortError") {
-      throw new ApiError("Сервер не ответил вовремя. Попробуйте еще раз.", { status: 408 });
+      throw new ApiError(translate("The server did not respond in time. Try again."), { status: 408 });
     }
     throw error;
   }
@@ -205,7 +206,7 @@ export const resetPassword = async (token: string, newPassword: string) =>
 export const getCurrentUser = async (token?: string | null) => {
   const authToken = token ?? (await getToken());
   if (!authToken) {
-    throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
+    throw new ApiError(translate("Your session has expired. Sign in again."), { code: "UNAUTHORIZED", status: 401 });
   }
   return requestJson<UserResponse>("/api/v2/user/me", {
     method: "GET",
@@ -216,7 +217,7 @@ export const getCurrentUser = async (token?: string | null) => {
 export const getOnboardingSession = async (clientLocale?: string | null) => {
   const token = await getToken();
   if (!token) {
-    throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
+    throw new ApiError(translate("Your session has expired. Sign in again."), { code: "UNAUTHORIZED", status: 401 });
   }
   return requestJson<OnboardingSessionResponse>("/api/v2/onboarding/session", {
     method: "GET",
@@ -228,7 +229,7 @@ export const getOnboardingSession = async (clientLocale?: string | null) => {
 export const submitOnboardingBaseCurrency = async (payload: SubmitOnboardingBaseCurrencyPayload) => {
   const token = await getToken();
   if (!token) {
-    throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
+    throw new ApiError(translate("Your session has expired. Sign in again."), { code: "UNAUTHORIZED", status: 401 });
   }
   return requestJson<OnboardingSessionResponse>("/api/v2/onboarding/base-currency", {
     method: "POST",
@@ -241,7 +242,7 @@ export const submitOnboardingBaseCurrency = async (payload: SubmitOnboardingBase
 export const submitOnboardingFirstExpense = async (payload: SubmitOnboardingFirstExpensePayload) => {
   const token = await getToken();
   if (!token) {
-    throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
+    throw new ApiError(translate("Your session has expired. Sign in again."), { code: "UNAUTHORIZED", status: 401 });
   }
   return requestJson<OnboardingSessionResponse>("/api/v2/onboarding/first-expense", {
     method: "POST",
@@ -254,7 +255,7 @@ export const submitOnboardingFirstExpense = async (payload: SubmitOnboardingFirs
 export const updateLanguagePreference = async (language: string) => {
   const token = await getToken();
   if (!token) {
-    throw new ApiError("Сессия истекла. Войдите снова.", { code: "UNAUTHORIZED", status: 401 });
+    throw new ApiError(translate("Your session has expired. Sign in again."), { code: "UNAUTHORIZED", status: 401 });
   }
   return requestJson<{ language: string }>("/api/v2/settings/language", {
     method: "PUT",

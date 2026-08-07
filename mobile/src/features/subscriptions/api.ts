@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken } from "../../storage/auth";
 import type {
@@ -22,7 +23,7 @@ const parseError = async (response: Response, fallbackMessage: string) => {
   try {
     const payload = (await response.json()) as ApiErrorResponse;
     const details = payload.details ?? null;
-    return new SubscriptionsApiError(payload.message ?? fallbackMessage, {
+    return new SubscriptionsApiError(localizeSystemMessage(payload.message, fallbackMessage), {
       code: domainErrorCode(details) ?? payload.code ?? "UNKNOWN",
       details,
       status: response.status,
@@ -44,7 +45,7 @@ const requestSubscription = async <T>(
 ): Promise<T> => {
   const token = await getToken();
   if (!token) {
-    throw new SubscriptionsApiError("Сессия истекла. Войдите снова.", {
+    throw new SubscriptionsApiError(translate("Your session has expired. Sign in again."), {
       code: "UNAUTHORIZED",
       status: 401,
     });
@@ -61,20 +62,20 @@ const requestSubscription = async <T>(
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new SubscriptionsApiError("Сессия истекла. Войдите снова.", {
+      throw new SubscriptionsApiError(translate("Your session has expired. Sign in again."), {
         code: "UNAUTHORIZED",
         status: 401,
       });
     }
 
     if (response.status === 403) {
-      throw new SubscriptionsApiError("Доступ запрещен.", {
+      throw new SubscriptionsApiError(translate("Access denied."), {
         code: "FORBIDDEN",
         status: 403,
       });
     }
 
-    throw await parseError(response, `Ошибка запроса (HTTP ${response.status}).`);
+    throw await parseError(response, translate("Request failed (HTTP {{status}}).", { status: response.status }));
   }
 
   return (await response.json()) as T;

@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -49,17 +50,17 @@ export default function TransactionsScreen() {
     }, [params.accountId]);
 
     const typeOptions = [
-        {value: "ALL", label: "Все типы"},
-        {value: "INCOME", label: "Доход"},
-        {value: "EXPENSE", label: "Расход"},
+        {value: "ALL", label: translate("All types")},
+        {value: "INCOME", label: translate("Income")},
+        {value: "EXPENSE", label: translate("Expense")},
     ];
 
     const selectedAccountLabel = useMemo(() => {
         if (!filters.accountId) {
-            return "Все счета";
+            return translate("All accounts");
         }
         const selected = accounts.find((account) => account.id === filters.accountId);
-        return selected?.name ?? "Все счета";
+        return selected?.name ?? translate("All accounts");
     }, [accounts, filters.accountId]);
 
     const periodLabel = useMemo(() => {
@@ -67,12 +68,12 @@ export default function TransactionsScreen() {
             return `${filters.startDate} – ${filters.endDate}`;
         }
         if (filters.startDate) {
-            return `From ${filters.startDate}`;
+            return translate("From {{date}}", { date: filters.startDate });
         }
         if (filters.endDate) {
-            return `Until ${filters.endDate}`;
+            return translate("Until {{date}}", { date: filters.endDate });
         }
-        return "All time";
+        return translate("All time");
     }, [filters.endDate, filters.startDate]);
 
     const openEditScreen = (transaction: unknown) => {
@@ -124,7 +125,7 @@ export default function TransactionsScreen() {
             return dto.categoryTitle;
         }
 
-        return "Без категории";
+        return translate("Uncategorized");
     };
 
     const getCategoryIcon = (transaction: unknown) => {
@@ -145,8 +146,8 @@ export default function TransactionsScreen() {
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
                     <View>
-                        <Text variant="title">Transactions</Text>
-                        <Text variant="caption">Period: {periodLabel}</Text>
+                        <Text variant="title">{translate("Transactions")}</Text>
+                        <Text variant="caption">{translate("Period: {{period}}", { period: periodLabel })}</Text>
                     </View>
                     <Chip label={baseCurrency} isActive/>
                 </View>
@@ -154,19 +155,19 @@ export default function TransactionsScreen() {
                 <Card style={styles.filterCard}>
                     <View style={styles.filterRow}>
                         <DateInput
-                            placeholder="Start date"
+                            placeholder={translate("Start date")}
                             value={filters.startDate}
                             onChange={(value) => setFilters((prev) => ({...prev, startDate: value}))}
                         />
                         <DateInput
-                            placeholder="End date"
+                            placeholder={translate("End date")}
                             value={filters.endDate}
                             onChange={(value) => setFilters((prev) => ({...prev, endDate: value}))}
                         />
                     </View>
                     <View style={styles.filterRow}>
                         <Select
-                            placeholder="Type"
+                            placeholder={translate("Type")}
                             value={filters.type}
                             options={typeOptions}
                             onChange={(value) =>

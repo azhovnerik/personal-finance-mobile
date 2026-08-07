@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { LocalizationProvider, useLocalization } from "../src/localization/LocalizationProvider";
 import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
 import { useStorePurchaseObserver } from "../src/features/subscriptions/useStorePurchaseObserver";
 import { getToken } from "../src/storage/auth";
@@ -45,6 +46,23 @@ const StorePurchaseObserver = () => {
   return null;
 };
 
+const LocalizedApp = () => {
+  const { locale } = useLocalization();
+
+  return (
+    <>
+      <StorePurchaseObserver />
+      <SubscriptionGate />
+      <Stack
+        key={locale}
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+    </>
+  );
+};
+
 export default function RootLayout() {
   const [queryClient] = useState(
     () =>
@@ -60,13 +78,9 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StorePurchaseObserver />
-      <SubscriptionGate />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      />
+      <LocalizationProvider>
+        <LocalizedApp />
+      </LocalizationProvider>
     </QueryClientProvider>
   );
 }

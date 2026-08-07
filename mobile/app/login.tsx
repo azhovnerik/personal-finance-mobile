@@ -1,3 +1,4 @@
+import { translate } from "../src/localization";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -45,13 +46,13 @@ export default function LoginScreen() {
     <ScreenContainer style={styles.screen}>
       <View style={styles.logoWrapper}>
         <Image source={require("../assets/logo.png")} style={styles.logoImage} resizeMode="contain" />
-        <Text variant="subtitle" style={styles.logoText}>MoneyDrive.me</Text>
+        <Text variant="subtitle" style={styles.logoText}>{translate("MoneyDrive.me")}</Text>
       </View>
 
       <Card style={styles.card}>
-        <Text variant="heading" style={styles.title}>Log in</Text>
+        <Text variant="heading" style={styles.title}>{translate("Log in")}</Text>
         <Input
-          placeholder="Email"
+          placeholder={translate("Email")}
           autoCapitalize="none"
           keyboardType="email-address"
           textContentType="username"
@@ -60,7 +61,7 @@ export default function LoginScreen() {
           editable={!isAnyLoginLoading}
         />
         <Input
-          placeholder="Password"
+          placeholder={translate("Password")}
           secureTextEntry={!isPasswordVisible}
           autoCapitalize="none"
           autoCorrect={false}
@@ -76,26 +77,26 @@ export default function LoginScreen() {
           disabled={isAnyLoginLoading}
           style={styles.passwordToggle}
         >
-          <Text style={styles.passwordToggleText}>{isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}</Text>
+          <Text style={styles.passwordToggleText}>{isPasswordVisible ? translate("Hide password") : translate("Show password")}</Text>
         </Pressable>
         {error || googleLogin.error || appleLogin.error ? (
           <Text style={styles.error}>{error ?? googleLogin.error ?? appleLogin.error}</Text>
         ) : null}
         <Button
-          title={isLoading ? "Входим..." : "Войти"}
+          title={isLoading ? translate("Signing in...") : translate("Sign in")}
           onPress={handleLogin}
           disabled={isAnyLoginLoading || !email.trim() || !password}
           size="lg"
         />
         <Button
-          title="Создать аккаунт"
+          title={translate("Create account")}
           variant="outline"
           tone="primary"
           size="lg"
           onPress={() => router.push("/auth/register")}
         />
         <Button
-          title={googleLogin.isLoading ? "Входим через Google..." : "Login with Google"}
+          title={googleLogin.isLoading ? translate("Signing in with Google...") : translate("Login with Google")}
           variant="outline"
           tone="secondary"
           size="lg"
@@ -115,7 +116,7 @@ export default function LoginScreen() {
           </View>
         ) : null}
         <Button
-          title="Забыли пароль?"
+          title={translate("Forgot password?")}
           variant="ghost"
           tone="primary"
           size="lg"
@@ -123,7 +124,7 @@ export default function LoginScreen() {
         />
         {errorCode === "EMAIL_NOT_VERIFIED" ? (
           <Button
-            title="Отправить письмо повторно"
+            title={translate("Resend email")}
             variant="outline"
             tone="secondary"
             size="lg"

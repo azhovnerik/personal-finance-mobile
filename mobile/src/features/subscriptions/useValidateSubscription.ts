@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { finish, purchase, releasePurchase } from "./storeAdapter";
@@ -33,7 +34,7 @@ export const useValidateSubscription = () => {
       try {
         const response = await withSubscriptionAuth(() => validateStorePurchase(storePayload));
         if (response.status === "EXPIRED") {
-          throw new SubscriptionsApiError("Период этой покупки уже истек.", {
+          throw new SubscriptionsApiError(translate("This purchase period has already expired."), {
             code: "RECEIPT_EXPIRED",
           });
         }

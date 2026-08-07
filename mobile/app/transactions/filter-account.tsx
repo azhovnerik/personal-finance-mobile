@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,9 +28,9 @@ export default function FilterAccountScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.headerAction}>Назад</Text>
+            <Text style={styles.headerAction}>{translate("Back")}</Text>
           </Pressable>
-          <Text variant="subtitle">Выбор счета</Text>
+          <Text variant="subtitle">{translate("Select account")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -39,8 +40,7 @@ export default function FilterAccountScreen() {
             onPress={() => handleSelect(ALL_ACCOUNTS_ID)}
           >
             <Text style={selectedAccountId === ALL_ACCOUNTS_ID ? styles.accountTextActive : styles.accountText}>
-              Все счета
-            </Text>
+              {translate("All accounts")}</Text>
           </Pressable>
 
           {accounts.map((account) => {

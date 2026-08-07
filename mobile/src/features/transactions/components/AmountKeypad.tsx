@@ -1,3 +1,4 @@
+import { translate } from "../../../localization";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Text, colors, spacing } from "../../../shared/ui";
@@ -16,7 +17,7 @@ const KEYPAD_ROWS = [
   ["0", "000", "."],
 ];
 
-export function AmountKeypad({ value, onChange, onDone, doneLabel = "ГОТОВО" }: AmountKeypadProps) {
+export function AmountKeypad({ value, onChange, onDone, doneLabel = translate("DONE") }: AmountKeypadProps) {
   const appendDigit = (digit: string) => {
     const next = value === "0" ? digit : `${value}${digit}`;
     onChange(next);
@@ -44,7 +45,7 @@ export function AmountKeypad({ value, onChange, onDone, doneLabel = "ГОТОВ�
         <Text style={styles.keypadPreview}>{value}</Text>
         <View style={styles.keypadTopActions}>
           <Pressable style={[styles.keypadAction, styles.keypadClear]} onPress={clearAmount}>
-            <Text style={styles.keypadActionText}>C</Text>
+            <Text style={styles.keypadActionText}>{translate("C")}</Text>
           </Pressable>
           <Pressable style={[styles.keypadAction, styles.keypadDelete]} onPress={deleteLast}>
             <Text style={styles.keypadActionText}>⌫</Text>

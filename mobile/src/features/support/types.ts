@@ -1,3 +1,5 @@
+import { localizeSystemMessage, translate } from "../../localization";
+
 export type SupportRequestPayload = {
   email: string;
   subject: string;
@@ -32,12 +34,12 @@ export class SupportApiError extends Error {
 export const parseSupportApiError = async (response: Response) => {
   try {
     const payload = (await response.json()) as SupportApiErrorPayload;
-    return new SupportApiError(payload.message ?? "Unable to send request.", {
+    return new SupportApiError(localizeSystemMessage(payload.message, "Unable to send request."), {
       code: payload.code,
       details: payload.details ?? null,
       status: response.status,
     });
   } catch {
-    return new SupportApiError("Unable to send request.", { status: response.status });
+    return new SupportApiError(translate("Unable to send request."), { status: response.status });
   }
 };

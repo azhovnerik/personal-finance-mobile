@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../src/localization";
 import {useEffect, useState} from "react";
 import {Pressable, StyleSheet, View} from "react-native";
 import {useRouter} from "expo-router";
@@ -8,7 +9,7 @@ import type {SupportedLanguage} from "../../src/features/auth/types";
 import {Button, Card, Input, ScreenContainer, Text, colors, spacing} from "../../src/shared/ui";
 
 const FALLBACK_SUPPORTED_LANGUAGES: SupportedLanguage[] = [
-    {code: "ua", label: "Українська"},
+    {code: "ua", label: "Ukrainian"},
     {code: "en", label: "English"},
 ];
 
@@ -101,11 +102,11 @@ export default function RegisterScreen() {
 
     const onSubmit = async () => {
         if (!email.trim() || !name.trim() || !password) {
-            setError("Заполните email, имя и пароль.");
+            setError(translate("Enter your email, name, and password."));
             return;
         }
         if (password !== confirmPassword) {
-            setError("Пароли не совпадают.");
+            setError(translate("Passwords do not match."));
             return;
         }
 
@@ -125,7 +126,7 @@ export default function RegisterScreen() {
             });
         } catch (rawError) {
             const apiError = rawError as ApiError;
-            setError(apiError.message ?? "Не удалось зарегистрироваться.");
+            setError(localizeSystemMessage(apiError.message, "Unable to register."));
         } finally {
             setIsSubmitting(false);
         }
@@ -141,13 +142,13 @@ export default function RegisterScreen() {
     return (
         <ScreenContainer style={styles.screen}>
             <Card style={styles.card}>
-                <Text variant="heading" style={styles.title}>Регистрация</Text>
-                <Input placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email}
+                <Text variant="heading" style={styles.title}>{translate("Registration")}</Text>
+                <Input placeholder={translate("Email")} autoCapitalize="none" keyboardType="email-address" value={email}
                        onChangeText={setEmail}/>
-                <Input placeholder="Имя" value={name} onChangeText={setName}/>
+                <Input placeholder={translate("Name")} value={name} onChangeText={setName}/>
                 <View style={styles.passwordField}>
                     <Input
-                        placeholder="Пароль"
+                        placeholder={translate("Password")}
                         secureTextEntry={!isPasswordVisible}
                         value={password}
                         onChangeText={setPassword}
@@ -156,13 +157,13 @@ export default function RegisterScreen() {
                     <Pressable style={styles.passwordToggle} onPress={() => setIsPasswordVisible((prev) => !prev)}
                                hitSlop={8}>
                         <Text variant="caption" style={styles.passwordToggleText}>
-                            {isPasswordVisible ? "Скрыть" : "Показать"}
+                            {isPasswordVisible ? translate("Hide") : translate("Show")}
                         </Text>
                     </Pressable>
                 </View>
                 <View style={styles.passwordField}>
                     <Input
-                        placeholder="Повторите пароль"
+                        placeholder={translate("Confirm password")}
                         secureTextEntry={!isConfirmPasswordVisible}
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
@@ -174,16 +175,16 @@ export default function RegisterScreen() {
                         hitSlop={8}
                     >
                         <Text variant="caption" style={styles.passwordToggleText}>
-                            {isConfirmPasswordVisible ? "Скрыть" : "Показать"}
+                            {isConfirmPasswordVisible ? translate("Hide") : translate("Show")}
                         </Text>
                     </Pressable>
                 </View>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Button title={isSubmitting ? "Создаем..." : "Создать аккаунт"} onPress={() => void onSubmit()}
+                <Button title={isSubmitting ? translate("Creating...") : translate("Create account")} onPress={() => void onSubmit()}
                         disabled={isSubmitting}/>
-                <Button title="Назад ко входу" variant="outline" tone="secondary"
+                <Button title={translate("Back to sign in")} variant="outline" tone="secondary"
                         onPress={() => router.replace("/login")}/>
-                <Button title="Заполнить пароль" variant="outline" tone="secondary" onPress={() => onClick()}/>
+                <Button title={translate("Fill password")} variant="outline" tone="secondary" onPress={() => onClick()}/>
             </Card>
         </ScreenContainer>
     );

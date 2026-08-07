@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -131,7 +132,7 @@ export default function DashboardScreen() {
 
   const dateRangeLabel = useMemo(() => {
     if (!summary?.startDate || !summary?.endDate) {
-      return "Период не выбран";
+      return translate("No period selected");
     }
     return formatDateRange(summary.startDate, summary.endDate);
   }, [summary?.endDate, summary?.startDate]);
@@ -147,37 +148,37 @@ export default function DashboardScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text variant="title">Dashboard</Text>
-            <Text variant="caption">Период: {dateRangeLabel}</Text>
+            <Text variant="title">{translate("Dashboard")}</Text>
+            <Text variant="caption">{translate("Period: {{period}}", { period: dateRangeLabel })}</Text>
           </View>
-          <Button title="Logout" variant="outline" tone="danger" size="sm" onPress={handleLogout} />
+          <Button title={translate("Logout")} variant="outline" tone="danger" size="sm" onPress={handleLogout} />
         </View>
 
         <Card style={styles.filterCard}>
-          <Text variant="subtitle">Период аналитики</Text>
+          <Text variant="subtitle">{translate("Analytics period")}</Text>
           <View style={styles.toggleRow}>
-            <Chip label="Месяц" isActive={periodPreset === "THIS_MONTH"} onPress={() => setPeriodPreset("THIS_MONTH")} />
+            <Chip label={translate("Month")} isActive={periodPreset === "THIS_MONTH"} onPress={() => setPeriodPreset("THIS_MONTH")} />
             <Chip
-              label="30 дней"
+              label={translate("30 days")}
               isActive={periodPreset === "LAST_30_DAYS"}
               onPress={() => setPeriodPreset("LAST_30_DAYS")}
             />
-            <Chip label="Кастом" isActive={periodPreset === "CUSTOM"} onPress={() => setPeriodPreset("CUSTOM")} />
+            <Chip label={translate("Custom")} isActive={periodPreset === "CUSTOM"} onPress={() => setPeriodPreset("CUSTOM")} />
           </View>
           {periodPreset === "CUSTOM" ? (
             <View style={styles.customDateRow}>
-              <DateInput value={customStartDate} placeholder="Start date" onChange={setCustomStartDate} />
-              <DateInput value={customEndDate} placeholder="End date" onChange={setCustomEndDate} />
+              <DateInput value={customStartDate} placeholder={translate("Start date")} onChange={setCustomStartDate} />
+              <DateInput value={customEndDate} placeholder={translate("End date")} onChange={setCustomEndDate} />
             </View>
           ) : null}
         </Card>
 
-        {isLoading && !summary ? <Text variant="caption">Загрузка dashboard...</Text> : null}
+        {isLoading && !summary ? <Text variant="caption">{translate("Loading dashboard...")}</Text> : null}
 
         {!isLoading && error && !summary ? (
           <Card style={styles.sectionCard}>
             <Text style={styles.errorText}>{error}</Text>
-            <Button title="Повторить" size="sm" onPress={() => void refresh()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
           </Card>
         ) : null}
 
@@ -185,19 +186,19 @@ export default function DashboardScreen() {
           <>
             <Card style={styles.chartCardWrapper}>
               <View style={styles.sectionHeader}>
-                <Text variant="subtitle">Расходы и доходы</Text>
+                <Text variant="subtitle">{translate("Expenses and income")}</Text>
                 <View style={styles.toggleRow}>
                   <Chip
-                    label="Расходы"
+                    label={translate("Expenses")}
                     isActive={breakdownType === "expenses"}
                     onPress={() => setBreakdownType("expenses")}
                   />
-                  <Chip label="Доходы" isActive={breakdownType === "income"} onPress={() => setBreakdownType("income")} />
+                  <Chip label={translate("Income")} isActive={breakdownType === "income"} onPress={() => setBreakdownType("income")} />
                 </View>
               </View>
-              <Text variant="caption">Сегменты показывают суммы по категориям.</Text>
+              <Text variant="caption">{translate("Segments show amounts by category.")}</Text>
               {categorySegments.length === 0 ? (
-                <Text variant="caption">Нет данных за выбранный период.</Text>
+                <Text variant="caption">{translate("No data for the selected period.")}</Text>
               ) : (
                 <View style={styles.pieRow}>
                   <View style={styles.pieChartWrapper}>
@@ -218,7 +219,7 @@ export default function DashboardScreen() {
                       ))}
                     </Svg>
                     <View style={styles.pieCenter}>
-                      <Text variant="caption">Всего</Text>
+                      <Text variant="caption">{translate("Total")}</Text>
                       <Text style={styles.pieTotal}>{formatCurrency(totalAmount, baseCurrency)}</Text>
                     </View>
                   </View>
@@ -239,29 +240,29 @@ export default function DashboardScreen() {
 
             <View style={styles.summaryGrid}>
               <Card style={styles.summaryCard}>
-                <Text variant="caption">Total balance</Text>
+                <Text variant="caption">{translate("Total balance")}</Text>
                 <Text variant="heading">{formatCurrency(summary.totalBalance, baseCurrency)}</Text>
-                <Text variant="caption">Across all accounts</Text>
+                <Text variant="caption">{translate("Across all accounts")}</Text>
               </Card>
               <Card style={styles.summaryCard}>
-                <Text variant="caption">Income this period</Text>
+                <Text variant="caption">{translate("Income this period")}</Text>
                 <Text style={[styles.summaryValue, styles.positiveValue]}>{formatCurrency(summary.totalIncome, baseCurrency)}</Text>
-                <Text variant="caption">All recorded income categories</Text>
+                <Text variant="caption">{translate("All recorded income categories")}</Text>
               </Card>
               <Card style={styles.summaryCard}>
-                <Text variant="caption">Expenses this period</Text>
+                <Text variant="caption">{translate("Expenses this period")}</Text>
                 <Text style={[styles.summaryValue, styles.negativeValue]}>{formatCurrency(summary.totalExpenses, baseCurrency)}</Text>
-                <Text variant="caption">Spending across all accounts</Text>
+                <Text variant="caption">{translate("Spending across all accounts")}</Text>
               </Card>
             </View>
 
             <Card style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                <Text variant="subtitle">Accounts</Text>
-                <Button title="Add account" variant="outline" tone="primary" size="sm" onPress={() => router.push("/accounts/edit")} />
+                <Text variant="subtitle">{translate("Accounts")}</Text>
+                <Button title={translate("Add account")} variant="outline" tone="primary" size="sm" onPress={() => router.push("/accounts/edit")} />
               </View>
               <View style={styles.accountList}>
-                {summary.accounts.length === 0 ? <Text variant="caption">Нет счетов.</Text> : null}
+                {summary.accounts.length === 0 ? <Text variant="caption">{translate("No accounts.")}</Text> : null}
                 {summary.accounts.map((account) => (
                   <View key={account.id} style={styles.accountRow}>
                     <View>
@@ -282,10 +283,12 @@ export default function DashboardScreen() {
             </Card>
 
             <Card style={styles.sectionCard}>
-              <Text variant="subtitle">Popular categories</Text>
-              <Text variant="caption">Top categories by spending ({baseCurrency})</Text>
+              <Text variant="subtitle">{translate("Popular categories")}</Text>
+              <Text variant="caption">
+                {translate("Top categories by spending ({{currency}})", { currency: baseCurrency })}
+              </Text>
               <View style={styles.breakdownList}>
-                {summary.topExpenseCategories.length === 0 ? <Text variant="caption">Нет данных.</Text> : null}
+                {summary.topExpenseCategories.length === 0 ? <Text variant="caption">{translate("No data.")}</Text> : null}
                 {summary.topExpenseCategories.map((item, index) => (
                   <View key={`${item.categoryId}-${index}`} style={styles.breakdownRow}>
                     <Text>{`${index + 1}. ${item.name}`}</Text>
@@ -297,9 +300,9 @@ export default function DashboardScreen() {
 
             <Card style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                <Text variant="subtitle">Budget progress</Text>
+                <Text variant="subtitle">{translate("Budget progress")}</Text>
                 <Button
-                  title="View budgets"
+                  title={translate("View budgets")}
                   variant="outline"
                   tone="primary"
                   size="sm"
@@ -307,7 +310,7 @@ export default function DashboardScreen() {
                 />
               </View>
               <View style={styles.progressList}>
-                {summary.budgetProgress.length === 0 ? <Text variant="caption">Нет бюджетов за выбранный период.</Text> : null}
+                {summary.budgetProgress.length === 0 ? <Text variant="caption">{translate("No budgets for the selected period.")}</Text> : null}
                 {summary.budgetProgress.map((budget) => (
                   <View key={budget.budgetId} style={styles.progressCard}>
                     <View style={styles.progressHeader}>
@@ -326,9 +329,9 @@ export default function DashboardScreen() {
 
             <Card style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                <Text variant="subtitle">Recent transactions</Text>
+                <Text variant="subtitle">{translate("Recent transactions")}</Text>
                 <Button
-                  title="View all"
+                  title={translate("View all")}
                   variant="outline"
                   tone="primary"
                   size="sm"
@@ -336,7 +339,7 @@ export default function DashboardScreen() {
                 />
               </View>
               <View style={styles.transactionList}>
-                {summary.recentTransactions.length === 0 ? <Text variant="caption">Транзакций пока нет.</Text> : null}
+                {summary.recentTransactions.length === 0 ? <Text variant="caption">{translate("No transactions yet.")}</Text> : null}
                 {summary.recentTransactions.map((transaction) => (
                   <View key={transaction.id} style={styles.transactionRow}>
                     <View>

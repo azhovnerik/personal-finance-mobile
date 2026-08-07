@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { Platform } from "react-native";
 import { GoogleOneTapSignIn } from "react-native-nitro-google-signin";
 
@@ -11,7 +12,7 @@ export const configureGoogleSignIn = () => {
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
   if (!webClientId || !iosClientId) {
-    throw new Error("Google Sign-In is not configured for this build.");
+    throw new Error(translate("Google Sign-In is not configured for this build."));
   }
 
   GoogleOneTapSignIn.configure({

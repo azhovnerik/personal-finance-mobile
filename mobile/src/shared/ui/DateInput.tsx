@@ -1,3 +1,4 @@
+import { getCurrentIntlLocale, translate } from "../../localization";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { useMemo, useState } from "react";
 
@@ -10,7 +11,7 @@ type DateInputProps = {
   onChange: (value: string) => void;
 };
 
-const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const padNumber = (value: number) => value.toString().padStart(2, "0");
 
@@ -47,7 +48,7 @@ export function DateInput({ value, placeholder, onChange }: DateInputProps) {
     return days;
   }, [monthCursor]);
 
-  const label = selectedDate ? formatDate(selectedDate) : placeholder ?? "Выберите дату";
+  const label = selectedDate ? formatDate(selectedDate) : placeholder ?? translate("Select a date");
 
   return (
     <>
@@ -68,7 +69,7 @@ export function DateInput({ value, placeholder, onChange }: DateInputProps) {
                 <Text>‹</Text>
               </Pressable>
               <Text variant="subtitle">
-                {monthCursor.toLocaleDateString("uk-UA", { month: "long", year: "numeric" })}
+                {monthCursor.toLocaleDateString(getCurrentIntlLocale(), { month: "long", year: "numeric" })}
               </Text>
               <Pressable
                 style={styles.navButton}
@@ -83,7 +84,7 @@ export function DateInput({ value, placeholder, onChange }: DateInputProps) {
             <View style={styles.weekRow}>
               {weekDays.map((day) => (
                 <Text key={day} style={styles.weekLabel}>
-                  {day}
+                  {translate(day)}
                 </Text>
               ))}
             </View>

@@ -1,3 +1,4 @@
+import { translate } from "../src/localization";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -132,8 +133,8 @@ export default function IndexScreen() {
       return (
         <ScreenContainer>
           <View style={styles.loader}>
-            <Text>Нет соединения с сервером.</Text>
-            <Button title="Повторить" onPress={checkAuth} />
+            <Text>{translate("Unable to connect to the server.")}</Text>
+            <Button title={translate("Retry")} onPress={checkAuth} />
           </View>
         </ScreenContainer>
       );
@@ -146,7 +147,7 @@ export default function IndexScreen() {
     <ScreenContainer>
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text>Проверяем авторизацию...</Text>
+        <Text>{translate("Checking authentication...")}</Text>
       </View>
     </ScreenContainer>
   );

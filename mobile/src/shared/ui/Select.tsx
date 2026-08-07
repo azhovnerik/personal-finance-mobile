@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useMemo, useState } from "react";
 
@@ -24,7 +25,7 @@ export function Select({ placeholder, value, options, onChange }: SelectProps) {
     return match?.label ?? "";
   }, [options, value]);
 
-  const displayLabel = selectedLabel || placeholder || "Select";
+  const displayLabel = selectedLabel || placeholder || translate("Select");
 
   return (
     <>
@@ -35,7 +36,7 @@ export function Select({ placeholder, value, options, onChange }: SelectProps) {
       <Modal transparent animationType="fade" visible={isOpen} onRequestClose={() => setIsOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)}>
           <Pressable style={styles.modalCard}>
-            <Text variant="subtitle">Выберите</Text>
+            <Text variant="subtitle">{translate("Select")}</Text>
             <ScrollView style={styles.optionList} contentContainerStyle={styles.optionContent}>
               {options.map((option) => (
                 <Pressable

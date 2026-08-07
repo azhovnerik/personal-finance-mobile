@@ -16,7 +16,7 @@ import {useMemo} from "react";
 
 export const mockUser: UserApp = {
     id: "user-1",
-    name: "Олена",
+    name: "Olena",
     email: "olena@example.com",
     baseCurrency: "UAH",
 };
@@ -24,22 +24,22 @@ export const mockUser: UserApp = {
 export const mockAccounts: Account[] = [
     {
         id: "acc-1",
-        name: "Основной счет",
-        description: "Карточный счет для ежедневных расходов",
+        name: "Main account",
+        description: "Card account for daily expenses",
         type: "BANK_ACCOUNT",
         currency: "UAH",
     },
     {
         id: "acc-2",
-        name: "Карта путешествий",
-        description: "Резерв для поездок",
+        name: "Travel card",
+        description: "Travel reserve",
         type: "CARD",
         currency: "UAH",
     },
     {
         id: "acc-3",
-        name: "Наличные",
-        description: "Кошелек",
+        name: "Cash",
+        description: "Wallet",
         type: "CASH",
         currency: "UAH",
     },
@@ -65,8 +65,8 @@ export const mockAccountDtos: AccountDto[] = [
 
 const categoryGroceries: Category = {
     id: "cat-1",
-    name: "Продукты",
-    description: "Супермаркет и кафе",
+    name: "Groceries",
+    description: "Supermarkets and cafes",
     userId: mockUser.id,
     type: "EXPENSES",
     disabled: false,
@@ -75,8 +75,8 @@ const categoryGroceries: Category = {
 
 const categoryHome: Category = {
     id: "cat-2",
-    name: "Дом",
-    description: "Коммунальные и быт",
+    name: "Home",
+    description: "Utilities and household",
     userId: mockUser.id,
     type: "EXPENSES",
     disabled: false,
@@ -85,8 +85,8 @@ const categoryHome: Category = {
 
 const categoryTransport: Category = {
     id: "cat-3",
-    name: "Транспорт",
-    description: "Такси и транспорт",
+    name: "Transport",
+    description: "Taxi and transport",
     userId: mockUser.id,
     type: "EXPENSES",
     disabled: false,
@@ -95,8 +95,8 @@ const categoryTransport: Category = {
 
 const categorySalary: Category = {
     id: "cat-4",
-    name: "Зарплата",
-    description: "Основной доход",
+    name: "Salary",
+    description: "Primary income",
     userId: mockUser.id,
     type: "INCOME",
     disabled: false,
@@ -105,8 +105,8 @@ const categorySalary: Category = {
 
 const categoryFreelance: Category = {
     id: "cat-5",
-    name: "Фриланс",
-    description: "Проектные выплаты",
+    name: "Freelance",
+    description: "Project payments",
     userId: mockUser.id,
     type: "INCOME",
     disabled: false,
@@ -124,7 +124,7 @@ export const mockTransactions: TransactionDto[] = [
         amount: 2350,
         amountInBase: 2350,
         currency: "UAH",
-        comment: "Супермаркет",
+        comment: "Supermarket",
     },
     {
         id: "txn-2",
@@ -136,7 +136,7 @@ export const mockTransactions: TransactionDto[] = [
         amount: 480,
         amountInBase: 480,
         currency: "UAH",
-        comment: "Такси",
+        comment: "Taxi",
     },
     {
         id: "txn-3",
@@ -148,14 +148,14 @@ export const mockTransactions: TransactionDto[] = [
         amount: 9200,
         amountInBase: 9200,
         currency: "UAH",
-        comment: "Проект",
+        comment: "Project",
     },
 ];
 
 export const mockCategories: CategoryReactDto[] = [
     {
         id: "cat-food",
-        name: "Еда и напитки",
+        name: "Food and drinks",
         type: "EXPENSES",
         disabled: false,
         icon: "food",
@@ -163,7 +163,7 @@ export const mockCategories: CategoryReactDto[] = [
         subcategories: [
             {
                 id: "cat-food-cafe",
-                name: "Кафе и рестораны",
+                name: "Cafes and restaurants",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "food",
@@ -171,7 +171,7 @@ export const mockCategories: CategoryReactDto[] = [
             },
             {
                 id: "cat-food-groceries",
-                name: "Продукты",
+                name: "Groceries",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "basket",
@@ -181,7 +181,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-shopping",
-        name: "Покупки",
+        name: "Shopping",
         type: "EXPENSES",
         disabled: false,
         icon: "bag",
@@ -189,7 +189,7 @@ export const mockCategories: CategoryReactDto[] = [
         subcategories: [
             {
                 id: "cat-shopping-home",
-                name: "Дом и быт",
+                name: "Home and household",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "home",
@@ -197,7 +197,7 @@ export const mockCategories: CategoryReactDto[] = [
             },
             {
                 id: "cat-shopping-clothes",
-                name: "Одежда",
+                name: "Clothing",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "shirt",
@@ -207,7 +207,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-home",
-        name: "Жильё",
+        name: "Housing",
         type: "EXPENSES",
         disabled: false,
         icon: "home",
@@ -215,7 +215,7 @@ export const mockCategories: CategoryReactDto[] = [
         subcategories: [
             {
                 id: "cat-home-rent",
-                name: "Аренда",
+                name: "Rent",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "home",
@@ -223,7 +223,7 @@ export const mockCategories: CategoryReactDto[] = [
             },
             {
                 id: "cat-home-utility",
-                name: "Коммунальные",
+                name: "Utilities",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "home",
@@ -233,7 +233,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-transport",
-        name: "Транспорт",
+        name: "Transport",
         type: "EXPENSES",
         disabled: false,
         icon: "car",
@@ -241,7 +241,7 @@ export const mockCategories: CategoryReactDto[] = [
         subcategories: [
             {
                 id: "cat-transport-taxi",
-                name: "Такси",
+                name: "Taxi",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "car",
@@ -249,7 +249,7 @@ export const mockCategories: CategoryReactDto[] = [
             },
             {
                 id: "cat-transport-fuel",
-                name: "Топливо",
+                name: "Fuel",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "fuel",
@@ -259,7 +259,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-income",
-        name: "Доходы",
+        name: "Income",
         type: "INCOME",
         disabled: false,
         icon: "finance",
@@ -267,7 +267,7 @@ export const mockCategories: CategoryReactDto[] = [
         subcategories: [
             {
                 id: "cat-income-salary",
-                name: "Зарплата",
+                name: "Salary",
                 type: "INCOME",
                 disabled: false,
                 icon: "finance",
@@ -275,7 +275,7 @@ export const mockCategories: CategoryReactDto[] = [
             },
             {
                 id: "cat-income-freelance",
-                name: "Фриланс",
+                name: "Freelance",
                 type: "INCOME",
                 disabled: false,
                 icon: "finance",
@@ -285,7 +285,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-auto",
-        name: "Автомобиль",
+        name: "Car",
         type: "EXPENSES",
         disabled: false,
         icon: "auto",
@@ -293,7 +293,7 @@ export const mockCategories: CategoryReactDto[] = [
         subcategories: [
             {
                 id: "cat-auto-service",
-                name: "Сервис",
+                name: "Service",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "auto",
@@ -301,7 +301,7 @@ export const mockCategories: CategoryReactDto[] = [
             },
             {
                 id: "cat-auto-insurance",
-                name: "Страховка",
+                name: "Insurance",
                 type: "EXPENSES",
                 disabled: false,
                 icon: "auto",
@@ -311,7 +311,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-fun",
-        name: "Жизнь и развлечения",
+        name: "Lifestyle and entertainment",
         type: "EXPENSES",
         disabled: false,
         icon: "party",
@@ -319,7 +319,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-communication",
-        name: "Связь, ПК",
+        name: "Communications and computers",
         type: "EXPENSES",
         disabled: false,
         icon: "tech",
@@ -327,7 +327,7 @@ export const mockCategories: CategoryReactDto[] = [
     },
     {
         id: "cat-finance",
-        name: "Финансовые расходы",
+        name: "Financial expenses",
         type: "EXPENSES",
         disabled: false,
         icon: "finance",
@@ -336,28 +336,28 @@ export const mockCategories: CategoryReactDto[] = [
 ]
 
 const expenseBreakdown: CategoryBreakdown[] = [
-    {categoryId: categoryGroceries.id, name: "Продукты", icon: "shopping-cart", amount: 16800},
-    {categoryId: categoryHome.id, name: "Дом и быт", icon: "home", amount: 10350},
-    {categoryId: categoryTransport.id, name: "Транспорт", icon: "truck", amount: 7100},
+    {categoryId: categoryGroceries.id, name: "Groceries", icon: "shopping-cart", amount: 16800},
+    {categoryId: categoryHome.id, name: "Home and household", icon: "home", amount: 10350},
+    {categoryId: categoryTransport.id, name: "Transport", icon: "truck", amount: 7100},
 ];
 
 const incomeBreakdown: CategoryBreakdown[] = [
-    {categoryId: categorySalary.id, name: "Зарплата", icon: "wallet", amount: 64000},
-    {categoryId: categoryFreelance.id, name: "Фриланс", icon: "briefcase", amount: 18500},
+    {categoryId: categorySalary.id, name: "Salary", icon: "wallet", amount: 64000},
+    {categoryId: categoryFreelance.id, name: "Freelance", icon: "briefcase", amount: 18500},
 ];
 
 const topExpenseCategories: CategoryBreakdown[] = [
-    {categoryId: categoryGroceries.id, name: "Продукты", icon: "shopping-cart", amount: 16800},
-    {categoryId: categoryHome.id, name: "Дом и быт", icon: "home", amount: 10350},
-    {categoryId: categoryTransport.id, name: "Транспорт", icon: "truck", amount: 7100},
+    {categoryId: categoryGroceries.id, name: "Groceries", icon: "shopping-cart", amount: 16800},
+    {categoryId: categoryHome.id, name: "Home and household", icon: "home", amount: 10350},
+    {categoryId: categoryTransport.id, name: "Transport", icon: "truck", amount: 7100},
 ];
 
 const recentTransactions: RecentTransactionItem[] = [
     {
         id: "rt-1",
-        dateLabel: "Сегодня, 12:40",
-        categoryName: "Продукты",
-        accountName: "Основной счет",
+        dateLabel: "Today, 12:40",
+        categoryName: "Groceries",
+        accountName: "Main account",
         amount: 2350,
         direction: "DECREASE",
         categoryType: "EXPENSES",
@@ -366,9 +366,9 @@ const recentTransactions: RecentTransactionItem[] = [
     },
     {
         id: "rt-2",
-        dateLabel: "Вчера, 19:10",
-        categoryName: "Сбережения",
-        accountName: "Карта путешествий",
+        dateLabel: "Yesterday, 19:10",
+        categoryName: "Savings",
+        accountName: "Travel card",
         amount: 4000,
         direction: "DECREASE",
         categoryType: "EXPENSES",
@@ -377,9 +377,9 @@ const recentTransactions: RecentTransactionItem[] = [
     },
     {
         id: "rt-3",
-        dateLabel: "28 фев",
-        categoryName: "Зарплата",
-        accountName: "Основной счет",
+        dateLabel: "Feb 28",
+        categoryName: "Salary",
+        accountName: "Main account",
         amount: 32000,
         direction: "INCREASE",
         categoryType: "INCOME",
@@ -426,21 +426,21 @@ export const mockDashboardSummary: DashboardSummary = {
     incomeBreakdown,
     topExpenseCategories,
     expenseTrend: [
-        {label: "Нед 1", amount: 11200},
-        {label: "Нед 2", amount: 9800},
-        {label: "Нед 3", amount: 12300},
-        {label: "Нед 4", amount: 13600},
+        {label: "Week 1", amount: 11200},
+        {label: "Week 2", amount: 9800},
+        {label: "Week 3", amount: 12300},
+        {label: "Week 4", amount: 13600},
     ],
     incomeTrend: [
-        {label: "Нед 1", amount: 18000},
-        {label: "Нед 2", amount: 22000},
-        {label: "Нед 3", amount: 19500},
-        {label: "Нед 4", amount: 23000},
+        {label: "Week 1", amount: 18000},
+        {label: "Week 2", amount: 22000},
+        {label: "Week 3", amount: 19500},
+        {label: "Week 4", amount: 23000},
     ],
     budgetProgress: [
         {
             budgetId: "budget-1",
-            monthLabel: "Март 2024",
+            monthLabel: "March 2024",
             plannedExpense: 20000,
             actualExpense: 12450,
             plannedIncome: 80000,
@@ -451,7 +451,7 @@ export const mockDashboardSummary: DashboardSummary = {
         },
         {
             budgetId: "budget-2",
-            monthLabel: "Апрель 2024",
+            monthLabel: "April 2024",
             plannedExpense: 15000,
             actualExpense: 6120,
             plannedIncome: 60000,
@@ -501,7 +501,7 @@ const budgetExpenseCategories: BudgetCategoryDetailedDto[] = [
 export const mockBudgets: BudgetDetailedDto[] = [
     {
         id: "budget-1",
-        month: "Март 2024",
+        month: "March 2024",
         totalIncome: 82000,
         totalExpense: 20000,
         totalIncomeFact: 71500,
@@ -514,7 +514,7 @@ export const mockBudgets: BudgetDetailedDto[] = [
     },
     {
         id: "budget-2",
-        month: "Апрель 2024",
+        month: "April 2024",
         totalIncome: 60000,
         totalExpense: 15000,
         totalIncomeFact: 42100,
@@ -551,19 +551,19 @@ export const mockBudgets: BudgetDetailedDto[] = [
 export const mockCategoryTree: CategoryReactDto[] = [
     {
         id: "cat-income-1",
-        name: "Доход",
+        name: "Income",
         type: "INCOME",
         disabled: false,
         subcategories: [
             {
                 id: "cat-income-1-1",
-                name: "Зарплата",
+                name: "Salary",
                 type: "INCOME",
                 disabled: false,
             },
             {
                 id: "cat-income-1-2",
-                name: "Бонусы",
+                name: "Bonuses",
                 type: "INCOME",
                 disabled: false,
             },
@@ -571,19 +571,19 @@ export const mockCategoryTree: CategoryReactDto[] = [
     },
     {
         id: "cat-income-2",
-        name: "Фриланс",
+        name: "Freelance",
         type: "INCOME",
         disabled: false,
         subcategories: [
             {
                 id: "cat-income-2-1",
-                name: "Проекты",
+                name: "Projects",
                 type: "INCOME",
                 disabled: false,
             },
             {
                 id: "cat-income-2-2",
-                name: "Консалтинг",
+                name: "Consulting",
                 type: "INCOME",
                 disabled: false,
             },
@@ -591,19 +591,19 @@ export const mockCategoryTree: CategoryReactDto[] = [
     },
     {
         id: "cat-expense-1",
-        name: "Расходы",
+        name: "Expenses",
         type: "EXPENSES",
         disabled: false,
         subcategories: [
             {
                 id: "cat-expense-1-1",
-                name: "Продукты",
+                name: "Groceries",
                 type: "EXPENSES",
                 disabled: false,
             },
             {
                 id: "cat-expense-1-2",
-                name: "Кафе",
+                name: "Cafe",
                 type: "EXPENSES",
                 disabled: false,
             },
@@ -611,19 +611,19 @@ export const mockCategoryTree: CategoryReactDto[] = [
     },
     {
         id: "cat-expense-2",
-        name: "Дом и быт",
+        name: "Home and household",
         type: "EXPENSES",
         disabled: false,
         subcategories: [
             {
                 id: "cat-expense-2-1",
-                name: "Коммунальные",
+                name: "Utilities",
                 type: "EXPENSES",
                 disabled: false,
             },
             {
                 id: "cat-expense-2-2",
-                name: "Ремонт",
+                name: "Repairs",
                 type: "EXPENSES",
                 disabled: false,
             },

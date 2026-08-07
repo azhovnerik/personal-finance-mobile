@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -41,7 +42,7 @@ export const useSettingsProfile = () => {
       query.error instanceof Error
         ? query.error.message
         : query.error
-          ? "Не удалось загрузить настройки."
+          ? translate("Unable to load settings.")
           : null,
     refresh,
   };

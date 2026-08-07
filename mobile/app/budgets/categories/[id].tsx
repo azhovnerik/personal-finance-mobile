@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../../src/localization";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -12,7 +13,7 @@ import { CategoryIcon } from "../../../src/features/categories/components/Catego
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
 const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
-  const name = item.category?.name ?? "Без названия";
+  const name = item.category?.name ?? translate("Untitled");
   return name;
 };
 
@@ -73,7 +74,7 @@ export default function BudgetCategoryDetailsScreen() {
 
     const parsedAmount = parsePlanAmount();
     if (parsedAmount === null) {
-      setFormError("Введите корректную плановую сумму больше 0.");
+      setFormError(translate("Enter a valid planned amount greater than 0."));
       return;
     }
 
@@ -87,7 +88,7 @@ export default function BudgetCategoryDetailsScreen() {
       });
       router.back();
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Не удалось обновить бюджетную категорию.");
+      setFormError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to update the budget category."));
     }
   };
 
@@ -96,10 +97,10 @@ export default function BudgetCategoryDetailsScreen() {
       return;
     }
 
-    Alert.alert("Удалить категорию?", "Категория будет удалена из бюджета этого месяца.", [
-      { text: "Отмена", style: "cancel" },
+    Alert.alert(translate("Delete category?"), translate("The category will be removed from this month's budget."), [
+      { text: translate("Cancel"), style: "cancel" },
       {
-        text: "Удалить",
+        text: translate("Delete"),
         style: "destructive",
         onPress: () => {
           void (async () => {
@@ -108,7 +109,7 @@ export default function BudgetCategoryDetailsScreen() {
               await deleteCategory({ budgetId, category: targetCategory });
               router.back();
             } catch (error) {
-              setFormError(error instanceof Error ? error.message : "Не удалось удалить бюджетную категорию.");
+              setFormError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to remove the budget category."));
             }
           })();
         },
@@ -125,30 +126,30 @@ export default function BudgetCategoryDetailsScreen() {
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>Назад</Text>
+            <Text style={styles.backLink}>{translate("Back")}</Text>
           </Pressable>
-          <Text variant="heading">Категория бюджета</Text>
+          <Text variant="heading">{translate("Budget category")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        {isLoading ? <Text variant="caption">Загрузка...</Text> : null}
+        {isLoading ? <Text variant="caption">{translate("Loading...")}</Text> : null}
 
         {error ? (
           <Card style={styles.errorCard}>
             <Text style={styles.errorText}>{error}</Text>
-            <Button title="Повторить" size="sm" onPress={() => void refresh()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
           </Card>
         ) : null}
 
         {!isLoading && !error && !budgetId ? (
           <Card>
-            <Text variant="caption">Не передан budgetId.</Text>
+            <Text variant="caption">{translate("Missing budgetId.")}</Text>
           </Card>
         ) : null}
 
         {!isLoading && !error && budgetId && !targetCategory ? (
           <Card>
-            <Text variant="caption">Категория не найдена в бюджете.</Text>
+            <Text variant="caption">{translate("Category not found in the budget.")}</Text>
           </Card>
         ) : null}
 
@@ -164,23 +165,25 @@ export default function BudgetCategoryDetailsScreen() {
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text>Тип</Text>
-                <Text>{targetCategory.type === "INCOME" ? "Доход" : "Расход"}</Text>
+                <Text>{translate("Type")}</Text>
+                <Text>{targetCategory.type === "INCOME" ? translate("Income") : translate("Expense")}</Text>
               </View>
               <View style={styles.row}>
-                <Text>Факт</Text>
+                <Text>{translate("Actual")}</Text>
                 <Text>{formatCurrency(factAmount, categoryCurrency)}</Text>
               </View>
               <View style={styles.row}>
-                <Text>Остаток</Text>
+                <Text>{translate("Remaining")}</Text>
                 <Text style={leftover < 0 ? styles.errorText : undefined}>{formatCurrency(leftover, categoryCurrency)}</Text>
               </View>
             </Card>
 
             <Card style={styles.formCard}>
-              <Text variant="subtitle">Редактирование</Text>
+              <Text variant="subtitle">{translate("Editing")}</Text>
               <View style={styles.field}>
-                <Text variant="caption">Плановая сумма ({categoryCurrency})</Text>
+                <Text variant="caption">
+                  {translate("Planned amount ({{currency}})", { currency: categoryCurrency })}
+                </Text>
                 <Pressable onPress={() => setIsAmountKeypadOpen(true)}>
                   <Input
                     value={planAmountInput}
@@ -194,12 +197,12 @@ export default function BudgetCategoryDetailsScreen() {
               </View>
 
               <View style={styles.field}>
-                <Text variant="caption">Комментарий</Text>
+                <Text variant="caption">{translate("Comment")}</Text>
                 <Input
                   value={commentInput}
                   onChangeText={setCommentInput}
                   onFocus={() => setIsAmountKeypadOpen(false)}
-                  placeholder="Комментарий"
+                  placeholder={translate("Comment")}
                   multiline
                 />
               </View>
@@ -209,12 +212,12 @@ export default function BudgetCategoryDetailsScreen() {
 
               <View style={styles.actions}>
                 <Button
-                  title={isUpdating ? "Сохранение..." : "Сохранить"}
+                  title={isUpdating ? translate("Saving...") : translate("Save")}
                   onPress={() => void onSave()}
                   disabled={isUpdating || isDeleting}
                 />
                 <Button
-                  title={isDeleting ? "Удаление..." : "Удалить"}
+                  title={isDeleting ? translate("Deleting...") : translate("Delete")}
                   variant="outline"
                   tone="danger"
                   onPress={onDelete}

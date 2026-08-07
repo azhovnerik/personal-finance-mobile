@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useState } from "react";
 
 import { login as loginRequest, persistAuthTokenFromResponse } from "./api";
@@ -19,7 +20,7 @@ export const useLogin = () => {
       return response;
     } catch (rawError) {
       const apiError = rawError as ApiError;
-      setError(apiError.message ?? "Не удалось войти. Попробуйте еще раз.");
+      setError(localizeSystemMessage(apiError.message, "Unable to sign in. Try again."));
       setErrorCode(apiError.code ?? null);
       return null;
     } finally {

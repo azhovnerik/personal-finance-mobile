@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -33,16 +34,16 @@ export default function AccountsScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text variant="title">Accounts</Text>
-            <Text variant="caption">Keep an eye on all of your balances.</Text>
+            <Text variant="title">{translate("Accounts")}</Text>
+            <Text variant="caption">{translate("Keep an eye on all of your balances.")}</Text>
           </View>
           <View style={styles.headerActions}>
             <Chip label={baseCurrency} isActive />
-            <Button title="Add" size="sm" onPress={() => openEdit()} />
+            <Button title={translate("Add")} size="sm" onPress={() => openEdit()} />
           </View>
         </View>
 
-        {isLoading ? <Text variant="caption">Загрузка счетов...</Text> : null}
+        {isLoading ? <Text variant="caption">{translate("Loading accounts...")}</Text> : null}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
 

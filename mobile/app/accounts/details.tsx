@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
@@ -53,12 +54,14 @@ export default function AccountDetailsScreen() {
       return;
     }
     Alert.alert(
-      "Удалить счет?",
-      selectedAccount.name ? `Счет "${selectedAccount.name}" будет удален.` : "Счет будет удален.",
+      translate("Delete account?"),
+      selectedAccount.name
+        ? translate('Account "{{name}}" will be deleted.', { name: selectedAccount.name })
+        : translate("The account will be deleted."),
       [
-        { text: "Отмена", style: "cancel" },
+        { text: translate("Cancel"), style: "cancel" },
         {
-          text: "Удалить",
+          text: translate("Delete"),
           style: "destructive",
           onPress: () => {
             void (async () => {
@@ -78,9 +81,9 @@ export default function AccountDetailsScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.headerAction}>Назад</Text>
+            <Text style={styles.headerAction}>{translate("Back")}</Text>
           </Pressable>
-          <Text variant="subtitle">Счет</Text>
+          <Text variant="subtitle">{translate("Account")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -89,26 +92,22 @@ export default function AccountDetailsScreen() {
             <Card style={styles.detailsCard}>
               <View style={styles.row}>
                 <Text variant="caption" style={styles.label}>
-                  Название
-                </Text>
+                  {translate("Name")}</Text>
                 <Text>{selectedAccount.name}</Text>
               </View>
               <View style={styles.row}>
                 <Text variant="caption" style={styles.label}>
-                  Тип
-                </Text>
+                  {translate("Type")}</Text>
                 <Text>{selectedAccount.type}</Text>
               </View>
               <View style={styles.row}>
                 <Text variant="caption" style={styles.label}>
-                  Валюта
-                </Text>
+                  {translate("Currency")}</Text>
                 <Text>{selectedAccount.currency ?? baseCurrency}</Text>
               </View>
               <View style={styles.row}>
                 <Text variant="caption" style={styles.label}>
-                  Баланс
-                </Text>
+                  {translate("Balance")}</Text>
                 <Text
                   style={(selectedAccount.balance ?? 0) < 0 ? styles.negativeValue : styles.positiveValue}
                 >
@@ -118,14 +117,13 @@ export default function AccountDetailsScreen() {
               {selectedAccount.description ? (
                 <View style={styles.row}>
                   <Text variant="caption" style={styles.label}>
-                    Описание
-                  </Text>
+                    {translate("Description")}</Text>
                   <Text>{selectedAccount.description}</Text>
                 </View>
               ) : null}
             </Card>
           ) : (
-            <Text style={styles.errorText}>Не удалось открыть счет.</Text>
+            <Text style={styles.errorText}>{translate("Unable to open the account.")}</Text>
           )}
         </ScrollView>
 
@@ -133,19 +131,19 @@ export default function AccountDetailsScreen() {
           {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
           <View style={styles.actionsRow}>
             <Button
-              title="Edit"
+              title={translate("Edit")}
               onPress={openEdit}
               disabled={!selectedAccount || isSaving}
               style={styles.actionButton}
             />
             <Button
-              title="Balance"
+              title={translate("Balance")}
               onPress={openBalance}
               disabled={!selectedAccount || isSaving}
               style={styles.actionButton}
             />
             <Button
-              title={isSaving ? "Удаление..." : "Delete"}
+              title={isSaving ? translate("Deleting...") : translate("Delete")}
               variant="outline"
               tone="danger"
               onPress={confirmDelete}

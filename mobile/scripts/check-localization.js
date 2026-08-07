@@ -89,6 +89,34 @@ for (const file of files) {
     return false;
   };
 
+  const isInsideJsxChildExpression = (node) => {
+    let current = node;
+    while (current.parent) {
+      const parent = current.parent;
+      if (ts.isJsxExpression(parent)) {
+        return parent.expression === current && !ts.isJsxAttribute(parent.parent);
+      }
+
+      if (ts.isConditionalExpression(parent) && parent.condition === current) {
+        return false;
+      }
+      if (ts.isCallExpression(parent) && parent.arguments.includes(current)) {
+        return false;
+      }
+      if (
+        ts.isJsxAttribute(parent) ||
+        ts.isJsxElement(parent) ||
+        ts.isJsxSelfClosingElement(parent) ||
+        ts.isFunctionLike(parent) ||
+        ts.isSourceFile(parent)
+      ) {
+        return false;
+      }
+      current = parent;
+    }
+    return false;
+  };
+
   const visit = (node) => {
     const isTextNode =
       ts.isStringLiteral(node) ||
@@ -103,6 +131,17 @@ for (const file of files) {
 
     if (ts.isJsxText(node) && latinPattern.test(node.text)) {
       addViolation(node, "untranslated JSX text", node.text);
+    }
+
+    if (
+      isTextNode &&
+      !ts.isJsxText(node) &&
+      latinPattern.test(node.text) &&
+      !/^[A-Z]{3}$/.test(node.text) &&
+      isInsideJsxChildExpression(node) &&
+      !isWrapped(node)
+    ) {
+      addViolation(node, "untranslated JSX expression text", node.text);
     }
 
     if (ts.isJsxAttribute(node) && translatableAttributes.has(node.name.text) && node.initializer) {

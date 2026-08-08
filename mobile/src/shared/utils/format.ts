@@ -1,4 +1,5 @@
 import { CurrencyCode } from "../api/dto";
+import { getCurrentIntlLocale } from "../../localization";
 
 const currencySymbols: Record<CurrencyCode, string> = {
   UAH: "₴",
@@ -19,7 +20,7 @@ export const getCurrencySymbol = (currency: CurrencyCode = "UAH") => currencySym
 
 export const formatAmount = (amount: number) =>
   typeof Intl !== "undefined"
-    ? new Intl.NumberFormat("uk-UA", {
+    ? new Intl.NumberFormat(getCurrentIntlLocale(), {
         minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
       }).format(amount)
@@ -37,7 +38,7 @@ export const formatDateRange = (start: string, end: string) => {
     if (Number.isNaN(date.getTime())) {
       return value;
     }
-    return new Intl.DateTimeFormat("uk-UA", {
+    return new Intl.DateTimeFormat(getCurrentIntlLocale(), {
       month: "short",
       day: "numeric",
       year: "numeric",

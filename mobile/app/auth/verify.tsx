@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../src/localization";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,7 +21,7 @@ export default function VerifyEmailScreen() {
 
   const submitVerify = async (nextToken: string) => {
     if (!nextToken.trim()) {
-      setError("Вставьте токен подтверждения.");
+      setError(translate("Paste the verification token."));
       setErrorCode(null);
       return;
     }
@@ -36,10 +37,10 @@ export default function VerifyEmailScreen() {
         router.replace(resolveRouteFromAuthResult(response));
         return;
       }
-      setMessage("Email подтвержден. Теперь можно войти.");
+      setMessage(translate("Email verified. You can now sign in."));
     } catch (rawError) {
       const apiError = rawError as ApiError;
-      setError(apiError.message ?? "Не удалось подтвердить email.");
+      setError(localizeSystemMessage(apiError.message, "Unable to verify the email."));
       setErrorCode(apiError.code ?? null);
     } finally {
       setIsLoading(false);
@@ -60,31 +61,30 @@ export default function VerifyEmailScreen() {
         {isLoading ? (
           <>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text>Подтверждаем email...</Text>
+            <Text>{translate("Verifying email...")}</Text>
           </>
         ) : null}
         {!isLoading && !message ? (
           <>
-            <Text variant="heading">Подтверждение email</Text>
+            <Text variant="heading">{translate("Email verification")}</Text>
             <Text variant="caption">
-              Если письмо пришло с production-ссылкой, вставьте token вручную для локальной проверки.
-            </Text>
+              {translate("If the email contains a production link, paste the token manually for local testing.")}</Text>
             <Input
-              placeholder="Verification token"
+              placeholder={translate("Verification token")}
               autoCapitalize="none"
               value={tokenInput}
               onChangeText={setTokenInput}
             />
-            <Button title="Подтвердить email" onPress={() => void submitVerify(tokenInput)} />
+            <Button title={translate("Verify email")} onPress={() => void submitVerify(tokenInput)} />
           </>
         ) : null}
         {!isLoading && message ? <Text>{message}</Text> : null}
         {!isLoading && error ? <Text style={styles.error}>{error}</Text> : null}
         {!isLoading && errorCode === "TOKEN_EXPIRED" ? (
-          <Button title="Отправить письмо повторно" onPress={() => router.replace("/auth/resend-verification")} />
+          <Button title={translate("Resend email")} onPress={() => router.replace("/auth/resend-verification")} />
         ) : null}
         {!isLoading ? (
-          <Button title="Перейти ко входу" variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
+          <Button title={translate("Go to sign in")} variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
         ) : null}
       </Card>
     </ScreenContainer>

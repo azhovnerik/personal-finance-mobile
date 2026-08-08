@@ -1,29 +1,49 @@
+import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AppIcon, Button, Card, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
-const MORE_ITEMS = [
-  { label: "Поддержка", description: "Связаться с сервисом", route: "/support", iconKind: "category", icon: "expense.health" },
-  { label: "Настройки", description: "Профиль и безопасность", route: "/settings", iconKind: "category", icon: "expense.utilities" },
-  { label: "Подписки", description: "Планы и оплата", route: "/subscriptions", iconKind: "category", icon: "expense.subscriptions" },
-];
-
 export default function MoreScreen() {
+  useLocalization();
   const router = useRouter();
+  const moreItems = [
+    {
+      label: translate("Support"),
+      description: translate("Contact support"),
+      route: "/support",
+      iconKind: "category",
+      icon: "expense.health",
+    },
+    {
+      label: translate("Settings"),
+      description: translate("Profile and security"),
+      route: "/settings",
+      iconKind: "category",
+      icon: "expense.utilities",
+    },
+    {
+      label: translate("Subscriptions"),
+      description: translate("Plans and billing"),
+      route: "/subscriptions",
+      iconKind: "category",
+      icon: "expense.subscriptions",
+    },
+  ];
 
   return (
     <ScreenContainer>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text variant="title">Ещё</Text>
-          <Text variant="caption">Дополнительные разделы сервиса</Text>
+          <Text variant="title">{translate("More")}</Text>
+          <Text variant="caption">{translate("More service sections")}</Text>
         </View>
 
         <View style={styles.list}>
-          {MORE_ITEMS.map((item) => (
-            <Card key={item.label} style={styles.card}>
+          {moreItems.map((item) => (
+            <Card key={item.route} style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.titleBlock}>
                   <View style={styles.titleRow}>
@@ -37,7 +57,7 @@ export default function MoreScreen() {
                   <Text variant="caption">{item.description}</Text>
                 </View>
                 <Button
-                  title="Открыть"
+                  title={translate("Open")}
                   variant="secondary"
                   onPress={() => router.push(item.route)}
                 />

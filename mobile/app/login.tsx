@@ -1,5 +1,7 @@
+import { translate } from "../src/localization";
+import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 
@@ -11,47 +13,67 @@ import { resolveRouteFromAuthResult } from "../src/features/auth/routing";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const { login, isLoading, error, errorCode } = useLogin();
   const appleLogin = useAppleLogin();
   const googleLogin = useGoogleLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSocialLoginInProgress, setIsSocialLoginInProgress] = useState(false);
 
   const handleLogin = async () => {
     const response = await login(email.trim(), password);
     if (response) {
+      setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
     }
   };
 
   const handleGoogleLogin = async () => {
+    setIsSocialLoginInProgress(true);
     const response = await googleLogin.login();
     if (response) {
+      setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
+      return;
     }
+    setIsSocialLoginInProgress(false);
   };
 
   const handleAppleLogin = async () => {
+    setIsSocialLoginInProgress(true);
     const response = await appleLogin.login();
     if (response) {
+      setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
+      return;
     }
+    setIsSocialLoginInProgress(false);
   };
 
   const isAnyLoginLoading = isLoading || googleLogin.isLoading || appleLogin.isLoading;
+
+  if (isSocialLoginInProgress) {
+    return (
+      <ScreenContainer style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text>{translate("Signing in...")}</Text>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer style={styles.screen}>
       <View style={styles.logoWrapper}>
         <Image source={require("../assets/logo.png")} style={styles.logoImage} resizeMode="contain" />
-        <Text variant="subtitle" style={styles.logoText}>MoneyDrive.me</Text>
+        <Text variant="subtitle" style={styles.logoText}>{translate("MoneyDrive.me")}</Text>
       </View>
 
       <Card style={styles.card}>
-        <Text variant="heading" style={styles.title}>Log in</Text>
+        <Text variant="heading" style={styles.title}>{translate("Log in")}</Text>
         <Input
-          placeholder="Email"
+          placeholder={translate("Email")}
           autoCapitalize="none"
           keyboardType="email-address"
           textContentType="username"
@@ -60,7 +82,7 @@ export default function LoginScreen() {
           editable={!isAnyLoginLoading}
         />
         <Input
-          placeholder="Password"
+          placeholder={translate("Password")}
           secureTextEntry={!isPasswordVisible}
           autoCapitalize="none"
           autoCorrect={false}
@@ -76,26 +98,19 @@ export default function LoginScreen() {
           disabled={isAnyLoginLoading}
           style={styles.passwordToggle}
         >
-          <Text style={styles.passwordToggleText}>{isPasswordVisible ? "Скрыть пароль" : "Показать пароль"}</Text>
+          <Text style={styles.passwordToggleText}>{isPasswordVisible ? translate("Hide password") : translate("Show password")}</Text>
         </Pressable>
         {error || googleLogin.error || appleLogin.error ? (
           <Text style={styles.error}>{error ?? googleLogin.error ?? appleLogin.error}</Text>
         ) : null}
         <Button
-          title={isLoading ? "Входим..." : "Войти"}
+          title={isLoading ? translate("Signing in...") : translate("Sign in")}
           onPress={handleLogin}
           disabled={isAnyLoginLoading || !email.trim() || !password}
           size="lg"
         />
         <Button
-          title="Создать аккаунт"
-          variant="outline"
-          tone="primary"
-          size="lg"
-          onPress={() => router.push("/auth/register")}
-        />
-        <Button
-          title={googleLogin.isLoading ? "Входим через Google..." : "Login with Google"}
+          title={googleLogin.isLoading ? translate("Signing in with Google...") : translate("Login with Google")}
           variant="outline"
           tone="secondary"
           size="lg"
@@ -115,7 +130,14 @@ export default function LoginScreen() {
           </View>
         ) : null}
         <Button
-          title="Забыли пароль?"
+          title={translate("Create account")}
+          variant="outline"
+          tone="primary"
+          size="lg"
+          onPress={() => router.push("/auth/register")}
+        />
+        <Button
+          title={translate("Forgot password?")}
           variant="ghost"
           tone="primary"
           size="lg"
@@ -123,7 +145,7 @@ export default function LoginScreen() {
         />
         {errorCode === "EMAIL_NOT_VERIFIED" ? (
           <Button
-            title="Отправить письмо повторно"
+            title={translate("Resend email")}
             variant="outline"
             tone="secondary"
             size="lg"
@@ -141,6 +163,11 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+  },
   screen: {
     justifyContent: "center",
     alignItems: "center",

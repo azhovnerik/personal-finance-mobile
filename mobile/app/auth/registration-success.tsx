@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -11,12 +12,14 @@ export default function RegistrationSuccessScreen() {
   return (
     <ScreenContainer style={styles.screen}>
       <Card style={styles.card}>
-        <Text variant="heading">Проверьте email</Text>
+        <Text variant="heading">{translate("Check your email")}</Text>
         <Text>
-          Мы отправили письмо для подтверждения на {email || "указанный адрес"}.
+          {translate("We sent a verification email to {{email}}.", {
+            email: email || translate("the specified address"),
+          })}
         </Text>
         <Button
-          title="Отправить письмо повторно"
+          title={translate("Resend email")}
           onPress={() =>
             router.replace({
               pathname: "/auth/resend-verification",
@@ -24,8 +27,8 @@ export default function RegistrationSuccessScreen() {
             })
           }
         />
-        <Button title="У меня есть token" variant="outline" tone="primary" onPress={() => router.push("/auth/verify")} />
-        <Button title="Перейти ко входу" variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
+        <Button title={translate("I have a token")} variant="outline" tone="primary" onPress={() => router.push("/auth/verify")} />
+        <Button title={translate("Go to sign in")} variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
       </Card>
     </ScreenContainer>
   );

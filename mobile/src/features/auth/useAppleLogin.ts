@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useEffect, useState } from "react";
 import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -58,7 +59,7 @@ export const useAppleLogin = () => {
         ],
       });
       if (!credential.identityToken) {
-        throw new Error("Apple did not return an identity token.");
+        throw new Error(translate("Apple did not return an identity token."));
       }
 
       const formattedName = credential.fullName
@@ -78,7 +79,7 @@ export const useAppleLogin = () => {
       }
 
       const apiError = rawError as ApiError;
-      setError(apiError.message ?? "Не удалось войти через Apple. Попробуйте еще раз.");
+      setError(localizeSystemMessage(apiError.message, "Unable to sign in with Apple. Try again."));
       return null;
     } finally {
       setIsLoading(false);

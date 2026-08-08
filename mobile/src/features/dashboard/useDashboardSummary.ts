@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -49,7 +50,7 @@ const normalizeCategoryBreakdown = (value: unknown): CategoryBreakdown[] => {
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
     .map((item) => ({
       categoryId: toStringValue(item.categoryId),
-      name: toStringValue(item.name, "Без категории"),
+      name: toStringValue(item.name, translate("Uncategorized")),
       icon: typeof item.icon === "string" ? item.icon : null,
       amount: toNumber(item.amount),
     }));
@@ -77,7 +78,7 @@ const normalizeAccounts = (value: unknown): AccountSummary[] => {
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
     .map((item) => ({
       id: toStringValue(item.id),
-      name: toStringValue(item.name, "Счет"),
+      name: toStringValue(item.name, translate("Account")),
       type: toStringValue(item.type, "CASH") as AccountSummary["type"],
       balance: toNumber(item.balance),
       balanceInBase: item.balanceInBase == null ? null : toNumber(item.balanceInBase),
@@ -115,8 +116,8 @@ const normalizeRecentTransactions = (value: unknown): RecentTransactionItem[] =>
     .map((item) => ({
       id: toStringValue(item.id),
       dateLabel: toStringValue(item.dateLabel),
-      categoryName: toStringValue(item.categoryName, "Без категории"),
-      accountName: toStringValue(item.accountName, "Без счета"),
+      categoryName: toStringValue(item.categoryName, translate("Uncategorized")),
+      accountName: toStringValue(item.accountName, translate("No account")),
       amount: toNumber(item.amount),
       direction: toStringValue(item.direction, "DECREASE") as RecentTransactionItem["direction"],
       categoryType: toStringValue(item.categoryType, "EXPENSES") as RecentTransactionItem["categoryType"],
@@ -153,7 +154,7 @@ const fetchDashboardSummary = async (
   const token = await getToken();
   if (!token) {
     await onUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   const params = new URLSearchParams();
@@ -175,16 +176,14 @@ const fetchDashboardSummary = async (
 
   if (response.status === 401) {
     await onUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   if (!response.ok) {
-    let message = `Не удалось загрузить dashboard (HTTP ${response.status}).`;
+    let message = translate("Unable to load dashboard (HTTP {{status}}).", { status: response.status });
     try {
       const payload = (await response.json()) as ErrorPayload;
-      if (payload?.message) {
-        message = payload.message;
-      }
+      message = localizeSystemMessage(payload?.message, message);
     } catch {
       // ignore parse errors
     }

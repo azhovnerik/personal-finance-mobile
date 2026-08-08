@@ -1,3 +1,5 @@
+import { localizeSystemMessage, translate } from "../src/localization";
+import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -23,7 +25,7 @@ const extractFieldErrors = (error: unknown): Record<string, string> => {
 
   return Object.entries(fields as Record<string, unknown>).reduce<Record<string, string>>((acc, [key, value]) => {
     if (typeof value === "string") {
-      acc[key] = value;
+      acc[key] = localizeSystemMessage(value, "Invalid value.");
     }
     return acc;
   }, {});
@@ -31,13 +33,14 @@ const extractFieldErrors = (error: unknown): Record<string, string> => {
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) {
-    return error.message;
+    return localizeSystemMessage(error.message, fallback);
   }
   return fallback;
 };
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const { profileResponse, isLoading, isRefreshing, error, refresh } = useSettingsProfile();
   const updateProfileMutation = useUpdateSettingsProfile();
   const resendEmailMutation = useResendPendingEmail();
@@ -112,17 +115,17 @@ export default function SettingsScreen() {
     setFieldErrors({});
 
     if (!name.trim()) {
-      setFieldErrors({ name: "Введите имя" });
+      setFieldErrors({ name: translate("Enter your name") });
       return;
     }
 
     if (!email.trim()) {
-      setFieldErrors({ email: "Введите email" });
+      setFieldErrors({ email: translate("Enter your email") });
       return;
     }
 
     if (!language) {
-      setFieldErrors({ language: "Выберите язык" });
+      setFieldErrors({ language: translate("Select a language") });
       return;
     }
 
@@ -137,15 +140,16 @@ export default function SettingsScreen() {
 
       setSuccessMessage(
         result.emailChangeStarted
-          ? (result.message ?? "Нужна верификация нового email.")
-          : "Профиль сохранен.",
+          ? localizeSystemMessage(result.message, "The new email must be verified.")
+          : translate("Profile saved."),
       );
+      setLocale(result.profile.language);
       setIsProfileDirty(false);
       setFieldErrors({});
       setFormError(null);
     } catch (mutationError) {
       setFieldErrors(extractFieldErrors(mutationError));
-      setFormError(getErrorMessage(mutationError, "Не удалось сохранить профиль."));
+      setFormError(getErrorMessage(mutationError, translate("Unable to save the profile.")));
     }
   }, [baseCurrency, email, language, name, telegramUsername, updateProfileMutation]);
 
@@ -156,12 +160,16 @@ export default function SettingsScreen() {
     try {
       const response = await resendEmailMutation.mutateAsync();
       if (response.sent) {
-        setSuccessMessage(`Письмо отправлено повторно. Cooldown: ${response.cooldownSeconds}с.`);
+        setSuccessMessage(translate("Email resent. Retry in {{seconds}} seconds.", {
+          seconds: response.cooldownSeconds,
+        }));
         return;
       }
-      setFormError(`Письмо не было отправлено. Попробуйте позже (cooldown ${response.cooldownSeconds}с).`);
+      setFormError(translate("Email was not sent. Try again in {{seconds}} seconds.", {
+        seconds: response.cooldownSeconds,
+      }));
     } catch (mutationError) {
-      setFormError(getErrorMessage(mutationError, "Не удалось отправить письмо повторно."));
+      setFormError(getErrorMessage(mutationError, translate("Unable to resend the email.")));
     }
   }, [resendEmailMutation]);
 
@@ -170,12 +178,12 @@ export default function SettingsScreen() {
     setPasswordFieldErrors({});
 
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      setPasswordError("Заполните все поля пароля.");
+      setPasswordError(translate("Complete all password fields."));
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordFieldErrors({ confirmNewPassword: "Пароли не совпадают." });
+      setPasswordFieldErrors({ confirmNewPassword: translate("Passwords do not match.") });
       return;
     }
 
@@ -192,14 +200,14 @@ export default function SettingsScreen() {
         return;
       }
 
-      setSuccessMessage("Пароль изменен.");
+      setSuccessMessage(translate("Password changed."));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
       setShowPasswordForm(false);
     } catch (mutationError) {
       setPasswordFieldErrors(extractFieldErrors(mutationError));
-      setPasswordError(getErrorMessage(mutationError, "Не удалось изменить пароль."));
+      setPasswordError(getErrorMessage(mutationError, translate("Unable to change password.")));
     }
   }, [changePasswordMutation, confirmNewPassword, currentPassword, newPassword, router]);
 
@@ -212,16 +220,16 @@ export default function SettingsScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text variant="title">Account settings</Text>
-            <Text variant="caption">Profile, language, and security</Text>
+            <Text variant="title">{translate("Account settings")}</Text>
+            <Text variant="caption">{translate("Profile, language, and security")}</Text>
           </View>
-          <Button title="Back" variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
+          <Button title={translate("Back")} variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
         </View>
 
         {error ? (
           <Card style={styles.messageCard}>
             <Text style={styles.errorText}>{error}</Text>
-            <Button title="Повторить" size="sm" onPress={() => void refresh()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
           </Card>
         ) : null}
 
@@ -239,22 +247,22 @@ export default function SettingsScreen() {
 
         {isLoading && !profileResponse ? (
           <Card style={styles.messageCard}>
-            <Text variant="caption">Загрузка настроек...</Text>
+            <Text variant="caption">{translate("Loading settings...")}</Text>
           </Card>
         ) : null}
 
         <Card style={styles.card}>
-          <Text variant="subtitle">Profile</Text>
+          <Text variant="subtitle">{translate("Profile")}</Text>
 
           <View style={styles.verifiedRow}>
-            <Text variant="caption">Verification</Text>
+            <Text variant="caption">{translate("Verification")}</Text>
             <Text style={[styles.verifiedBadge, profile?.emailVerified ? styles.verifiedYes : styles.verifiedNo]}>
-              {profile?.emailVerified ? "Verified" : "Unverified"}
+              {profile?.emailVerified ? translate("Verified") : translate("Unverified")}
             </Text>
           </View>
 
           <Input
-            placeholder="Email"
+            placeholder={translate("Email")}
             value={email}
             onChangeText={(value) => {
               setEmail(value);
@@ -266,7 +274,7 @@ export default function SettingsScreen() {
           {fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
 
           <Input
-            placeholder="Name"
+            placeholder={translate("Name")}
             value={name}
             onChangeText={(value) => {
               setName(value);
@@ -276,7 +284,7 @@ export default function SettingsScreen() {
           {fieldErrors.name ? <Text style={styles.errorText}>{fieldErrors.name}</Text> : null}
 
           <Input
-            placeholder="Telegram username"
+            placeholder={translate("Telegram username")}
             value={telegramUsername}
             onChangeText={(value) => {
               setTelegramUsername(value);
@@ -287,7 +295,7 @@ export default function SettingsScreen() {
           {fieldErrors.telegramUsername ? <Text style={styles.errorText}>{fieldErrors.telegramUsername}</Text> : null}
 
           <Select
-            placeholder="Interface language"
+            placeholder={translate("Interface language")}
             value={language}
             options={languageOptions}
             onChange={(value) => {
@@ -298,7 +306,7 @@ export default function SettingsScreen() {
           {fieldErrors.language ? <Text style={styles.errorText}>{fieldErrors.language}</Text> : null}
 
           <Select
-            placeholder="Base currency"
+            placeholder={translate("Base currency")}
             value={baseCurrency}
             options={effectiveCurrencyOptions}
             onChange={(value) => {
@@ -307,12 +315,12 @@ export default function SettingsScreen() {
             }}
           />
           {!canChangeBaseCurrency ? (
-            <Text style={styles.warningText}>Изменение базовой валюты недоступно: уже есть бюджеты или транзакции.</Text>
+            <Text style={styles.warningText}>{translate("The base currency cannot be changed because budgets or transactions already exist.")}</Text>
           ) : null}
           {fieldErrors.baseCurrency ? <Text style={styles.errorText}>{fieldErrors.baseCurrency}</Text> : null}
 
           <Button
-            title={updateProfileMutation.isPending ? "Сохранение..." : "Save"}
+            title={updateProfileMutation.isPending ? translate("Saving...") : translate("Save")}
             disabled={updateProfileMutation.isPending || isLoading}
             onPress={() => void handleSaveProfile()}
           />
@@ -320,10 +328,12 @@ export default function SettingsScreen() {
 
         {profile?.pendingEmail ? (
           <Card style={styles.card}>
-            <Text variant="subtitle">Email verification</Text>
-            <Text variant="caption">Ожидается подтверждение нового email: {profile.pendingEmail}</Text>
+            <Text variant="subtitle">{translate("Email verification")}</Text>
+            <Text variant="caption">
+              {translate("New email awaiting verification: {{email}}", { email: profile.pendingEmail })}
+            </Text>
             <Button
-              title={resendEmailMutation.isPending ? "Отправка..." : "Resend email"}
+              title={resendEmailMutation.isPending ? translate("Sending...") : translate("Resend email")}
               variant="outline"
               tone="primary"
               size="sm"
@@ -334,10 +344,10 @@ export default function SettingsScreen() {
         ) : null}
 
         <Card style={styles.card}>
-          <Text variant="subtitle">Password</Text>
+          <Text variant="subtitle">{translate("Password")}</Text>
           {profile?.hasPassword ? (
             <Button
-              title={showPasswordForm ? "Скрыть форму" : "Change password"}
+              title={showPasswordForm ? translate("Hide form") : translate("Change password")}
               variant="outline"
               tone="primary"
               size="sm"
@@ -345,14 +355,13 @@ export default function SettingsScreen() {
             />
           ) : (
             <Text variant="caption">
-              Для аккаунта не задан пароль. Password setup flow выполняется в отдельной задаче.
-            </Text>
+              {translate("This account has no password. Password setup is handled separately.")}</Text>
           )}
 
           {showPasswordForm && profile?.hasPassword ? (
             <View style={styles.passwordForm}>
               <Input
-                placeholder="Current password"
+                placeholder={translate("Current password")}
                 secureTextEntry
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
@@ -364,7 +373,7 @@ export default function SettingsScreen() {
               {passwordFieldErrors.currentPassword ? <Text style={styles.errorText}>{passwordFieldErrors.currentPassword}</Text> : null}
 
               <Input
-                placeholder="New password"
+                placeholder={translate("New password")}
                 secureTextEntry
                 value={newPassword}
                 onChangeText={setNewPassword}
@@ -376,7 +385,7 @@ export default function SettingsScreen() {
               {passwordFieldErrors.newPassword ? <Text style={styles.errorText}>{passwordFieldErrors.newPassword}</Text> : null}
 
               <Input
-                placeholder="Confirm new password"
+                placeholder={translate("Confirm new password")}
                 secureTextEntry
                 value={confirmNewPassword}
                 onChangeText={setConfirmNewPassword}
@@ -392,7 +401,7 @@ export default function SettingsScreen() {
               {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
               <Button
-                title={changePasswordMutation.isPending ? "Сохранение..." : "Save password"}
+                title={changePasswordMutation.isPending ? translate("Saving...") : translate("Save password")}
                 disabled={changePasswordMutation.isPending}
                 onPress={() => void handleChangePassword()}
               />

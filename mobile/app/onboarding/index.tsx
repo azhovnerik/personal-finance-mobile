@@ -1,3 +1,5 @@
+import { localizeSystemMessage, translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
@@ -72,19 +74,19 @@ const validateExpenseDraft = (expense: ExpenseDraft): { errors: ExpenseFieldErro
   const amount = Number.parseFloat(expense.amount.replace(",", "."));
 
   if (!expense.date.trim()) {
-    errors.date = "Укажите дату.";
+    errors.date = translate("Enter a date.");
   }
 
   if (!expense.categoryId) {
-    errors.categoryId = "Выберите категорию.";
+    errors.categoryId = translate("Select a category.");
   }
 
   if (!expense.accountId) {
-    errors.accountId = "Выберите счет.";
+    errors.accountId = translate("Select an account.");
   }
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    errors.amount = "Укажите сумму больше нуля.";
+    errors.amount = translate("Enter an amount greater than zero.");
   }
 
   return {
@@ -96,6 +98,7 @@ const validateExpenseDraft = (expense: ExpenseDraft): { errors: ExpenseFieldErro
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const [session, setSession] = useState<OnboardingSessionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -120,7 +123,7 @@ export default function OnboardingScreen() {
         await handleUnauthorized();
         return;
       }
-      setScreenError(apiError.message ?? "Не удалось загрузить onboarding.");
+      setScreenError(localizeSystemMessage(apiError.message, "Unable to load onboarding."));
     } finally {
       setIsLoading(false);
     }
@@ -172,11 +175,11 @@ export default function OnboardingScreen() {
 
   const submitBaseCurrency = async () => {
     if (!selectedLanguage) {
-      setScreenError("Выберите язык интерфейса.");
+      setScreenError(translate("Select an interface language."));
       return;
     }
     if (!selectedCurrency) {
-      setScreenError("Выберите базовую валюту.");
+      setScreenError(translate("Select a base currency."));
       return;
     }
 
@@ -187,6 +190,7 @@ export default function OnboardingScreen() {
         language: selectedLanguage,
         baseCurrency: selectedCurrency,
       });
+      setLocale(nextSession.user.language ?? selectedLanguage);
       setSession(nextSession);
     } catch (rawError) {
       const apiError = rawError as ApiError;
@@ -194,7 +198,7 @@ export default function OnboardingScreen() {
         await handleUnauthorized();
         return;
       }
-      setScreenError(apiError.message ?? "Не удалось сохранить язык и валюту.");
+      setScreenError(localizeSystemMessage(apiError.message, "Unable to save the language and currency."));
     } finally {
       setIsSaving(false);
     }
@@ -202,14 +206,14 @@ export default function OnboardingScreen() {
 
   const submitFirstExpense = async () => {
     if (!expenseDraft) {
-      setScreenError("Не удалось подготовить форму расхода.");
+      setScreenError(translate("Unable to prepare the expense form."));
       return;
     }
 
     const validation = validateExpenseDraft(expenseDraft);
     if (!validation.isValid) {
       setExpenseFieldErrors(validation.errors);
-      setScreenError("Расход не отправлен: заполните обязательные поля.");
+      setScreenError(translate("Expense not submitted: complete the required fields."));
       return;
     }
 
@@ -246,7 +250,7 @@ export default function OnboardingScreen() {
           }
         }
       }
-      setScreenError(apiError.message ?? "Не удалось сохранить первый расход.");
+      setScreenError(localizeSystemMessage(apiError.message, "Unable to save the first expense."));
     } finally {
       setIsSaving(false);
     }
@@ -257,7 +261,7 @@ export default function OnboardingScreen() {
       <ScreenContainer>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text>Загружаем onboarding...</Text>
+          <Text>{translate("Loading onboarding...")}</Text>
         </View>
       </ScreenContainer>
     );
@@ -267,8 +271,8 @@ export default function OnboardingScreen() {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
-          <Text>{screenError ?? "Не удалось открыть onboarding."}</Text>
-          <Button title="Повторить" onPress={() => void loadSession()} />
+          <Text>{screenError ?? translate("Unable to open onboarding.")}</Text>
+          <Button title={translate("Retry")} onPress={() => void loadSession()} />
         </View>
       </ScreenContainer>
     );
@@ -284,11 +288,14 @@ export default function OnboardingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text variant="title">Первичная настройка</Text>
+          <Text variant="title">{translate("Initial setup")}</Text>
           <Text variant="caption">
             {session.screen
-              ? `Шаг ${stepIndex + 1} из 2: ${session.screen}`
-              : "Все шаги заполнены"}
+              ? translate("Step {{current}} of 2: {{screen}}", {
+                  current: stepIndex + 1,
+                  screen: session.screen,
+                })
+              : translate("All steps completed")}
           </Text>
         </View>
 
@@ -300,22 +307,22 @@ export default function OnboardingScreen() {
 
         {session.screen === "BASE_CURRENCY" ? (
           <Card style={styles.card}>
-            <Text variant="subtitle">Язык и базовая валюта</Text>
-            <Text variant="caption">Выберите язык интерфейса и валюту для аналитики.</Text>
+            <Text variant="subtitle">{translate("Language and base currency")}</Text>
+            <Text variant="caption">{translate("Select the interface language and analytics currency.")}</Text>
             <Select
               value={selectedLanguage}
               options={languageOptions}
               onChange={(value) => setSelectedLanguage(value)}
-              placeholder="Язык интерфейса"
+              placeholder={translate("Interface language")}
             />
             <Select
               value={selectedCurrency}
               options={currencyOptions}
               onChange={(value) => setSelectedCurrency(value as CurrencyCode)}
-              placeholder="Выберите валюту"
+              placeholder={translate("Select a currency")}
             />
             <Button
-              title={isSaving ? "Сохраняем..." : "Продолжить"}
+              title={isSaving ? translate("Saving...") : translate("Continue")}
               onPress={() => void submitBaseCurrency()}
               disabled={isSaving || !selectedLanguage || !selectedCurrency}
             />
@@ -324,12 +331,12 @@ export default function OnboardingScreen() {
 
         {session.screen === "FIRST_EXPENSE" ? (
           <Card style={styles.card}>
-            <Text variant="subtitle">Добавьте первый расход</Text>
-            <Text variant="caption">Это займет меньше минуты.</Text>
+            <Text variant="subtitle">{translate("Add your first expense")}</Text>
+            <Text variant="caption">{translate("This takes less than a minute.")}</Text>
             {expenseDraft ? (
               <View style={styles.block}>
                 <Input
-                  placeholder="Дата YYYY-MM-DD"
+                  placeholder={translate("Date YYYY-MM-DD")}
                   value={expenseDraft.date}
                   onChangeText={(value) => {
                     setExpenseDraft((prev) => (prev ? { ...prev, date: value } : prev));
@@ -342,7 +349,7 @@ export default function OnboardingScreen() {
                   defaultType="EXPENSES"
                   lockType
                   preferFlatList
-                  placeholder="Категория"
+                  placeholder={translate("Category")}
                   onChange={(value) => {
                     setExpenseDraft((prev) => (prev ? { ...prev, categoryId: value } : prev));
                     setExpenseFieldErrors((prev) => ({ ...prev, categoryId: undefined }));
@@ -356,12 +363,12 @@ export default function OnboardingScreen() {
                     setExpenseDraft((prev) => (prev ? { ...prev, accountId: value } : prev));
                     setExpenseFieldErrors((prev) => ({ ...prev, accountId: undefined }));
                   }}
-                  placeholder="Счет"
+                  placeholder={translate("Account")}
                 />
                 {expenseFieldErrors.accountId ? <Text style={styles.fieldErrorText}>{expenseFieldErrors.accountId}</Text> : null}
                 <Pressable onPress={() => setIsExpenseAmountKeypadOpen(true)}>
                   <Input
-                    placeholder="Сумма"
+                    placeholder={translate("Amount")}
                     keyboardType="numeric"
                     value={expenseDraft.amount}
                     editable={false}
@@ -371,14 +378,14 @@ export default function OnboardingScreen() {
                 </Pressable>
                 {expenseFieldErrors.amount ? <Text style={styles.fieldErrorText}>{expenseFieldErrors.amount}</Text> : null}
                 <Input
-                  placeholder="Комментарий"
+                  placeholder={translate("Comment")}
                   value={expenseDraft.comment}
                   onChangeText={(value) => setExpenseDraft((prev) => (prev ? { ...prev, comment: value } : prev))}
                 />
               </View>
             ) : null}
             <Button
-              title={isSaving ? "Сохраняем..." : "Сохранить и продолжить"}
+              title={isSaving ? translate("Saving...") : translate("Save and continue")}
               onPress={() => void submitFirstExpense()}
               disabled={isSaving}
             />

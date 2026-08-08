@@ -1,3 +1,5 @@
+import { getCurrentIntlLocale, translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
@@ -44,10 +46,10 @@ const monthTitle = (value: string) => {
   if (!date) {
     return value;
   }
-  return new Intl.DateTimeFormat("uk-UA", { month: "long", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat(getCurrentIntlLocale(), { month: "long", year: "numeric" }).format(date);
 };
 const monthTitleFromDate = (value: Date) =>
-  new Intl.DateTimeFormat("uk-UA", { month: "long", year: "numeric" }).format(value);
+  new Intl.DateTimeFormat(getCurrentIntlLocale(), { month: "long", year: "numeric" }).format(value);
 const monthKeyFromDate = (value: Date) => value.getFullYear() * 100 + (value.getMonth() + 1);
 const monthApiFromDate = (value: Date) =>
   `${String(value.getMonth() + 1).padStart(2, "0")}-${value.getFullYear()}`;
@@ -62,12 +64,13 @@ const formatAmountWithSymbol = (value: number, currency: CurrencyCode) =>
   `${formatAmount(value)} ${getCurrencySymbol(currency)}`;
 
 const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
-  const name = item.category?.name ?? "Без названия";
+  const name = item.category?.name ?? translate("Untitled");
   return name;
 };
 
 const CategorySection = ({
   title,
+  type,
   categories,
   baseCurrency,
   budgetId,
@@ -75,6 +78,7 @@ const CategorySection = ({
   openAddCategory,
 }: {
   title: string;
+  type: "INCOME" | "EXPENSES";
   categories: BudgetCategoryDetailedDto[];
   baseCurrency: CurrencyCode;
   budgetId?: string;
@@ -91,8 +95,6 @@ const CategorySection = ({
     { plan: 0, fact: 0, leftover: 0 },
   );
 
-  const sectionType = title === "Доходы" ? "INCOME" : "EXPENSES";
-
   if (categories.length === 0) {
     return (
       <Card style={styles.sectionCard}>
@@ -100,14 +102,14 @@ const CategorySection = ({
           <Text variant="subtitle">{title}</Text>
           {budgetId ? (
             <Button
-              title="Добавить категорию"
+              title={translate("Add category")}
               size="sm"
               variant="outline"
-              onPress={() => openAddCategory(budgetId, sectionType)}
+              onPress={() => openAddCategory(budgetId, type)}
             />
           ) : null}
         </View>
-        <Text variant="caption">Категорий нет.</Text>
+        <Text variant="caption">{translate("No categories.")}</Text>
       </Card>
     );
   }
@@ -118,10 +120,10 @@ const CategorySection = ({
         <Text variant="subtitle">{title}</Text>
         {budgetId ? (
           <Button
-            title="Добавить категорию"
+            title={translate("Add category")}
             size="sm"
             variant="outline"
-            onPress={() => openAddCategory(budgetId, sectionType)}
+            onPress={() => openAddCategory(budgetId, type)}
           />
         ) : null}
       </View>
@@ -143,7 +145,7 @@ const CategorySection = ({
           isOverspend ? styles.progressFillDanger : ratioRaw > 0.7 ? styles.progressFillWarning : styles.progressFillSafe;
         const incomeProgressToneStyle = isOverspend ? styles.progressFillInfo : styles.progressFillSafe;
         const canOpen = Boolean(budgetId && (item.id || item.category?.id));
-        const isIncomeSection = sectionType === "INCOME";
+        const isIncomeSection = type === "INCOME";
 
         const rowContent = (
           <View style={styles.categoryCard}>
@@ -163,8 +165,7 @@ const CategorySection = ({
 
             {isIncomeSection ? (
               <Text style={[styles.incomePercentText, isOverspend ? styles.infoValue : styles.safeValue]}>
-                {percentOfPlan}% от плана
-              </Text>
+                {translate("{{percent}}% of plan", { percent: percentOfPlan })}</Text>
             ) : null}
 
             <View style={styles.progressTrack}>
@@ -180,16 +181,16 @@ const CategorySection = ({
             {isIncomeSection ? (
               <Text style={[styles.leftoverText, isOverspend ? styles.safeValue : leftover === 0 ? styles.safeValue : styles.mutedValue]}>
                 {isOverspend
-                  ? `+${formatAmountWithSymbol(Math.abs(leftover), displayCurrency)} сверх плана 🚀`
+                  ? translate("+{{amount}} above plan 🚀", { amount: formatAmountWithSymbol(Math.abs(leftover), displayCurrency) })
                   : leftover === 0
-                    ? "Цель достигнута! 🎉"
-                    : `До цели: ${formatAmountWithSymbol(leftover, displayCurrency)}`}
+                    ? translate("Goal reached! 🎉")
+                    : translate("To goal: {{amount}}", { amount: formatAmountWithSymbol(leftover, displayCurrency) })}
               </Text>
             ) : (
               <Text style={[styles.leftoverText, isOverspend ? styles.negativeValue : styles.safeValue]}>
                 {isOverspend
-                  ? `Перерасход ${formatAmountWithSymbol(Math.abs(leftover), displayCurrency)}`
-                  : `Осталось ${formatAmountWithSymbol(leftover, displayCurrency)}`}
+                  ? translate("Overspent by {{amount}}", { amount: formatAmountWithSymbol(Math.abs(leftover), displayCurrency) })
+                  : translate("{{amount}} remaining", { amount: formatAmountWithSymbol(leftover, displayCurrency) })}
               </Text>
             )}
           </View>
@@ -221,14 +222,17 @@ const CategorySection = ({
       })}
 
       <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total</Text>
+        <Text style={styles.totalLabel}>{translate("Total")}</Text>
         <Text style={styles.totalValue}>
-          План {formatAmountWithSymbol(totals.plan, baseCurrency)} · Факт {formatAmountWithSymbol(totals.fact, baseCurrency)}
+          {translate("Plan {{plan}} · Actual {{actual}}", {
+            plan: formatAmountWithSymbol(totals.plan, baseCurrency),
+            actual: formatAmountWithSymbol(totals.fact, baseCurrency),
+          })}
         </Text>
         <Text style={[styles.totalValue, totals.leftover < 0 ? styles.negativeValue : styles.safeValue]}>
           {totals.leftover < 0
-            ? `Перерасход ${formatAmountWithSymbol(Math.abs(totals.leftover), baseCurrency)}`
-            : `Осталось ${formatAmountWithSymbol(totals.leftover, baseCurrency)}`}
+            ? translate("Overspent by {{amount}}", { amount: formatAmountWithSymbol(Math.abs(totals.leftover), baseCurrency) })
+            : translate("{{amount}} remaining", { amount: formatAmountWithSymbol(totals.leftover, baseCurrency) })}
         </Text>
       </View>
     </Card>
@@ -236,6 +240,7 @@ const CategorySection = ({
 };
 
 export default function BudgetsScreen() {
+  useLocalization();
   const router = useRouter();
   const { budgets, isLoading, isRefreshing, error, refresh } = useBudgets();
   const { createBudget, isCreating, error: createError } = useBudgetActions();
@@ -310,24 +315,24 @@ export default function BudgetsScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text variant="title">Бюджет</Text>
-            <Text variant="caption">План / факт / остаток по категориям</Text>
+            <Text variant="title">{translate("Budget")}</Text>
+            <Text variant="caption">{translate("Plan / actual / remaining by category")}</Text>
           </View>
-          <Button title="Обновить" size="sm" variant="outline" onPress={() => void refresh()} />
+          <Button title={translate("Update")} size="sm" variant="outline" onPress={() => void refresh()} />
         </View>
 
         {error ? (
           <Card style={styles.errorCard}>
             <Text style={styles.negativeValue}>{error}</Text>
-            <Button title="Повторить" size="sm" onPress={() => void refresh()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
           </Card>
         ) : null}
 
-        {!error && isLoading ? <Text variant="caption">Загрузка бюджетов...</Text> : null}
+        {!error && isLoading ? <Text variant="caption">{translate("Loading budgets...")}</Text> : null}
 
         {!isLoading && !error && budgets.length === 0 ? (
           <Card>
-            <Text variant="caption">Бюджеты пока не найдены.</Text>
+            <Text variant="caption">{translate("No budgets found yet.")}</Text>
           </Card>
         ) : null}
 
@@ -350,22 +355,22 @@ export default function BudgetsScreen() {
             style={[styles.tabItem, selectedTab === "INCOME" ? styles.tabItemActive : undefined]}
             onPress={() => setSelectedTab("INCOME")}
           >
-            <Text style={selectedTab === "INCOME" ? styles.tabTextActive : styles.tabText}>Доходы</Text>
+            <Text style={selectedTab === "INCOME" ? styles.tabTextActive : styles.tabText}>{translate("Income")}</Text>
           </Pressable>
           <Pressable
             style={[styles.tabItem, selectedTab === "EXPENSES" ? styles.tabItemActive : undefined]}
             onPress={() => setSelectedTab("EXPENSES")}
           >
-            <Text style={selectedTab === "EXPENSES" ? styles.tabTextActive : styles.tabText}>Расходы</Text>
+            <Text style={selectedTab === "EXPENSES" ? styles.tabTextActive : styles.tabText}>{translate("Expenses")}</Text>
           </Pressable>
         </View>
 
-        {selectedBudget && isBudgetLoading ? <Text variant="caption">Загрузка категорий...</Text> : null}
+        {selectedBudget && isBudgetLoading ? <Text variant="caption">{translate("Loading categories...")}</Text> : null}
 
         {selectedBudget && budgetError ? (
           <Card style={styles.errorCard}>
             <Text style={styles.negativeValue}>{budgetError}</Text>
-            <Button title="Повторить" size="sm" onPress={() => void refreshBudget()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refreshBudget()} />
           </Card>
         ) : null}
 
@@ -373,7 +378,8 @@ export default function BudgetsScreen() {
           <>
             {selectedTab === "INCOME" ? (
               <CategorySection
-                title="Доходы"
+                title={translate("Income")}
+                type="INCOME"
                 categories={incomeCategories}
                 baseCurrency={baseCurrency}
                 budgetId={selectedBudgetDetails.id}
@@ -382,7 +388,8 @@ export default function BudgetsScreen() {
               />
             ) : (
               <CategorySection
-                title="Расходы"
+                title={translate("Expenses")}
+                type="EXPENSES"
                 categories={expenseCategories}
                 baseCurrency={baseCurrency}
                 budgetId={selectedBudgetDetails.id}
@@ -395,11 +402,11 @@ export default function BudgetsScreen() {
 
         {!selectedBudget && !isLoading && !error ? (
           <Card style={styles.emptyMonthCard}>
-            <Text>Бюджет на выбранный месяц не создан.</Text>
-            <Text variant="caption">Список бюджетных категорий за этот месяц пуст.</Text>
+            <Text>{translate("No budget has been created for the selected month.")}</Text>
+            <Text variant="caption">{translate("The budget category list for this month is empty.")}</Text>
             {createError ? <Text style={styles.negativeValue}>{createError}</Text> : null}
             <Button
-              title={isCreating ? "Создание..." : "Добавить бюджет"}
+              title={isCreating ? translate("Creating...") : translate("Add budget")}
               onPress={() => void onCreateBudget()}
               disabled={isCreating}
             />

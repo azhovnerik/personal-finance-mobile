@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { Platform } from "react-native";
 import {
   fetchProducts,
@@ -60,7 +61,7 @@ const toPlatform = () => {
   if (Platform.OS === "android") {
     return "ANDROID" as const;
   }
-  throw new Error("Store purchases are available only on iOS and Android.");
+  throw new Error(translate("Store purchases are available only on iOS and Android."));
 };
 
 const maybeString = (value: unknown) => (typeof value === "string" && value.trim() ? value : null);
@@ -442,13 +443,13 @@ export const purchase = async (productId: string, product?: StoreProduct): Promi
 
   return new Promise((resolve, reject) => {
     if (pendingPurchaseRequest) {
-      reject(new Error("Another store purchase is already in progress."));
+      reject(new Error(translate("Another store purchase is already in progress.")));
       return;
     }
 
     const timeoutId = setTimeout(() => {
       settlePendingPurchase((request) =>
-        request.reject(new Error("Покупка не была подтверждена магазином. Попробуйте еще раз.")),
+        request.reject(new Error(translate("The purchase was not confirmed by the store. Try again."))),
       );
     }, PURCHASE_TIMEOUT_MS);
     pendingPurchaseRequest = {
@@ -464,7 +465,7 @@ export const purchase = async (productId: string, product?: StoreProduct): Promi
 
     if (Platform.OS === "android" && !androidSubscriptionOffer) {
       settlePendingPurchase((request) =>
-        request.reject(new Error("Missing Android subscription offer token for selected product.")),
+        request.reject(new Error(translate("Missing Android subscription offer token for selected product."))),
       );
       return;
     }

@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../src/localization";
 import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -15,7 +16,7 @@ export default function ForgotPasswordScreen() {
 
   const onSubmit = async () => {
     if (!email.trim()) {
-      setError("Введите email.");
+      setError(translate("Enter your email."));
       return;
     }
     setIsSubmitting(true);
@@ -25,12 +26,14 @@ export default function ForgotPasswordScreen() {
       const response = await forgotPassword(email.trim());
       setMessage(
         response.cooldownSeconds
-          ? `Если аккаунт существует, письмо отправлено. Интервал: ${response.cooldownSeconds} сек.`
-          : "Если аккаунт существует, письмо отправлено.",
+          ? translate("If the account exists, an email has been sent. Retry in {{seconds}} seconds.", {
+              seconds: response.cooldownSeconds,
+            })
+          : translate("If the account exists, an email has been sent."),
       );
     } catch (rawError) {
       const apiError = rawError as ApiError;
-      setError(apiError.message ?? "Не удалось отправить письмо.");
+      setError(localizeSystemMessage(apiError.message, "Unable to send the email."));
     } finally {
       setIsSubmitting(false);
     }
@@ -39,12 +42,12 @@ export default function ForgotPasswordScreen() {
   return (
     <ScreenContainer style={styles.screen}>
       <Card style={styles.card}>
-        <Text variant="heading">Восстановление пароля</Text>
-        <Input placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+        <Text variant="heading">{translate("Password recovery")}</Text>
+        <Input placeholder={translate("Email")} autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
         {message ? <Text>{message}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button title={isSubmitting ? "Отправляем..." : "Отправить письмо"} onPress={() => void onSubmit()} disabled={isSubmitting} />
-        <Button title="Назад ко входу" variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
+        <Button title={isSubmitting ? translate("Sending...") : translate("Send email")} onPress={() => void onSubmit()} disabled={isSubmitting} />
+        <Button title={translate("Back to sign in")} variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
       </Card>
     </ScreenContainer>
   );
@@ -61,4 +64,3 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
 });
-

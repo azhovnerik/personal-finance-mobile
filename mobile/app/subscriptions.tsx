@@ -1,3 +1,4 @@
+import { getCurrentIntlLocale, localizeSystemMessage, translate } from "../src/localization";
 import { useEffect, useRef } from "react";
 import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -42,52 +43,55 @@ const userErrorMessage = (error: unknown) => {
   }
 
   if (error instanceof StoreAccountUnavailableError) {
-    return "На устройстве не подключен App Store Sandbox account. Добавьте sandbox tester в Settings > App Store > Sandbox Account.";
+    return translate("No App Store Sandbox account is connected on this device. Add a sandbox tester in Settings > App Store > Sandbox Account.");
   }
 
   if (error instanceof StoreDuplicatePurchaseError) {
-    return "Эта покупка уже была получена. Нажмите Restore purchases, чтобы восстановить подписку.";
+    return translate("This purchase has already been received. Tap Restore purchases to restore the subscription.");
   }
 
   if (error instanceof StoreProductMismatchError) {
-    return `App Store сохранил ${error.actualProductId} вместо ${error.requestedProductId}. Проверьте текущий план в настройках подписок App Store.`;
+    return translate(
+      "App Store saved {{actualProductId}} instead of {{requestedProductId}}. Check the current plan in App Store subscription settings.",
+      { actualProductId: error.actualProductId, requestedProductId: error.requestedProductId },
+    );
   }
 
   const rawMessage = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   if (rawMessage.includes("No active account") || rawMessage.includes("ASDErrorDomain Code=509")) {
-    return "На устройстве не подключен App Store Sandbox account. Добавьте sandbox tester в Settings > App Store > Sandbox Account.";
+    return translate("No App Store Sandbox account is connected on this device. Add a sandbox tester in Settings > App Store > Sandbox Account.");
   }
 
   if (error instanceof SubscriptionsApiError) {
     switch (error.code) {
       case "PRODUCT_MAPPING_NOT_FOUND":
-        return "Продукт временно недоступен.";
+        return translate("Product temporarily unavailable.");
       case "RECEIPT_INVALID":
       case "PURCHASE_TOKEN_INVALID":
-        return "Покупка не подтверждена. Попробуйте еще раз.";
+        return translate("Purchase not confirmed. Try again.");
       case "RECEIPT_EXPIRED":
-        return "Период этой покупки уже истек. Выберите актуальную подписку.";
+        return translate("This purchase period has expired. Select a current subscription.");
       case "PURCHASE_ALREADY_LINKED":
-        return "Эта покупка уже привязана к другому аккаунту MoneyDrive. Войдите в связанный аккаунт или используйте другой App Store Sandbox account.";
+        return translate("This purchase is linked to another MoneyDrive account. Sign in to the linked account or use a different App Store Sandbox account.");
       default:
-        return error.message;
+        return localizeSystemMessage(error.message, "Unable to complete the action.");
     }
   }
 
-  return rawMessage || "Не удалось выполнить действие.";
+  return localizeSystemMessage(rawMessage, "Unable to complete the action.");
 };
 
 const formatDate = (value: string | null | undefined) => {
   if (!value) {
-    return "Not set";
+    return translate("Not set");
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return translate("Not set");
   }
 
-  return new Intl.DateTimeFormat("uk-UA", {
+  return new Intl.DateTimeFormat(getCurrentIntlLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -96,11 +100,11 @@ const formatDate = (value: string | null | undefined) => {
 
 const sourceTitle = (source: SubscriptionSourceDto | null) => {
   if (!source) {
-    return "No active store source";
+    return translate("No active store source");
   }
   const sourceStatus = source.status === "ACTIVE" && !source.autoRenew
-    ? "Auto-renew off"
-    : statusLabels[source.status] ?? source.status;
+    ? translate("Auto-renew off")
+    : translate(statusLabels[source.status] ?? "Inactive");
   return `${source.provider} · ${sourceStatus}`;
 };
 
@@ -112,7 +116,10 @@ const isLiqPaySource = (source: SubscriptionSourceDto | null) =>
 
 const openManageAction = async (source: SubscriptionSourceDto | null) => {
   if (!source || source.manageAction === "NONE") {
-    Alert.alert("Subscription management", "No external management action is available.");
+    Alert.alert(
+      translate("Subscription management"),
+      translate("No external management action is available."),
+    );
     return;
   }
 
@@ -126,7 +133,10 @@ const openManageAction = async (source: SubscriptionSourceDto | null) => {
           : [];
 
   if (urls.length === 0) {
-    Alert.alert("Subscription management", "No external management action is available.");
+    Alert.alert(
+      translate("Subscription management"),
+      translate("No external management action is available."),
+    );
     return;
   }
 
@@ -140,10 +150,10 @@ const openManageAction = async (source: SubscriptionSourceDto | null) => {
   }
 
   Alert.alert(
-    "Subscription management",
+    translate("Subscription management"),
     source.manageAction === "APP_STORE"
-      ? "Open App Store account settings and choose Subscriptions."
-      : "Open the subscription provider account settings to manage this plan.",
+      ? translate("Open App Store account settings and choose Subscriptions.")
+      : translate("Open the subscription provider account settings to manage this plan."),
   );
 };
 
@@ -198,18 +208,18 @@ export default function SubscriptionsScreen() {
       {
         onSuccess: (response) => {
           Alert.alert(
-            "Subscription",
+            translate("Subscription"),
             response.premiumActive && response.status === "ACTIVE"
               ? response.planChangeScheduled
-                ? "Premium is active. The plan change will take effect on the next App Store renewal."
-                : "Premium is active."
-              : "The verified purchase is not active.",
+                ? translate("Premium is active. The plan change will take effect on the next App Store renewal.")
+                : translate("Premium is active.")
+              : translate("The verified purchase is not active."),
           );
         },
         onError: (error) => {
           const message = userErrorMessage(error);
           if (message) {
-            Alert.alert("Subscription", message);
+            Alert.alert(translate("Subscription"), message);
           }
         },
       },
@@ -220,14 +230,16 @@ export default function SubscriptionsScreen() {
     restoreSubscriptions.mutate(undefined, {
       onSuccess: (response) => {
         Alert.alert(
-          "Restore purchases",
-          response.restoredCount > 0 ? `Restored purchases: ${response.restoredCount}.` : "No active purchases found.",
+          translate("Restore purchases"),
+          response.restoredCount > 0
+            ? translate("Restored purchases: {{count}}.", { count: response.restoredCount })
+            : translate("No active purchases found."),
         );
       },
       onError: (error) => {
         const message = userErrorMessage(error);
         if (message) {
-          Alert.alert("Restore purchases", message);
+          Alert.alert(translate("Restore purchases"), message);
         }
       },
     });
@@ -271,12 +283,12 @@ export default function SubscriptionsScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text variant="title">Subscription</Text>
-            <Text variant="caption">Manage premium access</Text>
+            <Text variant="title">{translate("Subscription")}</Text>
+            <Text variant="caption">{translate("Manage premium access")}</Text>
           </View>
           {!status.isLoadingStatus && !premiumActive ? (
             <Button
-              title="Logout"
+              title={translate("Logout")}
               variant="outline"
               tone="danger"
               size="sm"
@@ -284,66 +296,63 @@ export default function SubscriptionsScreen() {
               onPress={() => void handleLogout()}
             />
           ) : (
-            <Button title="Back" variant="outline" tone="secondary" size="sm" onPress={handleBack} />
+            <Button title={translate("Back")} variant="outline" tone="secondary" size="sm" onPress={handleBack} />
           )}
         </View>
 
         <Card style={styles.card}>
           <View style={styles.rowBetween}>
-            <Text variant="subtitle">Current plan</Text>
+            <Text variant="subtitle">{translate("Current plan")}</Text>
             <View style={[styles.badge, premiumActive ? styles.badgeActive : styles.badgeMuted]}>
               <Text style={[styles.badgeText, premiumActive ? styles.badgeTextActive : styles.badgeTextMuted]}>
-                {premiumActive ? "Premium" : "Free"}
+                {premiumActive ? translate("Premium") : translate("Free")}
               </Text>
             </View>
           </View>
 
           {status.isLoadingStatus ? (
-            <Text variant="caption">Loading subscription status...</Text>
+            <Text variant="caption">{translate("Loading subscription status...")}</Text>
           ) : (
             <>
               <Text style={styles.planName}>
                 {renewalCanceled
-                  ? "Renewal canceled"
-                  : statusLabels[status.statusResponse?.status ?? ""] ?? "Inactive"}
+                  ? translate("Renewal canceled")
+                  : translate(statusLabels[status.statusResponse?.status ?? ""] ?? "Inactive")}
               </Text>
-              <Text variant="caption">Access until: {formatDate(status.statusResponse?.effectiveTo)}</Text>
+              <Text variant="caption">
+                {translate("Access until: {{date}}", { date: formatDate(status.statusResponse?.effectiveTo) })}
+              </Text>
               <Text variant="caption">{sourceTitle(activeSource)}</Text>
               {renewalCanceled ? (
                 <Text variant="caption">
-                  Auto-renewal is off. Premium access remains available through the date above.
-                </Text>
+                  {translate("Auto-renewal is off. Premium access remains available through the date above.")}</Text>
               ) : null}
               {status.statusResponse?.status === "PAST_DUE" ? (
                 <Text style={styles.warningText}>
-                  The payment is overdue. Premium access remains available through the grace-period date above.
-                </Text>
+                  {translate("The payment is overdue. Premium access remains available through the grace-period date above.")}</Text>
               ) : null}
               {status.statusResponse?.status === "EXPIRED" ? (
                 <Text variant="caption">
-                  Your account and data are safe. Buy a new subscription to restore business features.
-                </Text>
+                  {translate("Your account and data are safe. Buy a new subscription to restore business features.")}</Text>
               ) : null}
               {status.statusResponse?.status === "EXPIRED" && isLiqPaySource(activeSource) ? (
                 <Text variant="caption">
-                  To renew with LiqPay, open the web version and complete a new checkout.
-                </Text>
+                  {translate("To renew with LiqPay, open the web version and complete a new checkout.")}</Text>
               ) : null}
               {isTrial ? (
-                <Text variant="caption">Choose an App Store or Google Play product below.</Text>
+                <Text variant="caption">{translate("Choose an App Store or Google Play product below.")}</Text>
               ) : premiumActive && isLiqPaySource(activeSource) ? (
                 <Text variant="caption">
-                  LiqPay subscription can be cancelled only in the web version of the app.
-                </Text>
+                  {translate("LiqPay subscription can be cancelled only in the web version of the app.")}</Text>
               ) : premiumActive ? (
                 <View style={styles.actionRow}>
                   <Button
-                    title={isWebManageAction(activeSource) ? "Manage on web" : "Manage subscription"}
+                    title={isWebManageAction(activeSource) ? translate("Manage on web") : translate("Manage subscription")}
                     onPress={() => openManageAction(activeSource)}
                   />
                 </View>
               ) : (
-                <Text variant="caption">Choose an App Store or Google Play product below.</Text>
+                <Text variant="caption">{translate("Choose an App Store or Google Play product below.")}</Text>
               )}
             </>
           )}
@@ -354,22 +363,25 @@ export default function SubscriptionsScreen() {
         {showProducts ? (
           <>
             <View style={styles.sectionHeader}>
-              <Text variant="subtitle">Available plans</Text>
+              <Text variant="subtitle">{translate("Available plans")}</Text>
               <Text variant="caption">
-                {products.platform ? `Products for ${products.platform}` : "Store purchases require iOS or Android"}
+                {products.platform
+                  ? translate("Products for {{platform}}", { platform: products.platform })
+                  : translate("Store purchases require iOS or Android")}
               </Text>
             </View>
 
-            {products.isLoadingProducts ? <Text variant="caption">Loading store products...</Text> : null}
+            {products.isLoadingProducts ? <Text variant="caption">{translate("Loading store products...")}</Text> : null}
             {products.error ? <Text style={styles.errorText}>{products.error}</Text> : null}
             {showStoreProductsUnavailable ? (
               <Text style={styles.warningText}>
-                Store products are not available yet. Please check App Store or Google Play product setup.
-              </Text>
+                {translate("Store products are not available yet. Please check App Store or Google Play product setup.")}</Text>
             ) : null}
             {showSomeStoreProductsUnavailable ? (
               <Text style={styles.warningText}>
-                Some store products are not available yet: {products.unavailableProductIds.join(", ")}.
+                {translate("Some store products are not available yet: {{products}}.", {
+                  products: products.unavailableProductIds.join(", "),
+                })}
               </Text>
             ) : null}
 
@@ -378,14 +390,21 @@ export default function SubscriptionsScreen() {
                 <Card key={product.productCode} style={styles.card}>
                   <View style={styles.rowBetween}>
                     <Text style={styles.productTitle}>
-                      {periodLabels[product.billingPeriod] ?? product.title}
+                      {localizeSystemMessage(
+                        periodLabels[product.billingPeriod] ?? product.title,
+                        "Subscription plan",
+                      )}
                     </Text>
                     <Text style={styles.planPrice}>{product.displayPrice}</Text>
                   </View>
-                  <Text variant="caption">{product.description}</Text>
-                  <Text variant="caption">Product: {product.externalProductId}</Text>
+                  <Text variant="caption">
+                    {localizeSystemMessage(product.description, "Subscription plan")}
+                  </Text>
+                  <Text variant="caption">
+                    {translate("Product: {{product}}", { product: product.externalProductId })}
+                  </Text>
                   <Button
-                    title={validateSubscription.isPending ? "Processing..." : "Subscribe"}
+                    title={validateSubscription.isPending ? translate("Processing...") : translate("Subscribe")}
                     variant="outline"
                     tone="primary"
                     size="sm"
@@ -397,7 +416,7 @@ export default function SubscriptionsScreen() {
             </View>
 
             <Button
-              title={restoreSubscriptions.isPending ? "Restoring..." : "Restore purchases"}
+              title={restoreSubscriptions.isPending ? translate("Restoring...") : translate("Restore purchases")}
               variant="ghost"
               tone="secondary"
               disabled={isBusy || Platform.OS === "web"}

@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../src/localization";
 import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -18,15 +19,15 @@ export default function ResetPasswordScreen() {
 
   const onSubmit = async () => {
     if (!token) {
-      setError("Отсутствует токен сброса.");
+      setError(translate("Missing reset token."));
       return;
     }
     if (!password) {
-      setError("Введите новый пароль.");
+      setError(translate("Enter a new password."));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Пароли не совпадают.");
+      setError(translate("Passwords do not match."));
       return;
     }
 
@@ -35,10 +36,10 @@ export default function ResetPasswordScreen() {
     setMessage(null);
     try {
       await resetPassword(token, password);
-      setMessage("Пароль обновлен. Теперь можно войти.");
+      setMessage(translate("Password updated. You can now sign in."));
     } catch (rawError) {
       const apiError = rawError as ApiError;
-      setError(apiError.message ?? "Не удалось сбросить пароль.");
+      setError(localizeSystemMessage(apiError.message, "Unable to reset the password."));
     } finally {
       setIsSubmitting(false);
     }
@@ -47,13 +48,13 @@ export default function ResetPasswordScreen() {
   return (
     <ScreenContainer style={styles.screen}>
       <Card style={styles.card}>
-        <Text variant="heading">Новый пароль</Text>
-        <Input placeholder="Новый пароль" secureTextEntry value={password} onChangeText={setPassword} />
-        <Input placeholder="Повторите пароль" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
+        <Text variant="heading">{translate("New password")}</Text>
+        <Input placeholder={translate("New password")} secureTextEntry value={password} onChangeText={setPassword} />
+        <Input placeholder={translate("Confirm password")} secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
         {message ? <Text>{message}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button title={isSubmitting ? "Сохраняем..." : "Сохранить пароль"} onPress={() => void onSubmit()} disabled={isSubmitting} />
-        <Button title="Ко входу" variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
+        <Button title={isSubmitting ? translate("Saving...") : translate("Save password")} onPress={() => void onSubmit()} disabled={isSubmitting} />
+        <Button title={translate("Back to sign in")} variant="outline" tone="secondary" onPress={() => router.replace("/login")} />
       </Card>
     </ScreenContainer>
   );
@@ -70,4 +71,3 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
 });
-

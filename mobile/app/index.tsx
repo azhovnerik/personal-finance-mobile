@@ -1,3 +1,5 @@
+import { translate } from "../src/localization";
+import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -35,6 +37,7 @@ const getTokenExp = (token: string): number | null => {
 
 export default function IndexScreen() {
   const router = useRouter();
+  const { setLocale } = useLocalization();
   const [isChecking, setIsChecking] = useState(true);
   const [hasNetworkError, setHasNetworkError] = useState(false);
   const isMountedRef = useRef(true);
@@ -83,6 +86,7 @@ export default function IndexScreen() {
 
     try {
       const me = await getCurrentUser(token);
+      setLocale(me.language);
       updateIfMounted(() => {
         router.replace(resolveRouteFromUser(me));
       });
@@ -112,7 +116,7 @@ export default function IndexScreen() {
     updateIfMounted(() => {
       router.replace("/login");
     });
-  }, [router]);
+  }, [router, setLocale]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -132,8 +136,8 @@ export default function IndexScreen() {
       return (
         <ScreenContainer>
           <View style={styles.loader}>
-            <Text>Нет соединения с сервером.</Text>
-            <Button title="Повторить" onPress={checkAuth} />
+            <Text>{translate("Unable to connect to the server.")}</Text>
+            <Button title={translate("Retry")} onPress={checkAuth} />
           </View>
         </ScreenContainer>
       );
@@ -146,7 +150,7 @@ export default function IndexScreen() {
     <ScreenContainer>
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text>Проверяем авторизацию...</Text>
+        <Text>{translate("Checking authentication...")}</Text>
       </View>
     </ScreenContainer>
   );

@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { useMemo } from "react";
 import { Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
@@ -41,7 +42,7 @@ export const useSubscriptionProducts = (enabled: boolean) => {
     enabled: enabled && platform !== null,
     queryFn: async () => {
       if (!platform) {
-        throw new Error("Store products are available only on iOS and Android.");
+        throw new Error(translate("Store products are available only on iOS and Android."));
       }
 
       const response = await withSubscriptionAuth(() => getSubscriptionProducts(platform));
@@ -106,7 +107,7 @@ export const useSubscriptionProducts = (enabled: boolean) => {
       query.error instanceof Error
         ? query.error.message
         : query.error
-          ? "Не удалось загрузить продукты подписки."
+          ? translate("Unable to load subscription products.")
           : null,
     refetchProducts: query.refetch,
   };

@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -59,7 +60,6 @@ const parseMessage = async (response: Response, fallback: string, debugContext?:
     try {
         rawBody = await response.text();
         const body = rawBody ? JSON.parse(rawBody) as { code?: string; error?: string; message?: string; path?: string } : null;
-        const parts = [body?.message, body?.code, body?.error].filter(Boolean);
         if (__DEV__) {
             console.warn("Category API request failed", {
                 status: response.status,
@@ -68,9 +68,7 @@ const parseMessage = async (response: Response, fallback: string, debugContext?:
                 ...debugContext,
             });
         }
-        if (parts.length > 0) {
-            return parts.join(" ");
-        }
+        return localizeSystemMessage(body?.message, fallback);
     } catch {
         if (__DEV__) {
             console.warn("Category API request failed", {
@@ -88,7 +86,7 @@ const getAuthorizedHeaders = async (handleUnauthorized: () => Promise<void>) => 
     const token = await getToken();
     if (!token) {
         await handleUnauthorized();
-        throw new Error("Сессия истекла. Войдите снова.");
+        throw new Error(translate("Your session has expired. Sign in again."));
     }
     return {
         Authorization: `Bearer ${token}`,
@@ -122,7 +120,7 @@ export const useCategories = (filters?: CategoriesFilters, options?: UseCategori
             const token = await getToken();
             if (!token) {
                 await handleUnauthorized();
-                throw new Error("Сессия истекла. Войдите снова.");
+                throw new Error(translate("Your session has expired. Sign in again."));
             }
 
             const { data, error } = await client.GET(
@@ -134,7 +132,7 @@ export const useCategories = (filters?: CategoriesFilters, options?: UseCategori
             );
 
             if (error || !data) {
-                throw new Error("Не удалось загрузить категории.");
+                throw new Error(translate("Unable to load categories."));
             }
 
             return data as CategoryReactDto[];
@@ -145,7 +143,7 @@ export const useCategories = (filters?: CategoriesFilters, options?: UseCategori
         if (!query.error) return null;
         return query.error instanceof Error
             ? query.error.message
-            : "Не удалось загрузить категории.";
+            : translate("Unable to load categories.");
     }, [query.error]);
 
     const refresh = useCallback(async () => {
@@ -191,7 +189,7 @@ export const useFrequentCategories = (
             const token = await getToken();
             if (!token) {
                 await handleUnauthorized();
-                throw new Error("Сессия истекла. Войдите снова.");
+                throw new Error(translate("Your session has expired. Sign in again."));
             }
 
             const { data, error } = await client.GET(
@@ -203,7 +201,7 @@ export const useFrequentCategories = (
             );
 
             if (error || !data) {
-                throw new Error("Не удалось загрузить частые категории.");
+                throw new Error(translate("Unable to load frequent categories."));
             }
 
             return data as CategoryReactDto[];
@@ -214,7 +212,7 @@ export const useFrequentCategories = (
         if (!query.error) return null;
         return query.error instanceof Error
             ? query.error.message
-            : "Не удалось загрузить частые категории.";
+            : translate("Unable to load frequent categories.");
     }, [query.error]);
 
     const refresh = useCallback(async () => {
@@ -248,7 +246,7 @@ export const useCategoryIcons = (options?: UseCategoriesOptions): UseCategoryIco
             const token = await getToken();
             if (!token) {
                 await handleUnauthorized();
-                throw new Error("Сессия истекла. Войдите снова.");
+                throw new Error(translate("Your session has expired. Sign in again."));
             }
 
             const response = await fetch(`${API_BASE_URL}/api/v2/categories/icons`, {
@@ -257,7 +255,7 @@ export const useCategoryIcons = (options?: UseCategoriesOptions): UseCategoryIco
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось загрузить иконки категорий (HTTP ${response.status}).`));
+                throw new Error(await parseMessage(response, translate("Unable to load category icons (HTTP {{status}}).", { status: response.status })));
             }
 
             const payload = (await response.json()) as CategoryIconOption[];
@@ -274,7 +272,7 @@ export const useCategoryIcons = (options?: UseCategoriesOptions): UseCategoryIco
         if (!query.error) return null;
         return query.error instanceof Error
             ? query.error.message
-            : "Не удалось загрузить иконки категорий.";
+            : translate("Unable to load category icons.");
     }, [query.error]);
 
     const refresh = useCallback(async () => {
@@ -304,7 +302,7 @@ export const useCategoryActions = () => {
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось создать категорию (HTTP ${response.status}).`, {
+                throw new Error(await parseMessage(response, translate("Unable to create the category (HTTP {{status}}).", { status: response.status }), {
                     method: "POST",
                     url,
                     requestBody: body,
@@ -328,7 +326,7 @@ export const useCategoryActions = () => {
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось обновить категорию (HTTP ${response.status}).`, {
+                throw new Error(await parseMessage(response, translate("Unable to update the category (HTTP {{status}}).", { status: response.status }), {
                     categoryId: id,
                     method: "PUT",
                     url,
@@ -351,7 +349,7 @@ export const useCategoryActions = () => {
             });
 
             if (!response.ok) {
-                throw new Error(await parseMessage(response, `Не удалось удалить категорию (HTTP ${response.status}).`, {
+                throw new Error(await parseMessage(response, translate("Unable to delete the category (HTTP {{status}}).", { status: response.status }), {
                     categoryId: id,
                     method: "DELETE",
                     url,

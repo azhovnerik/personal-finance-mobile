@@ -1,3 +1,4 @@
+import { translate } from "../../../localization";
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -119,17 +120,17 @@ export const CategoryPickerModal = ({
         <SafeAreaView style={styles.categoryModal}>
           <View style={[styles.categoryHeader, { paddingTop: insets.top + spacing.sm }]}>
             <Pressable onPress={handleBack}>
-              <Text style={styles.modalAction}>Назад</Text>
+              <Text style={styles.modalAction}>{translate("Back")}</Text>
             </Pressable>
-            <Text variant="subtitle">{activeCategory?.name ?? "Категории"}</Text>
+            <Text variant="subtitle">{activeCategory?.name ?? translate("Categories")}</Text>
             <Pressable>
-              <Text style={styles.modalAction}>Редактировать</Text>
+              <Text style={styles.modalAction}>{translate("Edit")}</Text>
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.categoryContent} showsVerticalScrollIndicator={false}>
             {navigationStack.length === 0 ? (
               <>
-              <Text style={styles.sectionTitle}>Самые частые</Text>
+              <Text style={styles.sectionTitle}>{translate("Most frequent")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topCategoryRow}>
                 {filteredTopCategories.map((category) => (
                   <Pressable
@@ -157,8 +158,7 @@ export const CategoryPickerModal = ({
                     }}
                   >
                     <Text style={selectedType === "EXPENSES" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
-                      Расход
-                    </Text>
+                      {translate("Expense")}</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.typeSwitchButton, selectedType === "INCOME" && styles.typeSwitchButtonActive]}
@@ -168,15 +168,14 @@ export const CategoryPickerModal = ({
                     }}
                   >
                     <Text style={selectedType === "INCOME" ? styles.typeSwitchTextActive : styles.typeSwitchText}>
-                      Доход
-                    </Text>
+                      {translate("Income")}</Text>
                   </Pressable>
                 </View>
               ) : null}
               </>
             ) : null}
 
-            <Text style={styles.sectionTitle}>{navigationStack.length > 0 ? "Подкатегории" : "Все категории"}</Text>
+            <Text style={styles.sectionTitle}>{navigationStack.length > 0 ? translate("Subcategories") : translate("All categories")}</Text>
             <View style={styles.categoryList}>
               {visibleCategories.map((category) => {
                 const isGroup = isCategoryGroup(category);
@@ -196,14 +195,14 @@ export const CategoryPickerModal = ({
                     </View>
                     <View style={styles.categoryLabelColumn}>
                       <Text style={[styles.categoryLabel, isGroup ? styles.groupLabel : undefined]}>{category.name}</Text>
-                      {isGroup ? <Text style={styles.groupHint}>{childCount} категорий</Text> : null}
+                      {isGroup ? <Text style={styles.groupHint}>{childCount} {translate("categories")}</Text> : null}
                     </View>
                     {isGroup ? <Text style={styles.categoryChevron}>›</Text> : null}
                   </Pressable>
                 );
               })}
               {visibleCategories.length === 0 ? (
-                <Text style={styles.emptyText}>Категории не найдены для выбранного типа.</Text>
+                <Text style={styles.emptyText}>{translate("No categories found for the selected type.")}</Text>
               ) : null}
             </View>
           </ScrollView>

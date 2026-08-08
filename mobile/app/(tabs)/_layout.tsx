@@ -1,3 +1,5 @@
+import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Tabs } from "expo-router";
@@ -7,6 +9,7 @@ import { CreateTransactionModal } from "../../src/features/transactions/create/C
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 export default function TabsLayout() {
+  useLocalization();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (
@@ -24,42 +27,42 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="index"
             options={{
-              title: "Главная",
+              title: translate("Home"),
               tabBarIcon: ({ size }) => <CategoryIcon name="expense.home" size={size} />,
             }}
           />
           <Tabs.Screen
             name="transactions"
             options={{
-              title: "Транзакции",
+              title: translate("Transactions"),
               tabBarIcon: ({ size }) => <CategoryIcon name="transfer.between_accounts" size={size} />,
             }}
           />
           <Tabs.Screen
             name="budgets"
             options={{
-              title: "Бюджеты",
+              title: translate("Budgets"),
               tabBarIcon: ({ size }) => <CategoryIcon name="income.interest" size={size} />,
             }}
           />
           <Tabs.Screen
             name="categories"
             options={{
-              title: "Категории",
+              title: translate("Categories"),
               tabBarIcon: ({ size }) => <CategoryIcon name="expense.shopping" size={size} />,
             }}
           />
           <Tabs.Screen
             name="accounts"
             options={{
-              title: "Счета",
+              title: translate("Accounts"),
               tabBarIcon: ({ size }) => <CategoryIcon name="transfer.to_savings" size={size} />,
             }}
           />
           <Tabs.Screen
             name="more"
             options={{
-              title: "Ещё",
+              title: translate("More"),
               tabBarIcon: ({ size }) => <CategoryIcon name="expense.entertainment" size={size} />,
             }}
           />

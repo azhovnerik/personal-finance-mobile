@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -35,7 +36,7 @@ const fetchAccounts = async (onUnauthorized: () => Promise<void>): Promise<Accou
   const token = await getToken();
   if (!token) {
     await onUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   const response = await fetch(`${API_BASE_URL}/api/v2/accounts`, {
@@ -44,16 +45,14 @@ const fetchAccounts = async (onUnauthorized: () => Promise<void>): Promise<Accou
 
   if (response.status === 401) {
     await onUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   if (!response.ok) {
-    let message = `Не удалось загрузить счета (HTTP ${response.status}).`;
+    let message = translate("Unable to load accounts (HTTP {{status}}).", { status: response.status });
     try {
       const body = (await response.json()) as { message?: string };
-      if (body?.message) {
-        message = body.message;
-      }
+      message = localizeSystemMessage(body?.message, message);
     } catch {
       // ignore parse errors and keep generic message
     }
@@ -106,7 +105,7 @@ const fetchAccounts = async (onUnauthorized: () => Promise<void>): Promise<Accou
     return (payload as { result: { accounts: AccountDto[] } }).result.accounts;
   }
 
-  throw new Error("Некорректный формат ответа списка счетов.");
+  throw new Error(translate("Invalid accounts response format."));
 };
 
 export const useAccounts = (): UseAccountsResult => {
@@ -124,7 +123,7 @@ export const useAccounts = (): UseAccountsResult => {
     if (!query.error) {
       return null;
     }
-    return query.error instanceof Error ? query.error.message : "Не удалось загрузить счета.";
+    return query.error instanceof Error ? query.error.message : translate("Unable to load accounts.");
   }, [query.error]);
 
   const refresh = useMemo(() => {
@@ -154,7 +153,7 @@ export const useAccounts = (): UseAccountsResult => {
     const token = await getToken();
     if (!token) {
       await handleUnauthorized();
-      throw new Error("Сессия истекла. Войдите снова.");
+      throw new Error(translate("Your session has expired. Sign in again."));
     }
     return token;
   }, [handleUnauthorized]);
@@ -162,9 +161,7 @@ export const useAccounts = (): UseAccountsResult => {
   const parseApiErrorMessage = async (response: Response, fallback: string) => {
     try {
       const body = (await response.json()) as { message?: string };
-      if (body?.message) {
-        return body.message;
-      }
+      return localizeSystemMessage(body?.message, fallback);
     } catch {
       // ignore parse errors
     }
@@ -202,17 +199,17 @@ export const useAccounts = (): UseAccountsResult => {
       });
       if (response.status === 401) {
         await handleUnauthorized();
-        setActionError("Сессия истекла. Войдите снова.");
+        setActionError(translate("Your session has expired. Sign in again."));
         return false;
       }
       if (!response.ok) {
-        setActionError(await parseApiErrorMessage(response, "Не удалось создать счет."));
+        setActionError(await parseApiErrorMessage(response, translate("Unable to create the account.")));
         return false;
       }
       await query.refetch();
       return true;
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Не удалось создать счет.");
+      setActionError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to create the account."));
       return false;
     } finally {
       setIsSaving(false);
@@ -234,17 +231,17 @@ export const useAccounts = (): UseAccountsResult => {
       });
       if (response.status === 401) {
         await handleUnauthorized();
-        setActionError("Сессия истекла. Войдите снова.");
+        setActionError(translate("Your session has expired. Sign in again."));
         return false;
       }
       if (!response.ok) {
-        setActionError(await parseApiErrorMessage(response, "Не удалось обновить счет."));
+        setActionError(await parseApiErrorMessage(response, translate("Unable to update the account.")));
         return false;
       }
       await query.refetch();
       return true;
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Не удалось обновить счет.");
+      setActionError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to update the account."));
       return false;
     } finally {
       setIsSaving(false);
@@ -262,17 +259,17 @@ export const useAccounts = (): UseAccountsResult => {
       });
       if (response.status === 401) {
         await handleUnauthorized();
-        setActionError("Сессия истекла. Войдите снова.");
+        setActionError(translate("Your session has expired. Sign in again."));
         return false;
       }
       if (!response.ok) {
-        setActionError(await parseApiErrorMessage(response, "Не удалось удалить счет."));
+        setActionError(await parseApiErrorMessage(response, translate("Unable to delete the account.")));
         return false;
       }
       await query.refetch();
       return true;
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Не удалось удалить счет.");
+      setActionError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to delete the account."));
       return false;
     } finally {
       setIsSaving(false);
@@ -303,11 +300,11 @@ export const useAccounts = (): UseAccountsResult => {
       }
       if (response.status === 401) {
         await handleUnauthorized();
-        setActionError("Сессия истекла. Войдите снова.");
+        setActionError(translate("Your session has expired. Sign in again."));
         return false;
       }
       if (!response.ok) {
-        setActionError(await parseApiErrorMessage(response, "Не удалось обновить баланс."));
+        setActionError(await parseApiErrorMessage(response, translate("Unable to update balance.")));
         return false;
       }
       applyBalanceToCache(id, newBalance);
@@ -322,7 +319,7 @@ export const useAccounts = (): UseAccountsResult => {
           });
           if (verifyResponse.status === 401) {
             await handleUnauthorized();
-            setActionError("Сессия истекла. Войдите снова.");
+            setActionError(translate("Your session has expired. Sign in again."));
             return false;
           }
           if (verifyResponse.ok) {
@@ -339,10 +336,10 @@ export const useAccounts = (): UseAccountsResult => {
         } catch {
           // ignore verification failure and report timeout below
         }
-        setActionError("Таймаут обновления баланса. Проверьте доступность backend API.");
+        setActionError(translate("Balance update timed out. Check that the backend API is available."));
         return false;
       }
-      setActionError("Не удалось обновить баланс.");
+      setActionError(translate("Unable to update balance."));
       return false;
     } finally {
       setIsSaving(false);

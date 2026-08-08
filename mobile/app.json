@@ -18,6 +18,10 @@
       "bundleIdentifier": "me.moneydrive.app",
       "usesAppleSignIn": true,
       "infoPlist": {
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleLocalizations": [
+          "en"
+        ],
         "NSLocalNetworkUsageDescription": "Allow moneydrive.me to connect to the local development server while debugging.",
         "NSBonjourServices": [
           "_expo._tcp"
@@ -57,6 +61,7 @@
     "plugins": [
       "expo-router",
       "expo-apple-authentication",
+      "expo-localization",
       "react-native-iap",
       [
         "expo-build-properties",

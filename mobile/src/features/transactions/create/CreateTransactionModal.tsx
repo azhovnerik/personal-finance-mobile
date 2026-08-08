@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../../localization";
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -80,7 +81,7 @@ const getApiErrorMessage = (apiError: unknown, fallback: string) => {
   if (apiError && typeof apiError === "object" && "message" in apiError) {
     const message = (apiError as { message?: unknown }).message;
     if (typeof message === "string" && message.trim().length > 0) {
-      return message;
+      return localizeSystemMessage(message, fallback);
     }
   }
 
@@ -186,24 +187,24 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
     setErrorMessage(null);
 
     if (!formState.categoryId || !formState.accountId) {
-      setErrorMessage("Выберите категорию и счет.");
+      setErrorMessage(translate("Select a category and an account."));
       return;
     }
 
     if (!selectedCategory || selectedCategory.disabled) {
-      setErrorMessage("Категория недоступна.");
+      setErrorMessage(translate("Category unavailable."));
       return;
     }
 
     if (!selectedAccount) {
-      setErrorMessage("Счет недоступен.");
+      setErrorMessage(translate("Account unavailable."));
       return;
     }
 
     const normalizedAmount = formState.amount.replace(",", ".");
     const amountValue = Number(normalizedAmount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
-      setErrorMessage("Введите корректную сумму.");
+      setErrorMessage(translate("Enter a valid amount."));
       return;
     }
 
@@ -238,7 +239,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
       const token = await getToken();
       if (!token) {
         await handleUnauthorized();
-        setErrorMessage("Сессия истекла. Войдите снова.");
+        setErrorMessage(translate("Your session has expired. Sign in again."));
         return;
       }
 
@@ -266,12 +267,12 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
 
       if (response.status === 401) {
         await handleUnauthorized();
-        setErrorMessage("Сессия истекла. Войдите снова.");
+        setErrorMessage(translate("Your session has expired. Sign in again."));
         return;
       }
 
       if (apiError || !data) {
-        setErrorMessage(getApiErrorMessage(apiError, "Не удалось сохранить транзакцию."));
+        setErrorMessage(getApiErrorMessage(apiError, translate("Unable to save the transaction.")));
         return;
       }
 
@@ -279,7 +280,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
       resetForm();
       onClose();
     } catch {
-      setErrorMessage("Не удалось сохранить транзакцию.");
+      setErrorMessage(translate("Unable to save the transaction."));
     } finally {
       setIsSaving(false);
     }
@@ -290,9 +291,9 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
       <View style={styles.modalContainer}>
         <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={onClose}>
-            <Text style={styles.modalAction}>Отмена</Text>
+            <Text style={styles.modalAction}>{translate("Cancel")}</Text>
           </Pressable>
-          <Text variant="subtitle">Добавить транзакцию</Text>
+          <Text variant="subtitle">{translate("Add transaction")}</Text>
           <View style={styles.modalActionSpacer} />
         </View>
         <ScrollView
@@ -305,7 +306,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
               <Text style={styles.currencyText}>{mockUser.baseCurrency ?? "UAH"}</Text>
             </View>
             <View style={styles.amountInput}>
-              <Text variant="caption">Сумма</Text>
+              <Text variant="caption">{translate("Amount")}</Text>
               <Input keyboardType="numeric" value={formState.amount} onChangeText={updateAmount} />
             </View>
           </View>
@@ -315,37 +316,37 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
             onChange={handleCategorySelect}
             onResolvedCategoryChange={(category) => setSelectedCategory(category ? toCategory(category) : null)}
             defaultType="EXPENSES"
-            placeholder="Выберите категорию"
+            placeholder={translate("Select a category")}
           />
 
           <Input
-            placeholder="Примечание"
+            placeholder={translate("Note")}
             value={formState.note}
             onChangeText={(value) => setFormState((prev) => ({ ...prev, note: value }))}
           />
 
           <DateInput
-            placeholder="Дата"
+            placeholder={translate("Date")}
             value={formState.date}
             onChange={(value) => setFormState((prev) => ({ ...prev, date: value }))}
           />
 
           <Select
-            placeholder="Счет"
+            placeholder={translate("Account")}
             value={formState.accountId}
             options={accountOptions}
             onChange={(value) => setFormState((prev) => ({ ...prev, accountId: value }))}
           />
 
           <Pressable style={styles.detailsToggle}>
-            <Text style={styles.detailsText}>Добавить детали</Text>
+            <Text style={styles.detailsText}>{translate("Add details")}</Text>
           </Pressable>
         </ScrollView>
 
         <View style={styles.modalFooter}>
           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
           <Button
-            title={isSaving ? "Сохраняем..." : "Сохранить"}
+            title={isSaving ? translate("Saving...") : translate("Save")}
             size="lg"
             disabled={isSaving}
             onPress={handleSave}

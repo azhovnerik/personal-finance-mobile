@@ -1,3 +1,4 @@
+import { translate } from "../src/localization";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -83,9 +84,9 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
 
   const currentLevelTitle = useMemo(() => {
     if (navigationStack.length === 0) {
-      return selectedType === "EXPENSES" ? "Расходы" : "Доходы";
+      return selectedType === "EXPENSES" ? translate("Expenses") : translate("Income");
     }
-    return currentParent?.name ?? (selectedType === "EXPENSES" ? "Расходы" : "Доходы");
+    return currentParent?.name ?? (selectedType === "EXPENSES" ? translate("Expenses") : translate("Income"));
   }, [currentParent?.name, navigationStack.length, selectedType]);
 
   const openCategoryLevel = (item: CategoryReactDto) => {
@@ -156,11 +157,11 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
             <View style={styles.treeTextColumn}>
               <Text style={[styles.treeName, isGroup ? styles.groupName : undefined]}>{item.name}</Text>
               {isGroup ? (
-                <Text style={styles.groupHint}>{childrenCount} категорий</Text>
+                <Text style={styles.groupHint}>{childrenCount} {translate("categories")}</Text>
               ) : null}
             </View>
-            {isGroup ? <Chip label="Группа" /> : null}
-            {item.disabled ? <Chip label="Disabled" /> : null}
+            {isGroup ? <Chip label={translate("Group")} /> : null}
+            {item.disabled ? <Chip label={translate("Disabled")} /> : null}
           </View>
         </Pressable>
         {canDrillDown ? (
@@ -188,27 +189,27 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
 
   const renderCategoriesList = () => {
     if (isLoading) {
-      return <Text variant="caption">Загрузка категорий...</Text>;
+      return <Text variant="caption">{translate("Loading categories...")}</Text>;
     }
 
     if (!isLoading && error) {
       return (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>{error}</Text>
-          <Button title="Повторить" size="sm" onPress={() => void refresh()} />
+          <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
         </View>
       );
     }
 
     if (!isLoading && !error && visibleCategories.length === 0) {
-      return <Text variant="caption">Категории не найдены.</Text>;
+      return <Text variant="caption">{translate("No categories found.")}</Text>;
     }
 
     return (
       <View style={styles.treeList}>
         {navigationStack.length > 0 ? (
           <Pressable style={styles.levelBackRow} onPress={goBackLevel}>
-            <Text style={styles.levelBackText}>‹ Назад</Text>
+            <Text style={styles.levelBackText}>{translate("‹ Back")}</Text>
             <Text style={styles.levelBackHint}>{currentLevelTitle}</Text>
           </Pressable>
         ) : null}
@@ -226,11 +227,11 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
       >
         <View style={styles.header}>
           <View>
-            <Text variant="title">Категории</Text>
-            <Text variant="caption">Runtime дерево категорий</Text>
+            <Text variant="title">{translate("Categories")}</Text>
+            <Text variant="caption">{translate("Runtime category tree")}</Text>
           </View>
           {showBackButton ? (
-            <Button title="Назад" variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
+            <Button title={translate("Back")} variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
           ) : null}
         </View>
 
@@ -239,30 +240,30 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
             style={[styles.tabItem, selectedType === "EXPENSES" ? styles.tabItemActive : undefined]}
             onPress={() => onSwitchType("EXPENSES")}
           >
-            <Text style={selectedType === "EXPENSES" ? styles.tabTextActive : styles.tabText}>Расходы</Text>
+            <Text style={selectedType === "EXPENSES" ? styles.tabTextActive : styles.tabText}>{translate("Expenses")}</Text>
           </Pressable>
           <Pressable
             style={[styles.tabItem, selectedType === "INCOME" ? styles.tabItemActive : undefined]}
             onPress={() => onSwitchType("INCOME")}
           >
-            <Text style={selectedType === "INCOME" ? styles.tabTextActive : styles.tabText}>Доходы</Text>
+            <Text style={selectedType === "INCOME" ? styles.tabTextActive : styles.tabText}>{translate("Income")}</Text>
           </Pressable>
         </View>
 
         <Card style={styles.crudCard}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text variant="subtitle">Новая категория</Text>
+              <Text variant="subtitle">{translate("New category")}</Text>
               <Text variant="caption">
                 {canCreateInCurrentLevel
                   ? currentParent
-                    ? `Родитель: ${currentParent.name}`
-                    : "Корневой уровень"
-                  : "Максимальная глубина категорий — 2 уровня"}
+                    ? translate("Parent: {{name}}", { name: currentParent.name })
+                    : translate("Root level")
+                  : translate("Maximum category depth is 2 levels")}
               </Text>
             </View>
             {canCreateInCurrentLevel ? (
-              <Button title="Создать" size="sm" variant="outline" onPress={openCreateScreen} />
+              <Button title={translate("Create")} size="sm" variant="outline" onPress={openCreateScreen} />
             ) : null}
           </View>
         </Card>

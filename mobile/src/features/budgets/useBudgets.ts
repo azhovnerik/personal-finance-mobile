@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -11,9 +12,7 @@ const BUDGETS_QUERY_KEY = ["budgets"];
 const parseMessage = async (response: Response, fallback: string) => {
   try {
     const body = (await response.json()) as { message?: string };
-    if (body?.message) {
-      return body.message;
-    }
+    return localizeSystemMessage(body?.message, fallback);
   } catch {
     // ignore parse errors
   }
@@ -83,7 +82,7 @@ const fetchBudgets = async (handleUnauthorized: () => Promise<void>): Promise<Bu
   const token = await getToken();
   if (!token) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   const response = await fetch(`${API_BASE_URL}/api/v2/budgets`, {
@@ -92,11 +91,11 @@ const fetchBudgets = async (handleUnauthorized: () => Promise<void>): Promise<Bu
 
   if (response.status === 401) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   if (!response.ok) {
-    throw new Error(await parseMessage(response, `Не удалось загрузить бюджеты (HTTP ${response.status}).`));
+    throw new Error(await parseMessage(response, translate("Unable to load budgets (HTTP {{status}}).", { status: response.status })));
   }
 
   const payload = (await response.json()) as unknown;
@@ -110,7 +109,7 @@ const fetchBudgetDetails = async (
   const token = await getToken();
   if (!token) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   const response = await fetch(`${API_BASE_URL}/api/v2/budgets/${id}`, {
@@ -119,17 +118,17 @@ const fetchBudgetDetails = async (
 
   if (response.status === 401) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   if (!response.ok) {
-    throw new Error(await parseMessage(response, `Не удалось загрузить бюджет (HTTP ${response.status}).`));
+    throw new Error(await parseMessage(response, translate("Unable to load budget (HTTP {{status}}).", { status: response.status })));
   }
 
   const payload = (await response.json()) as unknown;
   const details = normalizeBudgetDetails(payload);
   if (!details) {
-    throw new Error("Некорректный формат ответа бюджета.");
+    throw new Error(translate("Invalid budget response format."));
   }
   return details;
 };
@@ -168,7 +167,7 @@ const updateBudgetCategory = async (
   const token = await getToken();
   if (!token) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   const response = await fetch(`${API_BASE_URL}/api/v2/budgets/${payload.budgetId}/category/edit`, {
     method: "PUT",
@@ -181,11 +180,11 @@ const updateBudgetCategory = async (
 
   if (response.status === 401) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   if (!response.ok) {
     throw new Error(
-      await parseMessage(response, `Не удалось обновить бюджетную категорию (HTTP ${response.status}).`),
+      await parseMessage(response, translate("Unable to update the budget category (HTTP {{status}}).", { status: response.status })),
     );
   }
 };
@@ -197,7 +196,7 @@ const deleteBudgetCategory = async (
   const token = await getToken();
   if (!token) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   const response = await fetch(`${API_BASE_URL}/api/v2/budgets/${payload.budgetId}/category/delete`, {
     method: "DELETE",
@@ -213,10 +212,10 @@ const deleteBudgetCategory = async (
 
   if (response.status === 401) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   if (!response.ok) {
-    throw new Error(await parseMessage(response, `Не удалось удалить бюджетную категорию (HTTP ${response.status}).`));
+    throw new Error(await parseMessage(response, translate("Unable to remove the budget category (HTTP {{status}}).", { status: response.status })));
   }
 };
 
@@ -227,7 +226,7 @@ const addBudgetCategory = async (
   const token = await getToken();
   if (!token) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   const response = await fetch(`${API_BASE_URL}/api/v2/budgets/${payload.budgetId}/category/add`, {
     method: "POST",
@@ -243,10 +242,10 @@ const addBudgetCategory = async (
 
   if (response.status === 401) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   if (!response.ok) {
-    throw new Error(await parseMessage(response, `Не удалось добавить бюджетную категорию (HTTP ${response.status}).`));
+    throw new Error(await parseMessage(response, translate("Unable to add the budget category (HTTP {{status}}).", { status: response.status })));
   }
 };
 
@@ -310,7 +309,7 @@ const createBudget = async (month: string, handleUnauthorized: () => Promise<voi
   const token = await getToken();
   if (!token) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
 
   const response = await fetch(`${API_BASE_URL}/api/v2/budgets/add`, {
@@ -324,10 +323,10 @@ const createBudget = async (month: string, handleUnauthorized: () => Promise<voi
 
   if (response.status === 401) {
     await handleUnauthorized();
-    throw new Error("Сессия истекла. Войдите снова.");
+    throw new Error(translate("Your session has expired. Sign in again."));
   }
   if (!response.ok) {
-    throw new Error(await parseMessage(response, `Не удалось создать бюджет (HTTP ${response.status}).`));
+    throw new Error(await parseMessage(response, translate("Unable to create budget (HTTP {{status}}).", { status: response.status })));
   }
 };
 

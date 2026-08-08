@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../src/localization";
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -21,7 +22,7 @@ const extractFieldErrors = (error: unknown): Record<string, string> => {
 
   return Object.entries(fields as Record<string, unknown>).reduce<Record<string, string>>((result, [key, value]) => {
     if (typeof value === "string") {
-      result[key] = value;
+      result[key] = localizeSystemMessage(value, "Invalid value.");
     }
     return result;
   }, {});
@@ -53,15 +54,15 @@ export default function SupportScreen() {
     const validationErrors: Record<string, string> = {};
 
     if (!normalizedEmail) {
-      validationErrors.email = "Enter your email.";
+      validationErrors.email = translate("Enter your email.");
     } else if (!EMAIL_PATTERN.test(normalizedEmail)) {
-      validationErrors.email = "Enter a valid email address.";
+      validationErrors.email = translate("Enter a valid email address.");
     }
     if (!normalizedSubject) {
-      validationErrors.subject = "Enter a subject.";
+      validationErrors.subject = translate("Enter a subject.");
     }
     if (!normalizedMessage) {
-      validationErrors.message = "Enter a message.";
+      validationErrors.message = translate("Enter a message.");
     }
 
     setFieldErrors(validationErrors);
@@ -79,11 +80,11 @@ export default function SupportScreen() {
       });
       setSubject("");
       setMessage("");
-      setSuccessMessage("Your request has been sent to our support team.");
+      setSuccessMessage(translate("Your request has been sent to our support team."));
     } catch (error) {
       const serverFieldErrors = extractFieldErrors(error);
       setFieldErrors(serverFieldErrors);
-      setFormError(error instanceof Error ? error.message : "Unable to send request. Please try again.");
+      setFormError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to send request. Please try again."));
     }
   }, [email, message, subject, submitMutation]);
 
@@ -96,14 +97,14 @@ export default function SupportScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text variant="title">Contact support</Text>
-            <Text variant="caption">We usually respond within one business day.</Text>
+            <Text variant="title">{translate("Contact support")}</Text>
+            <Text variant="caption">{translate("We usually respond within one business day.")}</Text>
           </View>
-          <Button title="Back" variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
+          <Button title={translate("Back")} variant="outline" tone="secondary" size="sm" onPress={() => router.back()} />
         </View>
 
         <Card style={styles.card}>
-          <Text variant="subtitle">Send a request</Text>
+          <Text variant="subtitle">{translate("Send a request")}</Text>
           {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
           {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
           <Input
@@ -115,14 +116,14 @@ export default function SupportScreen() {
               setEmail(value);
               setIsEmailInitialized(true);
             }}
-            placeholder="Your email"
+            placeholder={translate("Your email")}
             value={email}
           />
           {fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
           <Input
             maxLength={255}
             onChangeText={setSubject}
-            placeholder="Subject"
+            placeholder={translate("Subject")}
             value={subject}
           />
           {fieldErrors.subject ? <Text style={styles.errorText}>{fieldErrors.subject}</Text> : null}
@@ -130,7 +131,7 @@ export default function SupportScreen() {
             maxLength={4000}
             multiline
             onChangeText={setMessage}
-            placeholder="Message"
+            placeholder={translate("Message")}
             style={styles.messageInput}
             textAlignVertical="top"
             value={message}
@@ -139,7 +140,7 @@ export default function SupportScreen() {
           <Button
             disabled={submitMutation.isPending}
             onPress={() => void handleSubmit()}
-            title={submitMutation.isPending ? "Sending..." : "Send request"}
+            title={submitMutation.isPending ? translate("Sending...") : translate("Send request")}
           />
         </Card>
       </ScrollView>

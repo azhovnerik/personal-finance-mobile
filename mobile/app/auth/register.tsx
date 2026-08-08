@@ -1,24 +1,17 @@
-import {useEffect, useState} from "react";
+import { getDeviceLocale, localizeSystemMessage, normalizeLocale, translate } from "../../src/localization";
+import {useEffect, useMemo, useState} from "react";
 import {Pressable, StyleSheet, View} from "react-native";
 import {useRouter} from "expo-router";
 
 import {getRegistrationSupportedLanguages, register as registerRequest} from "../../src/features/auth/api";
 import type {ApiError} from "../../src/features/auth/api";
 import type {SupportedLanguage} from "../../src/features/auth/types";
-import {Button, Card, Input, ScreenContainer, Text, colors, spacing} from "../../src/shared/ui";
+import {Button, Card, Input, ScreenContainer, Select, Text, colors, spacing} from "../../src/shared/ui";
 
 const FALLBACK_SUPPORTED_LANGUAGES: SupportedLanguage[] = [
-    {code: "ua", label: "Українська"},
+    {code: "ua", label: "Ukrainian"},
     {code: "en", label: "English"},
 ];
-
-const detectDeviceLocale = () => {
-    try {
-        return Intl.DateTimeFormat().resolvedOptions().locale ?? null;
-    } catch {
-        return null;
-    }
-};
 
 const resolveLanguageFromSupported = (supportedLanguages: SupportedLanguage[], deviceLocale: string | null, current?: string) => {
     if (supportedLanguages.length === 0) {
@@ -34,6 +27,7 @@ const resolveLanguageFromSupported = (supportedLanguages: SupportedLanguage[], d
 
     const normalizedLocale = deviceLocale?.replace("_", "-").toLowerCase();
     if (normalizedLocale) {
+        candidates.push(normalizeLocale(normalizedLocale).toLowerCase());
         candidates.push(normalizedLocale);
         const base = normalizedLocale.split("-")[0] ?? normalizedLocale;
         candidates.push(base);
@@ -69,6 +63,10 @@ export default function RegisterScreen() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>(FALLBACK_SUPPORTED_LANGUAGES);
+    const languageOptions = useMemo(
+        () => supportedLanguages.map((item) => ({value: item.code, label: item.label})),
+        [supportedLanguages],
+    );
 
     useEffect(() => {
         let isMounted = true;
@@ -80,10 +78,10 @@ export default function RegisterScreen() {
                     return;
                 }
                 setSupportedLanguages(fromBackend);
-                setLanguage((prev) => resolveLanguageFromSupported(fromBackend, detectDeviceLocale(), prev));
+                setLanguage((prev) => resolveLanguageFromSupported(fromBackend, getDeviceLocale(), prev));
             } catch {
                 // keep local fallback options
-                setLanguage((prev) => resolveLanguageFromSupported(FALLBACK_SUPPORTED_LANGUAGES, detectDeviceLocale(), prev));
+                setLanguage((prev) => resolveLanguageFromSupported(FALLBACK_SUPPORTED_LANGUAGES, getDeviceLocale(), prev));
             }
         })();
 
@@ -96,23 +94,23 @@ export default function RegisterScreen() {
         if (language) {
             return;
         }
-        setLanguage(resolveLanguageFromSupported(supportedLanguages, detectDeviceLocale()));
+        setLanguage(resolveLanguageFromSupported(supportedLanguages, getDeviceLocale()));
     }, [language, supportedLanguages]);
 
     const onSubmit = async () => {
         if (!email.trim() || !name.trim() || !password) {
-            setError("Заполните email, имя и пароль.");
+            setError(translate("Enter your email, name, and password."));
             return;
         }
         if (password !== confirmPassword) {
-            setError("Пароли не совпадают.");
+            setError(translate("Passwords do not match."));
             return;
         }
 
         setIsSubmitting(true);
         setError(null);
         try {
-            const languageForSubmit = resolveLanguageFromSupported(supportedLanguages, detectDeviceLocale(), language);
+            const languageForSubmit = resolveLanguageFromSupported(supportedLanguages, getDeviceLocale(), language);
             const response = await registerRequest({
                 email: email.trim(),
                 name: name.trim(),
@@ -125,7 +123,7 @@ export default function RegisterScreen() {
             });
         } catch (rawError) {
             const apiError = rawError as ApiError;
-            setError(apiError.message ?? "Не удалось зарегистрироваться.");
+            setError(localizeSystemMessage(apiError.message, "Unable to register."));
         } finally {
             setIsSubmitting(false);
         }
@@ -141,13 +139,20 @@ export default function RegisterScreen() {
     return (
         <ScreenContainer style={styles.screen}>
             <Card style={styles.card}>
-                <Text variant="heading" style={styles.title}>Регистрация</Text>
-                <Input placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email}
+                <Text variant="heading" style={styles.title}>{translate("Registration")}</Text>
+                <Input placeholder={translate("Email")} autoCapitalize="none" keyboardType="email-address" value={email}
                        onChangeText={setEmail}/>
-                <Input placeholder="Имя" value={name} onChangeText={setName}/>
+                <Input placeholder={translate("Name")} value={name} onChangeText={setName}/>
+                <Text variant="caption">{translate("Interface language")}</Text>
+                <Select
+                    value={language}
+                    options={languageOptions}
+                    placeholder={translate("Interface language")}
+                    onChange={setLanguage}
+                />
                 <View style={styles.passwordField}>
                     <Input
-                        placeholder="Пароль"
+                        placeholder={translate("Password")}
                         secureTextEntry={!isPasswordVisible}
                         value={password}
                         onChangeText={setPassword}
@@ -156,13 +161,13 @@ export default function RegisterScreen() {
                     <Pressable style={styles.passwordToggle} onPress={() => setIsPasswordVisible((prev) => !prev)}
                                hitSlop={8}>
                         <Text variant="caption" style={styles.passwordToggleText}>
-                            {isPasswordVisible ? "Скрыть" : "Показать"}
+                            {isPasswordVisible ? translate("Hide") : translate("Show")}
                         </Text>
                     </Pressable>
                 </View>
                 <View style={styles.passwordField}>
                     <Input
-                        placeholder="Повторите пароль"
+                        placeholder={translate("Confirm password")}
                         secureTextEntry={!isConfirmPasswordVisible}
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
@@ -174,16 +179,16 @@ export default function RegisterScreen() {
                         hitSlop={8}
                     >
                         <Text variant="caption" style={styles.passwordToggleText}>
-                            {isConfirmPasswordVisible ? "Скрыть" : "Показать"}
+                            {isConfirmPasswordVisible ? translate("Hide") : translate("Show")}
                         </Text>
                     </Pressable>
                 </View>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Button title={isSubmitting ? "Создаем..." : "Создать аккаунт"} onPress={() => void onSubmit()}
+                <Button title={isSubmitting ? translate("Creating...") : translate("Create account")} onPress={() => void onSubmit()}
                         disabled={isSubmitting}/>
-                <Button title="Назад ко входу" variant="outline" tone="secondary"
+                <Button title={translate("Back to sign in")} variant="outline" tone="secondary"
                         onPress={() => router.replace("/login")}/>
-                <Button title="Заполнить пароль" variant="outline" tone="secondary" onPress={() => onClick()}/>
+                <Button title={translate("Fill password")} variant="outline" tone="secondary" onPress={() => onClick()}/>
             </Card>
         </ScreenContainer>
     );

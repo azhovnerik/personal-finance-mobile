@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import client from "../../shared/lib/api/client";
@@ -78,7 +79,7 @@ const getApiErrorMessage = (apiError: unknown, fallback: string) => {
   if (apiError && typeof apiError === "object" && "message" in apiError) {
     const message = (apiError as { message?: unknown }).message;
     if (typeof message === "string" && message.trim().length > 0) {
-      return message;
+      return localizeSystemMessage(message, fallback);
     }
   }
 
@@ -108,7 +109,7 @@ export const useTransactions = (
       const token = await getToken();
       if (!token) {
         setTransactions([]);
-        setError("Сессия истекла. Войдите снова.");
+        setError(translate("Your session has expired. Sign in again."));
         await handleUnauthorized();
         return;
       }
@@ -126,18 +127,18 @@ export const useTransactions = (
       });
       if (apiError || !data) {
         if (response.status === 401) {
-          setError("Сессия истекла. Войдите снова.");
+          setError(translate("Your session has expired. Sign in again."));
           await handleUnauthorized();
           return;
         }
         setTransactions([]);
-        setError(getApiErrorMessage(apiError, "Не удалось загрузить транзакции."));
+        setError(getApiErrorMessage(apiError, translate("Unable to load transactions.")));
       } else {
         setTransactions(visibleTransactions(data as TransactionDto[]));
       }
     } catch {
       setTransactions([]);
-      setError("Не удалось загрузить транзакции.");
+      setError(translate("Unable to load transactions."));
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +165,7 @@ export const useTransactions = (
       try {
         const token = await getToken();
         if (!token) {
-          setError("Сессия истекла. Войдите снова.");
+          setError(translate("Your session has expired. Sign in again."));
           await handleUnauthorized();
           return false;
         }
@@ -183,13 +184,13 @@ export const useTransactions = (
         });
 
         if (response.status === 401) {
-          setError("Сессия истекла. Войдите снова.");
+          setError(translate("Your session has expired. Sign in again."));
           await handleUnauthorized();
           return false;
         }
 
         if (!response.ok) {
-          setError("Не удалось удалить транзакцию.");
+          setError(translate("Unable to delete the transaction."));
           return false;
         }
 
@@ -197,7 +198,7 @@ export const useTransactions = (
         notifyTransactionsChanged();
         return true;
       } catch {
-        setError("Не удалось удалить транзакцию.");
+        setError(translate("Unable to delete the transaction."));
         return false;
       }
     },
@@ -211,7 +212,7 @@ export const useTransactions = (
       try {
         const token = await getToken();
         if (!token) {
-          setError("Сессия истекла. Войдите снова.");
+          setError(translate("Your session has expired. Sign in again."));
           await handleUnauthorized();
           return false;
         }
@@ -236,13 +237,13 @@ export const useTransactions = (
         });
 
         if (response.status === 401) {
-          setError("Сессия истекла. Войдите снова.");
+          setError(translate("Your session has expired. Sign in again."));
           await handleUnauthorized();
           return false;
         }
 
         if (!response.ok) {
-          setError("Не удалось сохранить транзакцию.");
+          setError(translate("Unable to save the transaction."));
           return false;
         }
 
@@ -254,7 +255,7 @@ export const useTransactions = (
         notifyTransactionsChanged();
         return true;
       } catch {
-        setError("Не удалось сохранить транзакцию.");
+        setError(translate("Unable to save the transaction."));
         return false;
       }
     },

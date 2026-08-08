@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Keyboard, Pressable, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -20,7 +21,7 @@ export default function AccountBalanceScreen() {
 
   useEffect(() => {
     if (!params.account) {
-      setLocalError("Нет данных о счете.");
+      setLocalError(translate("No account data."));
       return;
     }
     try {
@@ -28,19 +29,19 @@ export default function AccountBalanceScreen() {
       setAccount(parsed);
       setBalanceValue(String(parsed.balance ?? 0));
     } catch {
-      setLocalError("Не удалось открыть счет.");
+      setLocalError(translate("Unable to open the account."));
     }
   }, [params.account]);
 
   const handleSave = async () => {
     setIsAmountKeypadOpen(false);
     if (!account?.id) {
-      setLocalError("Нет ID счета.");
+      setLocalError(translate("Missing account ID."));
       return;
     }
     const parsed = Number.parseFloat(balanceValue.replace(",", "."));
     if (Number.isNaN(parsed)) {
-      setLocalError("Введите корректный баланс.");
+      setLocalError(translate("Enter a valid balance."));
       return;
     }
     setLocalError(null);
@@ -60,17 +61,19 @@ export default function AccountBalanceScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.headerAction}>Отмена</Text>
+            <Text style={styles.headerAction}>{translate("Cancel")}</Text>
           </Pressable>
-          <Text variant="subtitle">Изменить баланс</Text>
+          <Text variant="subtitle">{translate("Change balance")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={styles.content}>
-          <Text variant="caption">Счет: {account?.name ?? "—"}</Text>
+          <Text variant="caption">
+            {translate("Account: {{name}}", { name: account?.name ?? "—" })}
+          </Text>
           <Pressable onPress={handleAmountPress}>
             <Input
-              placeholder="Новый баланс"
+              placeholder={translate("New balance")}
               keyboardType="numeric"
               value={balanceValue}
               editable={false}
@@ -84,7 +87,7 @@ export default function AccountBalanceScreen() {
           {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
           {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
           <Button
-            title={isSaving ? "Сохраняем..." : "Сохранить баланс"}
+            title={isSaving ? translate("Saving...") : translate("Save balance")}
             disabled={isSaving}
             onPress={handleSave}
           />

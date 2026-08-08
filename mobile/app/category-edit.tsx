@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../src/localization";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -7,7 +8,7 @@ import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../
 import { CategoryReactDto, CategoryType } from "../src/shared/api/dto";
 import { CategoryMutationPayload, useCategories, useCategoryActions, useCategoryIcons } from "../src/features/categories/useCategories";
 import { findCategoryInTree, isCategoryGroup } from "../src/features/categories/categoryTree";
-import { normalizeCategoryIcon } from "../src/features/categories/categoryIcons";
+import { FALLBACK_CATEGORY_ICONS, normalizeCategoryIcon } from "../src/features/categories/categoryIcons";
 import { CategoryIcon } from "../src/features/categories/components/CategoryIcon";
 
 type CategoryFormState = {
@@ -111,7 +112,7 @@ export default function CategoryEditScreen() {
       setForm(toFormState(parsed));
       setHasUserEdited(false);
     } catch {
-      setLocalError("Не удалось открыть категорию.");
+      setLocalError(translate("Unable to open the category."));
     }
   }, [mode, params.category]);
 
@@ -133,7 +134,7 @@ export default function CategoryEditScreen() {
   const buildPayload = (): CategoryMutationPayload | null => {
     const name = form.name.trim();
     if (!name) {
-      setLocalError("Введите название категории.");
+      setLocalError(translate("Enter a category name."));
       return null;
     }
 
@@ -150,7 +151,7 @@ export default function CategoryEditScreen() {
   const handleSave = async () => {
     setLocalError(null);
     if (mode === "edit" && !editingCategory) {
-      setLocalError("Не удалось открыть категорию для редактирования.");
+      setLocalError(translate("Unable to open the category for editing."));
       return;
     }
 
@@ -160,7 +161,7 @@ export default function CategoryEditScreen() {
     }
 
     if (mode === "create" && parentId && parentDepth >= 2) {
-      setLocalError("Максимальная глубина категорий — 2 уровня.");
+      setLocalError(translate("Maximum category depth is 2 levels."));
       return;
     }
 
@@ -183,7 +184,7 @@ export default function CategoryEditScreen() {
         router.back();
       }
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : "Не удалось сохранить категорию.");
+      setLocalError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to save the category."));
     }
   };
 
@@ -192,10 +193,12 @@ export default function CategoryEditScreen() {
       return;
     }
 
-    Alert.alert("Удалить категорию?", `Категория "${editingCategory.name}" будет удалена.`, [
-      { text: "Отмена", style: "cancel" },
+    Alert.alert(translate("Delete category?"), translate('Category "{{name}}" will be deleted.', {
+      name: editingCategory.name,
+    }), [
+      { text: translate("Cancel"), style: "cancel" },
       {
-        text: "Удалить",
+        text: translate("Delete"),
         style: "destructive",
         onPress: () => {
           void (async () => {
@@ -203,7 +206,7 @@ export default function CategoryEditScreen() {
               await deleteCategory(editingCategory.id);
               router.back();
             } catch (error) {
-              setLocalError(error instanceof Error ? error.message : "Не удалось удалить категорию.");
+              setLocalError(localizeSystemMessage(error instanceof Error ? error.message : null, "Unable to delete the category."));
             }
           })();
         },
@@ -217,7 +220,7 @@ export default function CategoryEditScreen() {
     }
 
     if (categoryDepth >= 2) {
-      setLocalError("У сабкатегории не может быть вложенных сабкатегорий.");
+      setLocalError(translate("A subcategory cannot contain nested subcategories."));
       return;
     }
 
@@ -240,11 +243,14 @@ export default function CategoryEditScreen() {
     }
 
     Alert.alert(
-      "Категория станет группой",
-      `Категория "${editingCategory.name}" станет группой. Ее больше нельзя будет выбирать в новых транзакциях и бюджетах. Уже созданные операции останутся без изменений.`,
+      translate("Category will become a group"),
+      translate(
+        'Category "{{name}}" will become a group. It can no longer be selected in new transactions and budgets. Existing records will remain unchanged.',
+        { name: editingCategory.name },
+      ),
       [
-        { text: "Отмена", style: "cancel" },
-        { text: "Продолжить", onPress: openCreateScreen },
+        { text: translate("Cancel"), style: "cancel" },
+        { text: translate("Continue"), onPress: openCreateScreen },
       ],
     );
   };
@@ -254,33 +260,43 @@ export default function CategoryEditScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => router.back()} disabled={isSaving}>
-            <Text style={styles.headerAction}>Назад</Text>
+            <Text style={styles.headerAction}>{translate("Back")}</Text>
           </Pressable>
-          <Text variant="subtitle">{mode === "edit" ? "Категория" : "Новая категория"}</Text>
+          <Text variant="subtitle">{mode === "edit" ? translate("Category") : translate("New category")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Card style={styles.metaCard}>
-            <Text variant="caption">Тип: {categoryType === "EXPENSES" ? "Расход" : categoryType === "INCOME" ? "Доход" : "Перевод"}</Text>
-            <Text variant="caption">{parentName ? `Родитель: ${parentName}` : "Корневой уровень"}</Text>
+            <Text variant="caption">
+              {translate("Type: {{type}}", {
+                type: categoryType === "EXPENSES"
+                  ? translate("Expense")
+                  : categoryType === "INCOME"
+                    ? translate("Income")
+                    : translate("Transfer"),
+              })}
+            </Text>
+            <Text variant="caption">
+              {parentName ? translate("Parent: {{name}}", { name: parentName }) : translate("Root level")}
+            </Text>
           </Card>
 
           <Input
-            placeholder="Название"
+            placeholder={translate("Name")}
             value={form.name}
             onChangeText={(value) => updateForm({ name: value })}
           />
           <Card style={styles.iconPickerCard}>
             <View style={styles.iconPickerHeader}>
               <View>
-                <Text variant="subtitle">Иконка</Text>
+                <Text variant="subtitle">{translate("Icon")}</Text>
                 <Text variant="caption">
                   {isIconPickerOpen
                     ? isLoadingIcons
-                      ? "Загрузка иконок..."
-                      : "Выберите иконку из единого каталога"
-                    : "Нажмите на иконку для выбора"}
+                      ? translate("Loading icons...")
+                      : translate("Select an icon from the shared catalog")
+                    : translate("Tap the icon to select")}
                 </Text>
               </View>
               <Pressable
@@ -296,6 +312,8 @@ export default function CategoryEditScreen() {
                 {icons.map((icon) => {
                   const normalizedKey = normalizeCategoryIcon(icon.key);
                   const isSelected = normalizedKey === normalizeCategoryIcon(form.icon);
+                  const fallbackLabel = FALLBACK_CATEGORY_ICONS.find((candidate) => candidate.key === normalizedKey)?.label
+                    ?? "Category icon";
                   return (
                     <Pressable
                       key={icon.key}
@@ -307,7 +325,7 @@ export default function CategoryEditScreen() {
                     >
                       <CategoryIcon name={icon.key} size={34} color={colors.textPrimary} />
                       <Text style={styles.iconOptionLabel} numberOfLines={1}>
-                        {icon.label}
+                        {localizeSystemMessage(icon.label, fallbackLabel)}
                       </Text>
                     </Pressable>
                   );
@@ -316,12 +334,12 @@ export default function CategoryEditScreen() {
             ) : null}
           </Card>
           <Input
-            placeholder="Описание"
+            placeholder={translate("Description")}
             value={form.description}
             onChangeText={(value) => updateForm({ description: value })}
           />
           <Button
-            title={form.disabled ? "Категория отключена" : "Категория активна"}
+            title={form.disabled ? translate("Category disabled") : translate("Category enabled")}
             variant="outline"
             tone={form.disabled ? "danger" : "secondary"}
             onPress={() => updateForm({ disabled: !form.disabled })}
@@ -329,7 +347,7 @@ export default function CategoryEditScreen() {
           />
           {canAddSubcategory ? (
             <Button
-              title="Добавить подкатегорию"
+              title={translate("Add subcategory")}
               variant="outline"
               tone="primary"
               onPress={openCreateSubcategory}
@@ -341,13 +359,13 @@ export default function CategoryEditScreen() {
         <View style={styles.footer}>
           {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
           <Button
-            title={isSaving ? "Сохранение..." : mode === "edit" ? "Сохранить" : "Создать"}
+            title={isSaving ? translate("Saving...") : mode === "edit" ? translate("Save") : translate("Create")}
             onPress={() => void handleSave()}
             disabled={isSaving}
           />
           {mode === "edit" && editingCategory ? (
             <Button
-              title="Удалить категорию"
+              title={translate("Delete category")}
               variant="outline"
               tone="danger"
               onPress={handleDelete}

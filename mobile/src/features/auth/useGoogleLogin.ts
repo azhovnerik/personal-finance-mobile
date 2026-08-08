@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";
 import {
@@ -38,7 +39,7 @@ export const useGoogleLogin = () => {
         return null;
       }
       if (!isSuccessResponse(response) || !response.data.idToken) {
-        throw new Error("Google did not return an ID token.");
+        throw new Error(translate("Google did not return an ID token."));
       }
 
       const authResponse = await loginWithGoogle(response.data.idToken);
@@ -50,7 +51,7 @@ export const useGoogleLogin = () => {
       }
 
       const apiError = rawError as ApiError;
-      setError(apiError.message ?? "Не удалось войти через Google. Попробуйте еще раз.");
+      setError(localizeSystemMessage(apiError.message, "Unable to sign in with Google. Try again."));
       return null;
     } finally {
       setIsLoading(false);

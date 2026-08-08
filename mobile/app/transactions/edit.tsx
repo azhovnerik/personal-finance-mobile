@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Alert, Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -132,7 +133,7 @@ export default function EditTransactionScreen() {
 
   useEffect(() => {
     if (!params.transaction) {
-      setLocalError("Нет данных о транзакции.");
+      setLocalError(translate("No transaction data."));
       return;
     }
 
@@ -148,7 +149,7 @@ export default function EditTransactionScreen() {
         comment: parsed.comment ?? "",
       });
     } catch {
-      setLocalError("Не удалось открыть транзакцию.");
+      setLocalError(translate("Unable to open the transaction."));
     }
   }, [params.transaction]);
 
@@ -177,13 +178,13 @@ export default function EditTransactionScreen() {
 
   const handleSave = async () => {
     if (!initialTransaction || !initialTransaction.id) {
-      setLocalError("Не удалось сохранить транзакцию.");
+      setLocalError(translate("Unable to save the transaction."));
       return;
     }
 
     const parsedAmount = Number.parseFloat(formState.amount.replace(",", "."));
     if (Number.isNaN(parsedAmount)) {
-      setLocalError("Введите корректную сумму.");
+      setLocalError(translate("Enter a valid amount."));
       return;
     }
 
@@ -191,7 +192,7 @@ export default function EditTransactionScreen() {
       toAccount(accounts.find((account) => account.id === formState.accountId)) ??
       toAccount(initialTransaction.account);
     if (!nextAccount) {
-      setLocalError("Счет недоступен.");
+      setLocalError(translate("Account unavailable."));
       return;
     }
     const nextCategory = selectedCategory ? toCategory(selectedCategory) : initialTransaction.category;
@@ -243,15 +244,15 @@ export default function EditTransactionScreen() {
 
   const handleDelete = () => {
     if (!initialTransaction?.id) {
-      setLocalError("Не удалось удалить транзакцию.");
+      setLocalError(translate("Unable to delete the transaction."));
       return;
     }
     const transactionId = initialTransaction.id;
 
-    Alert.alert("Удалить транзакцию?", "Транзакция будет удалена без возможности восстановления.", [
-      { text: "Отмена", style: "cancel" },
+    Alert.alert(translate("Delete transaction?"), translate("The transaction will be permanently deleted."), [
+      { text: translate("Cancel"), style: "cancel" },
       {
-        text: "Удалить",
+        text: translate("Delete"),
         style: "destructive",
         onPress: () => {
           void (async () => {
@@ -275,9 +276,9 @@ export default function EditTransactionScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.modalAction}>Отмена</Text>
+            <Text style={styles.modalAction}>{translate("Cancel")}</Text>
           </Pressable>
-          <Text variant="subtitle">Редактировать транзакцию</Text>
+          <Text variant="subtitle">{translate("Edit transaction")}</Text>
           <View style={styles.modalActionSpacer} />
         </View>
 
@@ -291,7 +292,7 @@ export default function EditTransactionScreen() {
               <Text style={styles.currencyText}>{initialTransaction?.currency ?? mockUser.baseCurrency ?? "UAH"}</Text>
             </View>
             <View style={styles.amountInput}>
-              <Text variant="caption">Сумма</Text>
+              <Text variant="caption">{translate("Amount")}</Text>
               <Pressable onPress={handleAmountPress}>
                 <Input
                   keyboardType="numeric"
@@ -310,9 +311,9 @@ export default function EditTransactionScreen() {
                 <CategoryIcon name={displayedCategory?.icon} size={34} />
               </View>
               <View style={styles.categorySummaryText}>
-                <Text variant="caption">Категория</Text>
+                <Text variant="caption">{translate("Category")}</Text>
                 <Text numberOfLines={1} style={styles.categorySummaryName}>
-                  {displayedCategory?.name ?? "Без категории"}
+                  {displayedCategory?.name ?? translate("Uncategorized")}
                 </Text>
               </View>
             </View>
@@ -333,18 +334,18 @@ export default function EditTransactionScreen() {
                   }
                 : null
             }
-            placeholder="Выберите категорию"
+            placeholder={translate("Select a category")}
           />
 
           <Input
-            placeholder="Примечание"
+            placeholder={translate("Note")}
             value={formState.comment}
             onFocus={() => setIsAmountKeypadOpen(false)}
             onChangeText={(value) => setFormState((prev) => ({ ...prev, comment: value }))}
           />
 
           <DateInput
-            placeholder="Дата"
+            placeholder={translate("Date")}
             value={formState.date}
             onChange={(value) => {
               setIsAmountKeypadOpen(false);
@@ -353,7 +354,7 @@ export default function EditTransactionScreen() {
           />
 
           <Select
-            placeholder="Счет"
+            placeholder={translate("Account")}
             value={formState.accountId}
             options={accountOptions}
             onChange={(value) => {
@@ -367,14 +368,14 @@ export default function EditTransactionScreen() {
           {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
           {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
           <Button
-            title={isSaving ? "Сохраняем..." : "Сохранить"}
+            title={isSaving ? translate("Saving...") : translate("Save")}
             size="lg"
             disabled={isSaving || isDeleting}
             onPress={() => void handleSave()}
             style={isSaving || isDeleting ? styles.buttonDisabled : undefined}
           />
           <Button
-            title={isDeleting ? "Удаляем..." : "Удалить транзакцию"}
+            title={isDeleting ? translate("Deleting...") : translate("Delete transaction")}
             variant="outline"
             tone="danger"
             size="lg"

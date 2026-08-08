@@ -1,3 +1,4 @@
+import { translate } from "../../localization";
 import { useCallback, useEffect } from "react";
 import { AppState } from "react-native";
 import { useQuery } from "@tanstack/react-query";
@@ -20,13 +21,13 @@ export const useSubscriptionStatus = (enabled = true) => {
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
-        query.refetch();
+      if (enabled && state === "active") {
+        void query.refetch();
       }
     });
 
     return () => subscription.remove();
-  }, [query]);
+  }, [enabled, query]);
 
   const refresh = useCallback(async () => {
     await query.refetch();
@@ -40,7 +41,7 @@ export const useSubscriptionStatus = (enabled = true) => {
       query.error instanceof Error
         ? query.error.message
         : query.error
-          ? "Не удалось загрузить статус подписки."
+          ? translate("Unable to load subscription status.")
           : null,
     refresh,
   };

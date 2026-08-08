@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -12,7 +13,7 @@ const renderAmount = (value?: number | null, currency: CurrencyCode = "UAH") => 
 };
 
 const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
-  return item.category?.name ?? "Без названия";
+  return item.category?.name ?? translate("Untitled");
 };
 
 export default function BudgetDetailsScreen() {
@@ -33,23 +34,23 @@ export default function BudgetDetailsScreen() {
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>Назад</Text>
+            <Text style={styles.backLink}>{translate("Back")}</Text>
           </Pressable>
-          <Text variant="title">Budget details</Text>
+          <Text variant="title">{translate("Budget details")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        {isLoading ? <Text variant="caption">Загрузка бюджета...</Text> : null}
+        {isLoading ? <Text variant="caption">{translate("Loading budget...")}</Text> : null}
         {error ? (
           <Card style={styles.errorCard}>
             <Text style={styles.errorText}>{error}</Text>
-            <Button title="Retry" size="sm" onPress={() => void refresh()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
           </Card>
         ) : null}
 
         {!isLoading && !error && !budget ? (
           <Card>
-            <Text variant="caption">Бюджет не найден.</Text>
+            <Text variant="caption">{translate("Budget not found.")}</Text>
           </Card>
         ) : null}
 
@@ -58,27 +59,27 @@ export default function BudgetDetailsScreen() {
             <Card style={styles.summaryCard}>
               <Text variant="subtitle">{budget.month}</Text>
               <View style={styles.summaryRow}>
-                <Text>Planned income</Text>
+                <Text>{translate("Planned income")}</Text>
                 <Text style={styles.positiveValue}>{renderAmount(budget.totalIncome, currency)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text>Planned expense</Text>
+                <Text>{translate("Planned expense")}</Text>
                 <Text style={styles.negativeValue}>{renderAmount(budget.totalExpense, currency)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text>Actual income</Text>
+                <Text>{translate("Actual income")}</Text>
                 <Text style={styles.positiveValue}>{renderAmount(budget.totalIncomeFact, currency)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text>Actual expense</Text>
+                <Text>{translate("Actual expense")}</Text>
                 <Text style={styles.negativeValue}>{renderAmount(budget.totalExpenseFact, currency)}</Text>
               </View>
             </Card>
 
             <Card style={styles.sectionCard}>
-              <Text variant="subtitle">Income categories</Text>
+              <Text variant="subtitle">{translate("Income categories")}</Text>
               {incomeCategories.length === 0 ? (
-                <Text variant="caption">Категории доходов пока недоступны.</Text>
+                <Text variant="caption">{translate("Income categories are not available yet.")}</Text>
               ) : (
                 incomeCategories.map((item) => (
                   <View key={item.id ?? `${item.category?.id}-${item.planAmount}`} style={styles.categoryRow}>
@@ -99,9 +100,9 @@ export default function BudgetDetailsScreen() {
             </Card>
 
             <Card style={styles.sectionCard}>
-              <Text variant="subtitle">Expense categories</Text>
+              <Text variant="subtitle">{translate("Expense categories")}</Text>
               {expenseCategories.length === 0 ? (
-                <Text variant="caption">Категории расходов пока недоступны.</Text>
+                <Text variant="caption">{translate("Expense categories are not available yet.")}</Text>
               ) : (
                 expenseCategories.map((item) => (
                   <View key={item.id ?? `${item.category?.id}-${item.planAmount}`} style={styles.categoryRow}>
@@ -123,8 +124,7 @@ export default function BudgetDetailsScreen() {
 
             <Card>
               <Text variant="caption">
-                Изменение бюджета и редактирование категорий будут добавлены отдельно после расширения backend API.
-              </Text>
+                {translate("Budget changes and category editing will be added after the backend API is extended.")}</Text>
             </Card>
           </>
         ) : null}

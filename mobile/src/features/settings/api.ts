@@ -1,3 +1,4 @@
+import { localizeSystemMessage, translate } from "../../localization";
 import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken } from "../../storage/auth";
 import type {
@@ -15,7 +16,7 @@ import { SettingsApiError } from "./types";
 const parseError = async (response: Response, fallbackMessage: string) => {
   try {
     const payload = (await response.json()) as ApiErrorResponse;
-    return new SettingsApiError(payload.message ?? fallbackMessage, {
+    return new SettingsApiError(localizeSystemMessage(payload.message, fallbackMessage), {
       code: payload.code ?? "UNKNOWN",
       details: payload.details ?? null,
       status: response.status,
@@ -37,7 +38,7 @@ const requestSettings = async <T>(
 ): Promise<T> => {
   const token = await getToken();
   if (!token) {
-    throw new SettingsApiError("Сессия истекла. Войдите снова.", {
+    throw new SettingsApiError(translate("Your session has expired. Sign in again."), {
       code: "UNAUTHORIZED",
       status: 401,
     });
@@ -54,20 +55,20 @@ const requestSettings = async <T>(
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new SettingsApiError("Сессия истекла. Войдите снова.", {
+      throw new SettingsApiError(translate("Your session has expired. Sign in again."), {
         code: "UNAUTHORIZED",
         status: 401,
       });
     }
 
     if (response.status === 403) {
-      throw new SettingsApiError("Доступ запрещен.", {
+      throw new SettingsApiError(translate("Access denied."), {
         code: "FORBIDDEN",
         status: 403,
       });
     }
 
-    throw await parseError(response, `Ошибка запроса (HTTP ${response.status}).`);
+    throw await parseError(response, translate("Request failed (HTTP {{status}}).", { status: response.status }));
   }
 
   return (await response.json()) as T;

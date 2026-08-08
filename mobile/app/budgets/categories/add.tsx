@@ -1,3 +1,4 @@
+import { translate } from "../../../src/localization";
 import { Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -14,7 +15,7 @@ import { isCategorySelectable } from "../../../src/features/categories/categoryT
 const resolveAmount = (value?: number | null, fallback?: number | null) => value ?? fallback ?? 0;
 
 const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
-  const name = item.category?.name ?? "Без названия";
+  const name = item.category?.name ?? translate("Untitled");
   return name;
 };
 
@@ -102,7 +103,7 @@ export default function AddBudgetCategoryScreen() {
     }
 
     if (!selectedCategory) {
-      setFormError("Выберите подкатегорию. Родительскую категорию добавить нельзя.");
+      setFormError(translate("Select a subcategory. A parent category cannot be added."));
       return;
     }
 
@@ -110,7 +111,7 @@ export default function AddBudgetCategoryScreen() {
     const parsedAmount = Number(normalized);
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setFormError("Введите корректную плановую сумму больше 0.");
+      setFormError(translate("Enter a valid planned amount greater than 0."));
       return;
     }
 
@@ -121,7 +122,7 @@ export default function AddBudgetCategoryScreen() {
         budgetId,
         category: {
           id: selectedCategoryId,
-          name: selectedCategory?.name ?? "Без названия",
+          name: selectedCategory?.name ?? translate("Untitled"),
           type,
           disabled: Boolean(selectedCategory?.disabled),
           description: selectedCategory?.description ?? null,
@@ -159,30 +160,30 @@ export default function AddBudgetCategoryScreen() {
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>Назад</Text>
+            <Text style={styles.backLink}>{translate("Back")}</Text>
           </Pressable>
-          <Text variant="heading">Добавить в бюджет</Text>
+          <Text variant="heading">{translate("Add to budget")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        {isLoading ? <Text variant="caption">Загрузка...</Text> : null}
+        {isLoading ? <Text variant="caption">{translate("Loading...")}</Text> : null}
 
         {error ? (
           <Card style={styles.errorCard}>
             <Text style={styles.errorText}>{error}</Text>
-            <Button title="Повторить" size="sm" onPress={() => void refresh()} />
+            <Button title={translate("Retry")} size="sm" onPress={() => void refresh()} />
           </Card>
         ) : null}
 
         {!isLoading && !error && (!budgetId || !type) ? (
           <Card>
-            <Text variant="caption">Недостаточно данных для добавления категории.</Text>
+            <Text variant="caption">{translate("Not enough data to add the category.")}</Text>
           </Card>
         ) : null}
 
         {!isLoading && !error && budgetId && type && availableCategories.length === 0 ? (
           <Card>
-            <Text variant="caption">Нет доступных категорий для добавления.</Text>
+            <Text variant="caption">{translate("No categories available to add.")}</Text>
           </Card>
         ) : null}
 
@@ -196,23 +197,23 @@ export default function AddBudgetCategoryScreen() {
                 <Text numberOfLines={1} variant="subtitle" style={styles.categoryTitle}>
                   {factOnlyCategory
                     ? renderCategoryName(factOnlyCategory)
-                    : selectedCategory?.name ?? "Выберите категорию"}
+                    : selectedCategory?.name ?? translate("Select a category")}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text>Тип</Text>
-                <Text>{type === "INCOME" ? "Доход" : "Расход"}</Text>
+                <Text>{translate("Type")}</Text>
+                <Text>{type === "INCOME" ? translate("Income") : translate("Expense")}</Text>
               </View>
               {factOnlyCategory ? (
                 <View style={styles.row}>
-                  <Text>Факт</Text>
+                  <Text>{translate("Actual")}</Text>
                   <Text>{formatCurrency(factAmount, categoryCurrency)}</Text>
                 </View>
               ) : null}
             </Card>
 
             <Card style={styles.formCard}>
-              <Text variant="subtitle">Новая плановая сумма</Text>
+              <Text variant="subtitle">{translate("New planned amount")}</Text>
 
               <CategoryPickerField
                 value={selectedCategoryId}
@@ -233,11 +234,11 @@ export default function AddBudgetCategoryScreen() {
                       }
                     : null
                 }
-                placeholder="Выберите категорию"
+                placeholder={translate("Select a category")}
               />
 
               <View style={styles.field}>
-                <Text variant="caption">План ({categoryCurrency})</Text>
+                <Text variant="caption">{translate("Plan ({{currency}})", { currency: categoryCurrency })}</Text>
                 <Pressable onPress={() => setIsAmountKeypadOpen(true)}>
                   <Input
                     value={planAmountInput}
@@ -251,12 +252,12 @@ export default function AddBudgetCategoryScreen() {
               </View>
 
               <View style={styles.field}>
-                <Text variant="caption">Комментарий</Text>
+                <Text variant="caption">{translate("Comment")}</Text>
                 <Input
                   value={commentInput}
                   onChangeText={setCommentInput}
                   onFocus={() => setIsAmountKeypadOpen(false)}
-                  placeholder="Комментарий"
+                  placeholder={translate("Comment")}
                   multiline
                 />
               </View>
@@ -265,7 +266,7 @@ export default function AddBudgetCategoryScreen() {
               {mutationError ? <Text style={styles.errorText}>{mutationError}</Text> : null}
 
               <Button
-                title={isAdding ? "Добавление..." : "Добавить в бюджет"}
+                title={isAdding ? translate("Adding...") : translate("Add to budget")}
                 onPress={() => void onSave()}
                 disabled={isAdding}
               />

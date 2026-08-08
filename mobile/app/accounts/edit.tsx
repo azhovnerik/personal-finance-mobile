@@ -1,3 +1,4 @@
+import { translate } from "../../src/localization";
 import { Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -17,10 +18,10 @@ type AccountFormState = {
 };
 
 const ACCOUNT_TYPE_OPTIONS = [
-  { value: "CASH", label: "Наличные" },
-  { value: "CARD", label: "Карта" },
-  { value: "BANK_ACCOUNT", label: "Банковский счет" },
-  { value: "DEBT", label: "Долг" },
+  { value: "CASH", label: "Cash" },
+  { value: "CARD", label: "Card" },
+  { value: "BANK_ACCOUNT", label: "Bank account" },
+  { value: "DEBT", label: "Debt" },
 ];
 
 const CURRENCY_OPTIONS = [
@@ -65,7 +66,7 @@ export default function EditAccountScreen() {
         description: parsed.description ?? "",
       });
     } catch {
-      setLocalError("Не удалось открыть счет.");
+      setLocalError(translate("Unable to open the account."));
     }
   }, [params.account]);
 
@@ -74,12 +75,12 @@ export default function EditAccountScreen() {
     setLocalError(null);
     const name = form.name.trim();
     if (!name) {
-      setLocalError("Введите название счета.");
+      setLocalError(translate("Enter an account name."));
       return;
     }
     const balance = Number.parseFloat(form.balance.replace(",", "."));
     if (Number.isNaN(balance)) {
-      setLocalError("Введите корректный баланс.");
+      setLocalError(translate("Enter a valid balance."));
       return;
     }
 
@@ -109,39 +110,39 @@ export default function EditAccountScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.headerAction}>Отмена</Text>
+            <Text style={styles.headerAction}>{translate("Cancel")}</Text>
           </Pressable>
-          <Text variant="subtitle">{editingId ? "Редактировать счет" : "Новый счет"}</Text>
+          <Text variant="subtitle">{editingId ? translate("Edit account") : translate("New account")}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Input
-            placeholder="Название"
+            placeholder={translate("Name")}
             value={form.name}
             onChangeText={(value) => setForm((prev) => ({ ...prev, name: value }))}
           />
           <Select
-            placeholder="Тип"
+            placeholder={translate("Type")}
             value={form.type}
-            options={ACCOUNT_TYPE_OPTIONS}
+            options={ACCOUNT_TYPE_OPTIONS.map((option) => ({ ...option, label: translate(option.label) }))}
             onChange={(value) => setForm((prev) => ({ ...prev, type: value as AccountType }))}
           />
           <Select
-            placeholder="Валюта"
+            placeholder={translate("Currency")}
             value={form.currency}
             options={CURRENCY_OPTIONS}
             onChange={(value) => setForm((prev) => ({ ...prev, currency: value as CurrencyCode }))}
           />
           <Input
-            placeholder="Описание"
+            placeholder={translate("Description")}
             value={form.description}
             onChangeText={(value) => setForm((prev) => ({ ...prev, description: value }))}
           />
           {!editingId ? (
             <Pressable onPress={handleAmountPress}>
               <Input
-                placeholder="Баланс"
+                placeholder={translate("Balance")}
                 keyboardType="numeric"
                 value={form.balance}
                 editable={false}
@@ -156,7 +157,7 @@ export default function EditAccountScreen() {
           {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
           {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
           <Button
-            title={isSaving ? "Сохраняем..." : editingId ? "Обновить" : "Создать"}
+            title={isSaving ? translate("Saving...") : editingId ? translate("Update") : translate("Create")}
             disabled={isSaving}
             onPress={handleSave}
           />

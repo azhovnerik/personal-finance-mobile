@@ -1,3 +1,4 @@
+import { translate } from "../../../localization";
 import { useEffect, useMemo, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, View } from "react-native";
 
@@ -48,7 +49,7 @@ const sortCategoriesRecursively = (categories: CategoryReactDto[]): CategoryReac
 export function CategoryPickerField({
   value,
   defaultType = "EXPENSES",
-  placeholder = "Выберите категорию",
+  placeholder = translate("Select a category"),
   displayCategory,
   categoriesOverride,
   allowedCategoryIds,

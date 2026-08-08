@@ -5,12 +5,16 @@ import de from "./catalogs/de";
 import es from "./catalogs/es";
 import fr from "./catalogs/fr";
 import itIT from "./catalogs/it-IT";
+import jaJP from "./catalogs/ja-JP";
+import koKR from "./catalogs/ko-KR";
 import nlNL from "./catalogs/nl-NL";
 import pl from "./catalogs/pl";
 import pt from "./catalogs/pt";
 import ptBR from "./catalogs/pt-BR";
 import trTR from "./catalogs/tr-TR";
 import ua from "./catalogs/ua";
+import zhCN from "./catalogs/zh-CN";
+import zhTW from "./catalogs/zh-TW";
 
 export const DEFAULT_LOCALE = "en";
 export const AVAILABLE_LOCALES = [
@@ -51,12 +55,16 @@ const i18n = new I18n({
   es,
   fr,
   "it-IT": itIT,
+  "ja-JP": jaJP,
+  "ko-KR": koKR,
   "nl-NL": nlNL,
   pl,
   pt,
   "pt-BR": ptBR,
   "tr-TR": trTR,
   ua,
+  "zh-CN": zhCN,
+  "zh-TW": zhTW,
 });
 i18n.defaultLocale = DEFAULT_LOCALE;
 i18n.locale = DEFAULT_LOCALE;

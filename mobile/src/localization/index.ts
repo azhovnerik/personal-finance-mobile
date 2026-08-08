@@ -1,7 +1,15 @@
 import { I18n } from "i18n-js";
 import type { TranslateOptions } from "i18n-js/typings/typing";
 import { getLocales } from "expo-localization";
+import de from "./catalogs/de";
 import es from "./catalogs/es";
+import fr from "./catalogs/fr";
+import itIT from "./catalogs/it-IT";
+import nlNL from "./catalogs/nl-NL";
+import pl from "./catalogs/pl";
+import pt from "./catalogs/pt";
+import ptBR from "./catalogs/pt-BR";
+import trTR from "./catalogs/tr-TR";
 import ua from "./catalogs/ua";
 
 export const DEFAULT_LOCALE = "en";
@@ -39,7 +47,15 @@ export const getDeviceLocale = (): string | null => {
 
 const i18n = new I18n({
   ...Object.fromEntries(AVAILABLE_LOCALES.map((locale) => [locale, {}])),
+  de,
   es,
+  fr,
+  "it-IT": itIT,
+  "nl-NL": nlNL,
+  pl,
+  pt,
+  "pt-BR": ptBR,
+  "tr-TR": trTR,
   ua,
 });
 i18n.defaultLocale = DEFAULT_LOCALE;

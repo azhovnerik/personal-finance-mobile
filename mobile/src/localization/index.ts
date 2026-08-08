@@ -1,6 +1,7 @@
 import { I18n } from "i18n-js";
 import type { TranslateOptions } from "i18n-js/typings/typing";
 import { getLocales } from "expo-localization";
+import es from "./catalogs/es";
 import ua from "./catalogs/ua";
 
 export const DEFAULT_LOCALE = "en";
@@ -38,6 +39,7 @@ export const getDeviceLocale = (): string | null => {
 
 const i18n = new I18n({
   ...Object.fromEntries(AVAILABLE_LOCALES.map((locale) => [locale, {}])),
+  es,
   ua,
 });
 i18n.defaultLocale = DEFAULT_LOCALE;

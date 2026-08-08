@@ -1,4 +1,5 @@
 import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -7,6 +8,7 @@ import { formatCurrency } from "../../src/shared/utils/format";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
 
 export default function AccountsScreen() {
+  useLocalization();
   const router = useRouter();
   const baseCurrency = "UAH";
   const { accounts, isLoading, error, actionError } = useAccounts();

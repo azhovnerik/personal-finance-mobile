@@ -1,4 +1,5 @@
 import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -27,6 +28,7 @@ const getDefaultPeriod = () => {
 };
 
 export default function TransactionsScreen() {
+    useLocalization();
     const router = useRouter();
     const params = useLocalSearchParams<{ accountId?: string }>();
     const defaultPeriod = useMemo(() => getDefaultPeriod(), []);

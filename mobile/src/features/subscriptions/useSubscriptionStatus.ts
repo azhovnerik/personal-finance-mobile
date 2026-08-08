@@ -21,13 +21,13 @@ export const useSubscriptionStatus = (enabled = true) => {
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
-        query.refetch();
+      if (enabled && state === "active") {
+        void query.refetch();
       }
     });
 
     return () => subscription.remove();
-  }, [query]);
+  }, [enabled, query]);
 
   const refresh = useCallback(async () => {
     await query.refetch();

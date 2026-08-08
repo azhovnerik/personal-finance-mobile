@@ -1,4 +1,5 @@
 import { getCurrentIntlLocale, translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
@@ -239,6 +240,7 @@ const CategorySection = ({
 };
 
 export default function BudgetsScreen() {
+  useLocalization();
   const router = useRouter();
   const { budgets, isLoading, isRefreshing, error, refresh } = useBudgets();
   const { createBudget, isCreating, error: createError } = useBudgetActions();

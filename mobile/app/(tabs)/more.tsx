@@ -1,18 +1,37 @@
 import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AppIcon, Button, Card, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
-const MORE_ITEMS = [
-  { label: "Support", description: "Contact support", route: "/support", iconKind: "category", icon: "expense.health" },
-  { label: "Settings", description: "Profile and security", route: "/settings", iconKind: "category", icon: "expense.utilities" },
-  { label: "Subscriptions", description: "Plans and billing", route: "/subscriptions", iconKind: "category", icon: "expense.subscriptions" },
-];
-
 export default function MoreScreen() {
+  useLocalization();
   const router = useRouter();
+  const moreItems = [
+    {
+      label: translate("Support"),
+      description: translate("Contact support"),
+      route: "/support",
+      iconKind: "category",
+      icon: "expense.health",
+    },
+    {
+      label: translate("Settings"),
+      description: translate("Profile and security"),
+      route: "/settings",
+      iconKind: "category",
+      icon: "expense.utilities",
+    },
+    {
+      label: translate("Subscriptions"),
+      description: translate("Plans and billing"),
+      route: "/subscriptions",
+      iconKind: "category",
+      icon: "expense.subscriptions",
+    },
+  ];
 
   return (
     <ScreenContainer>
@@ -23,7 +42,7 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.list}>
-          {MORE_ITEMS.map((item) => (
+          {moreItems.map((item) => (
             <Card key={item.route} style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.titleBlock}>
@@ -33,9 +52,9 @@ export default function MoreScreen() {
                     ) : (
                       <CategoryIcon name={item.icon} size={22} />
                     )}
-                    <Text>{translate(item.label)}</Text>
+                    <Text>{item.label}</Text>
                   </View>
-                  <Text variant="caption">{translate(item.description)}</Text>
+                  <Text variant="caption">{item.description}</Text>
                 </View>
                 <Button
                   title={translate("Open")}

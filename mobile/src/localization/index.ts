@@ -1,5 +1,7 @@
 import { I18n } from "i18n-js";
 import type { TranslateOptions } from "i18n-js/typings/typing";
+import { getLocales } from "expo-localization";
+import ua from "./catalogs/ua";
 
 export const DEFAULT_LOCALE = "en";
 export const AVAILABLE_LOCALES = [
@@ -22,7 +24,22 @@ export const AVAILABLE_LOCALES = [
 
 export type AvailableLocale = (typeof AVAILABLE_LOCALES)[number];
 
-const i18n = new I18n(Object.fromEntries(AVAILABLE_LOCALES.map((locale) => [locale, {}])));
+export const getDeviceLocale = (): string | null => {
+  try {
+    return getLocales()[0]?.languageTag ?? null;
+  } catch {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().locale ?? null;
+    } catch {
+      return null;
+    }
+  }
+};
+
+const i18n = new I18n({
+  ...Object.fromEntries(AVAILABLE_LOCALES.map((locale) => [locale, {}])),
+  ua,
+});
 i18n.defaultLocale = DEFAULT_LOCALE;
 i18n.locale = DEFAULT_LOCALE;
 i18n.enableFallback = true;
@@ -72,6 +89,11 @@ export const normalizeLocale = (locale?: string | null): AvailableLocale => {
   };
   if (aliases[normalized]) {
     return aliases[normalized];
+  }
+
+  const baseLocale = normalized.split("-")[0];
+  if (baseLocale && aliases[baseLocale]) {
+    return aliases[baseLocale];
   }
 
   return DEFAULT_LOCALE;

@@ -1,4 +1,5 @@
 import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -57,6 +58,7 @@ const getLast30DaysPeriod = () => {
 };
 
 export default function DashboardScreen() {
+  useLocalization();
   const router = useRouter();
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("THIS_MONTH");
   const [initialThisMonthPeriod] = useState(() => getThisMonthPeriod());

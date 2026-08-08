@@ -1,4 +1,5 @@
 import { translate } from "../../src/localization";
+import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Tabs } from "expo-router";
@@ -8,6 +9,7 @@ import { CreateTransactionModal } from "../../src/features/transactions/create/C
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 export default function TabsLayout() {
+  useLocalization();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (

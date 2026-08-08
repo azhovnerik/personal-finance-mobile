@@ -1,7 +1,7 @@
 import { translate } from "../src/localization";
 import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 
@@ -20,6 +20,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSocialLoginInProgress, setIsSocialLoginInProgress] = useState(false);
 
   const handleLogin = async () => {
     const response = await login(email.trim(), password);
@@ -30,22 +31,37 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    setIsSocialLoginInProgress(true);
     const response = await googleLogin.login();
     if (response) {
       setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
+      return;
     }
+    setIsSocialLoginInProgress(false);
   };
 
   const handleAppleLogin = async () => {
+    setIsSocialLoginInProgress(true);
     const response = await appleLogin.login();
     if (response) {
       setLocale(response.user.language);
       router.replace(resolveRouteFromAuthResult(response));
+      return;
     }
+    setIsSocialLoginInProgress(false);
   };
 
   const isAnyLoginLoading = isLoading || googleLogin.isLoading || appleLogin.isLoading;
+
+  if (isSocialLoginInProgress) {
+    return (
+      <ScreenContainer style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text>{translate("Signing in...")}</Text>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer style={styles.screen}>
@@ -94,13 +110,6 @@ export default function LoginScreen() {
           size="lg"
         />
         <Button
-          title={translate("Create account")}
-          variant="outline"
-          tone="primary"
-          size="lg"
-          onPress={() => router.push("/auth/register")}
-        />
-        <Button
           title={googleLogin.isLoading ? translate("Signing in with Google...") : translate("Login with Google")}
           variant="outline"
           tone="secondary"
@@ -120,6 +129,13 @@ export default function LoginScreen() {
             />
           </View>
         ) : null}
+        <Button
+          title={translate("Create account")}
+          variant="outline"
+          tone="primary"
+          size="lg"
+          onPress={() => router.push("/auth/register")}
+        />
         <Button
           title={translate("Forgot password?")}
           variant="ghost"
@@ -147,6 +163,11 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+  },
   screen: {
     justifyContent: "center",
     alignItems: "center",

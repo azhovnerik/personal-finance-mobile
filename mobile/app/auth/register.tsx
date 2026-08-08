@@ -1,4 +1,4 @@
-import { localizeSystemMessage, translate } from "../../src/localization";
+import { getDeviceLocale, localizeSystemMessage, normalizeLocale, translate } from "../../src/localization";
 import {useEffect, useMemo, useState} from "react";
 import {Pressable, StyleSheet, View} from "react-native";
 import {useRouter} from "expo-router";
@@ -12,14 +12,6 @@ const FALLBACK_SUPPORTED_LANGUAGES: SupportedLanguage[] = [
     {code: "ua", label: "Ukrainian"},
     {code: "en", label: "English"},
 ];
-
-const detectDeviceLocale = () => {
-    try {
-        return Intl.DateTimeFormat().resolvedOptions().locale ?? null;
-    } catch {
-        return null;
-    }
-};
 
 const resolveLanguageFromSupported = (supportedLanguages: SupportedLanguage[], deviceLocale: string | null, current?: string) => {
     if (supportedLanguages.length === 0) {
@@ -35,6 +27,7 @@ const resolveLanguageFromSupported = (supportedLanguages: SupportedLanguage[], d
 
     const normalizedLocale = deviceLocale?.replace("_", "-").toLowerCase();
     if (normalizedLocale) {
+        candidates.push(normalizeLocale(normalizedLocale).toLowerCase());
         candidates.push(normalizedLocale);
         const base = normalizedLocale.split("-")[0] ?? normalizedLocale;
         candidates.push(base);
@@ -85,10 +78,10 @@ export default function RegisterScreen() {
                     return;
                 }
                 setSupportedLanguages(fromBackend);
-                setLanguage((prev) => resolveLanguageFromSupported(fromBackend, detectDeviceLocale(), prev));
+                setLanguage((prev) => resolveLanguageFromSupported(fromBackend, getDeviceLocale(), prev));
             } catch {
                 // keep local fallback options
-                setLanguage((prev) => resolveLanguageFromSupported(FALLBACK_SUPPORTED_LANGUAGES, detectDeviceLocale(), prev));
+                setLanguage((prev) => resolveLanguageFromSupported(FALLBACK_SUPPORTED_LANGUAGES, getDeviceLocale(), prev));
             }
         })();
 
@@ -101,7 +94,7 @@ export default function RegisterScreen() {
         if (language) {
             return;
         }
-        setLanguage(resolveLanguageFromSupported(supportedLanguages, detectDeviceLocale()));
+        setLanguage(resolveLanguageFromSupported(supportedLanguages, getDeviceLocale()));
     }, [language, supportedLanguages]);
 
     const onSubmit = async () => {
@@ -117,7 +110,7 @@ export default function RegisterScreen() {
         setIsSubmitting(true);
         setError(null);
         try {
-            const languageForSubmit = resolveLanguageFromSupported(supportedLanguages, detectDeviceLocale(), language);
+            const languageForSubmit = resolveLanguageFromSupported(supportedLanguages, getDeviceLocale(), language);
             const response = await registerRequest({
                 email: email.trim(),
                 name: name.trim(),

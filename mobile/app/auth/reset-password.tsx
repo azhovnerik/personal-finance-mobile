@@ -3,14 +3,15 @@ import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { resetPassword } from "../../src/features/auth/api";
+import { resetPassword, setupPassword } from "../../src/features/auth/api";
 import type { ApiError } from "../../src/features/auth/api";
 import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ token?: string }>();
+  const params = useLocalSearchParams<{ token?: string; mode?: string }>();
   const token = typeof params.token === "string" ? params.token : "";
+  const isPasswordSetup = params.mode === "password-setup";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -35,7 +36,11 @@ export default function ResetPasswordScreen() {
     setError(null);
     setMessage(null);
     try {
-      await resetPassword(token, password);
+      if (isPasswordSetup) {
+        await setupPassword(token, password);
+      } else {
+        await resetPassword(token, password);
+      }
       setMessage(translate("Password updated. You can now sign in."));
     } catch (rawError) {
       const apiError = rawError as ApiError;

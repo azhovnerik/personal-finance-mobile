@@ -3,15 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { persistAuthTokenFromResponse, verifyEmail } from "../../src/features/auth/api";
+import { confirmEmailChange, persistAuthTokenFromResponse, verifyEmail } from "../../src/features/auth/api";
 import type { ApiError } from "../../src/features/auth/api";
 import { resolveRouteFromAuthResult } from "../../src/features/auth/routing";
 import { Button, Card, Input, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ token?: string }>();
+  const params = useLocalSearchParams<{ token?: string; mode?: string }>();
   const token = typeof params.token === "string" ? params.token : "";
+  const isEmailChange = params.mode === "email-change";
   const hasStartedRef = useRef(false);
   const [tokenInput, setTokenInput] = useState(token);
   const [isLoading, setIsLoading] = useState(Boolean(token));
@@ -31,6 +32,12 @@ export default function VerifyEmailScreen() {
     setErrorCode(null);
     setMessage(null);
     try {
+      if (isEmailChange) {
+        await confirmEmailChange(nextToken.trim());
+        setMessage(translate("Email verified. You can now sign in."));
+        return;
+      }
+
       const response = await verifyEmail(nextToken.trim());
       await persistAuthTokenFromResponse(response);
       if (response.token || response.user) {

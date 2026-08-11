@@ -3,7 +3,7 @@ import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { AppIcon, Button, Card, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
+import { AppIcon, Card, ScreenContainer, Text, colors, spacing } from "../../src/shared/ui";
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
 
 export default function MoreScreen() {
@@ -43,7 +43,7 @@ export default function MoreScreen() {
 
         <View style={styles.list}>
           {moreItems.map((item) => (
-            <Card key={item.route} style={styles.card}>
+            <Card key={item.route} style={styles.card} onPress={() => router.push(item.route)}>
               <View style={styles.cardHeader}>
                 <View style={styles.titleBlock}>
                   <View style={styles.titleRow}>
@@ -56,11 +56,6 @@ export default function MoreScreen() {
                   </View>
                   <Text variant="caption">{item.description}</Text>
                 </View>
-                <Button
-                  title={translate("Open")}
-                  variant="secondary"
-                  onPress={() => router.push(item.route)}
-                />
               </View>
             </Card>
           ))}

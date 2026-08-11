@@ -1,5 +1,5 @@
 import { getCurrentIntlLocale, localizeSystemMessage, translate } from "../src/localization";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -170,6 +170,7 @@ export default function SubscriptionsScreen() {
   const validateSubscription = useValidateSubscription();
   const restoreSubscriptions = useRestoreSubscriptions();
   const trackedScreenOpen = useRef(false);
+  const [pendingProductId, setPendingProductId] = useState<string | null>(null);
 
   const activeSource = status.statusResponse?.sources?.[0] ?? null;
   const isBusy = validateSubscription.isPending || restoreSubscriptions.isPending;
@@ -199,6 +200,7 @@ export default function SubscriptionsScreen() {
   }, [products.platform, status.statusResponse?.status]);
 
   const handlePurchase = (product: SubscriptionProductWithStore) => {
+    setPendingProductId(product.externalProductId);
     validateSubscription.mutate(
       {
         externalProductId: product.externalProductId,
@@ -221,6 +223,9 @@ export default function SubscriptionsScreen() {
           if (message) {
             Alert.alert(translate("Subscription"), message);
           }
+        },
+        onSettled: () => {
+          setPendingProductId(null);
         },
       },
     );
@@ -322,7 +327,7 @@ export default function SubscriptionsScreen() {
               <Text variant="caption">
                 {translate("Access until: {{date}}", { date: formatDate(status.statusResponse?.effectiveTo) })}
               </Text>
-              <Text variant="caption">{sourceTitle(activeSource)}</Text>
+              {!isTrial ? <Text variant="caption">{sourceTitle(activeSource)}</Text> : null}
               {renewalCanceled ? (
                 <Text variant="caption">
                   {translate("Auto-renewal is off. Premium access remains available through the date above.")}</Text>
@@ -404,7 +409,7 @@ export default function SubscriptionsScreen() {
                     {translate("Product: {{product}}", { product: product.externalProductId })}
                   </Text>
                   <Button
-                    title={validateSubscription.isPending ? translate("Processing...") : translate("Subscribe")}
+                    title={pendingProductId === product.externalProductId ? translate("Processing...") : translate("Subscribe")}
                     variant="outline"
                     tone="primary"
                     size="sm"

@@ -1,14 +1,31 @@
 import { translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, useGlobalSearchParams, useRouter } from "expo-router";
 
 import { Text, colors, spacing } from "../../src/shared/ui";
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
+import { CreateTransactionModal } from "../../src/features/transactions/create/CreateTransactionModal";
 
 export default function TabsLayout() {
   useLocalization();
   const router = useRouter();
+  const { openCreate } = useGlobalSearchParams<{ openCreate?: string }>();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (openCreate === "1") {
+      setIsCreateOpen(true);
+    }
+  }, [openCreate]);
+
+  const closeCreate = () => {
+    setIsCreateOpen(false);
+    if (openCreate === "1") {
+      router.setParams({ openCreate: undefined });
+    }
+  };
 
   return (
     <>
@@ -66,12 +83,13 @@ export default function TabsLayout() {
           />
           <Tabs.Screen name="add" options={{ href: null }} />
         </Tabs>
-        <Pressable style={styles.addButtonWrapper} onPress={() => router.navigate("/(tabs)/add")}>
+        <Pressable style={styles.addButtonWrapper} onPress={() => setIsCreateOpen(true)}>
           <View style={styles.addButton}>
             <Text style={styles.addButtonLabel}>+</Text>
           </View>
         </Pressable>
       </View>
+      <CreateTransactionModal visible={isCreateOpen} onClose={closeCreate} />
     </>
   );
 }

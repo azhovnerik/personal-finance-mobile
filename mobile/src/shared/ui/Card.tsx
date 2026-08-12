@@ -1,13 +1,26 @@
 import { PropsWithChildren } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { Pressable, StyleSheet, View, ViewStyle } from "react-native";
 
 import { colors, radius, spacing } from "./theme";
 
 type CardProps = PropsWithChildren<{
   style?: ViewStyle;
+  onPress?: () => void;
 }>;
 
-export function Card({ children, style }: CardProps) {
+export function Card({ children, style, onPress }: CardProps) {
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, style, pressed && styles.pressed]}
+      >
+        {children}
+      </Pressable>
+    );
+  }
+
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
@@ -23,5 +36,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 });

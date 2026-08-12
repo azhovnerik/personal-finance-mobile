@@ -1,16 +1,31 @@
 import { translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { Tabs } from "expo-router";
+import { Tabs, useGlobalSearchParams, useRouter } from "expo-router";
 
 import { Text, colors, spacing } from "../../src/shared/ui";
-import { CreateTransactionModal } from "../../src/features/transactions/create/CreateTransactionModal";
 import { CategoryIcon } from "../../src/features/categories/components/CategoryIcon";
+import { CreateTransactionModal } from "../../src/features/transactions/create/CreateTransactionModal";
 
 export default function TabsLayout() {
   useLocalization();
+  const router = useRouter();
+  const { openCreate } = useGlobalSearchParams<{ openCreate?: string }>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (openCreate === "1") {
+      setIsCreateOpen(true);
+    }
+  }, [openCreate]);
+
+  const closeCreate = () => {
+    setIsCreateOpen(false);
+    if (openCreate === "1") {
+      router.setParams({ openCreate: undefined });
+    }
+  };
 
   return (
     <>
@@ -74,8 +89,7 @@ export default function TabsLayout() {
           </View>
         </Pressable>
       </View>
-
-      <CreateTransactionModal visible={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+      <CreateTransactionModal visible={isCreateOpen} onClose={closeCreate} />
     </>
   );
 }

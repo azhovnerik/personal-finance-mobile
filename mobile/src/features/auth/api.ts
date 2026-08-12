@@ -185,6 +185,12 @@ export const verifyEmail = async (token: string) =>
     body: { token },
   });
 
+export const confirmEmailChange = async (token: string) =>
+  requestJson<{ emailConfirmed: boolean }>("/api/v2/user/auth/email/confirm", {
+    method: "POST",
+    body: { token },
+  });
+
 export const resendVerification = async (email: string) =>
   requestJson<EmailActionResponse>("/api/v2/user/auth/resend-verification", {
     method: "POST",
@@ -199,6 +205,12 @@ export const forgotPassword = async (email: string) =>
 
 export const resetPassword = async (token: string, newPassword: string) =>
   requestJson<PasswordResetResponse>("/api/v2/user/auth/password/reset", {
+    method: "POST",
+    body: { token, newPassword },
+  });
+
+export const setupPassword = async (token: string, newPassword: string) =>
+  requestJson<PasswordResetResponse>("/api/v2/user/auth/password/setup", {
     method: "POST",
     body: { token, newPassword },
   });

@@ -16,16 +16,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "me.moneydrive.app",
+      "buildNumber": "2",
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDevelopmentRegion": "en",
         "CFBundleLocalizations": [
           "en"
         ],
-        "NSLocalNetworkUsageDescription": "Allow moneydrive.me to connect to the local development server while debugging.",
-        "NSBonjourServices": [
-          "_expo._tcp"
-        ]
+        "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
         "applinks:app.moneydrive.me"

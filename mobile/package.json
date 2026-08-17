@@ -6,6 +6,8 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:development:prebuild": "IOS_BUILD_PROFILE=development expo prebuild --platform ios",
+    "ios:app-store:prebuild": "IOS_BUILD_PROFILE=app-store expo prebuild --platform ios --clean",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "localization:check": "node scripts/check-localization.js",

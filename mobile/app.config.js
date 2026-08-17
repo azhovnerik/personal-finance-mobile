@@ -46,6 +46,10 @@ module.exports = () => {
     ]);
   }
 
+  if (iosBuildProfile === "app-store") {
+    plugins.push("./plugins/with-app-store-signing");
+  }
+
   return {
     ...staticConfig.expo,
     ios: {

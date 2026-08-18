@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import Svg, { Circle } from "react-native-svg";
 
 import { useDashboardSummary } from "../../src/features/dashboard/useDashboardSummary";
@@ -60,6 +61,7 @@ const getLast30DaysPeriod = () => {
 export default function DashboardScreen() {
   useLocalization();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("THIS_MONTH");
   const [initialThisMonthPeriod] = useState(() => getThisMonthPeriod());
   const [customStartDate, setCustomStartDate] = useState(initialThisMonthPeriod.startDate);
@@ -128,9 +130,10 @@ export default function DashboardScreen() {
     try {
       await logout();
     } finally {
+      queryClient.clear();
       router.replace("/login");
     }
-  }, [router]);
+  }, [queryClient, router]);
 
   const dateRangeLabel = useMemo(() => {
     if (!summary?.startDate || !summary?.endDate) {

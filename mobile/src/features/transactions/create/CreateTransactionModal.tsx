@@ -124,7 +124,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
 
   const useMocks = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCKS === "true";
 
-  const { accounts } = useAccounts();
+  const { accounts, refresh: refreshAccounts } = useAccounts();
 
   const accountOptions = useMemo(
     () =>
@@ -196,11 +196,6 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
       return;
     }
 
-    if (!selectedAccount) {
-      setErrorMessage(translate("Account unavailable."));
-      return;
-    }
-
     const normalizedAmount = formState.amount.replace(",", ".");
     const amountValue = Number(normalizedAmount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
@@ -211,10 +206,14 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
     const direction = directionForCategoryType(selectedCategory.type);
     const type = transactionTypeForCategoryType(selectedCategory.type);
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
-    const currency: CurrencyCode = selectedAccount.currency ?? mockUser.baseCurrency ?? "UAH";
     const comment = formState.note.trim();
 
     if (useMocks) {
+      if (!selectedAccount) {
+        setErrorMessage(translate("Account unavailable."));
+        return;
+      }
+      const currency: CurrencyCode = selectedAccount.currency ?? mockUser.baseCurrency ?? "UAH";
       const mockTransaction: TransactionDto = {
         id: generateId(),
         date: formState.date,
@@ -236,6 +235,15 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
 
     setIsSaving(true);
     try {
+      const currentAccounts = await refreshAccounts();
+      const currentAccount = toAccount(currentAccounts.find((account) => account.id === formState.accountId));
+      if (!currentAccount) {
+        const nextAccountId = currentAccounts.find((account) => account.defaultAccount && account.id)?.id ?? null;
+        setFormState((prev) => ({ ...prev, accountId: nextAccountId }));
+        setErrorMessage(translate("Account unavailable."));
+        return;
+      }
+
       const token = await getToken();
       if (!token) {
         await handleUnauthorized();
@@ -253,7 +261,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
         changeBalanceId: null,
         amount: amountValue,
         amountInBase: amountValue,
-        currency,
+        currency: currentAccount.currency ?? mockUser.baseCurrency ?? "UAH",
         comment: comment.length > 0 ? comment : undefined,
         transfer: null,
       };

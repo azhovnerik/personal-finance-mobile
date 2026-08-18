@@ -14,7 +14,8 @@ export const useUnauthorizedRedirect = () => {
       return;
     }
 
-    void queryClient.cancelQueries();
+    await queryClient.cancelQueries();
+    queryClient.clear();
 
     try {
       await clearAuthSession();

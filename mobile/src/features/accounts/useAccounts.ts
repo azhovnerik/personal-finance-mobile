@@ -24,7 +24,7 @@ type UseAccountsResult = {
   isSaving: boolean;
   error: string | null;
   actionError: string | null;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<AccountDto[]>;
   isCrudAvailable: boolean;
   createAccount: (payload: AccountMutationPayload) => Promise<boolean>;
   updateAccount: (id: string, payload: AccountMutationPayload) => Promise<boolean>;
@@ -128,7 +128,11 @@ export const useAccounts = (): UseAccountsResult => {
 
   const refresh = useMemo(() => {
     return async () => {
-      await query.refetch();
+      const result = await query.refetch();
+      if (result.error) {
+        throw result.error;
+      }
+      return result.data ?? [];
     };
   }, [query]);
 

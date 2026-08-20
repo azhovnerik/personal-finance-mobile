@@ -394,6 +394,21 @@ const nlNL = {
   "‹ Back": "‹ Terug",
   "Account \"{{name}}\" will be deleted.": "Rekening \"{{name}}\" wordt verwijderd.",
   "Category \"{{name}}\" will be deleted.": "Categorie \"{{name}}\" wordt verwijderd.",
+  "Account deleted": "Account verwijderd",
+  "Accounts, categories, budgets, transactions, transfers, settings, and access tokens will be deleted.": "Rekeningen, categorieën, budgetten, transacties, overboekingen, instellingen en toegangstokens worden verwijderd.",
+  "Apple did not return credentials required for account deletion.": "Apple heeft de vereiste gegevens voor accountverwijdering niet teruggestuurd.",
+  "Confirm your identity": "Bevestig je identiteit",
+  "Danger zone": "Gevarenzone",
+  "Delete MoneyDrive account": "MoneyDrive-account verwijderen",
+  "Delete MoneyDrive account permanently": "MoneyDrive-account permanent verwijderen",
+  "Deleting account...": "Account verwijderen...",
+  "Deleting your account permanently removes your profile and financial data. This action cannot be undone.": "Als je je account permanent verwijdert, worden je profiel en financiële gegevens gewist. Dit kan niet ongedaan worden gemaakt.",
+  "Deleting MoneyDrive does not cancel App Store billing. Cancel the subscription in Apple settings if you no longer want it.": "Het verwijderen van MoneyDrive stopt de facturering via de App Store niet. Zeg het abonnement op in de Apple-instellingen als je het niet meer wilt.",
+  "Google Sign-In": "Inloggen met Google",
+  "Manage Apple subscription": "Apple-abonnement beheren",
+  "Sign in with Apple": "Log in met Apple",
+  "Type DELETE to confirm": "Typ DELETE om te bevestigen",
+  "Unable to open subscription management.": "Abonnementbeheer kon niet worden geopend.",
 } as const;
 
 export default nlNL;

@@ -394,6 +394,21 @@ const koKR = {
   "‹ Back": "‹ 뒤로",
   "Account \"{{name}}\" will be deleted.": "\"{{name}}\" 계좌가 삭제됩니다.",
   "Category \"{{name}}\" will be deleted.": "'{{name}}' 카테고리가 삭제됩니다.",
+  "Account deleted": "계정이 삭제되었습니다",
+  "Accounts, categories, budgets, transactions, transfers, settings, and access tokens will be deleted.": "계좌, 카테고리, 예산, 거래, 이체, 설정 및 액세스 토큰이 삭제됩니다.",
+  "Apple did not return credentials required for account deletion.": "Apple에서 계정 삭제에 필요한 인증 정보를 반환하지 않았습니다.",
+  "Confirm your identity": "본인 확인",
+  "Danger zone": "위험 구역",
+  "Delete MoneyDrive account": "MoneyDrive 계정 삭제",
+  "Delete MoneyDrive account permanently": "MoneyDrive 계정 영구 삭제",
+  "Deleting account...": "계정 삭제 중...",
+  "Deleting your account permanently removes your profile and financial data. This action cannot be undone.": "계정을 삭제하면 프로필과 금융 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+  "Deleting MoneyDrive does not cancel App Store billing. Cancel the subscription in Apple settings if you no longer want it.": "MoneyDrive를 삭제해도 App Store 결제는 취소되지 않습니다. 더 이상 원하지 않으면 Apple 설정에서 구독을 취소하세요.",
+  "Google Sign-In": "Google로 로그인",
+  "Manage Apple subscription": "Apple 구독 관리",
+  "Sign in with Apple": "Apple로 로그인",
+  "Type DELETE to confirm": "확인하려면 DELETE 입력",
+  "Unable to open subscription management.": "구독 관리를 열 수 없습니다.",
 } as const;
 
 export default koKR;

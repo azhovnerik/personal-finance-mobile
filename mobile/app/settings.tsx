@@ -1,17 +1,26 @@
 import { localizeSystemMessage, translate } from "../src/localization";
 import { useLocalization } from "../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { CurrencyCode } from "../src/shared/api/dto";
 import { clearAuthSession } from "../src/features/auth/api";
+import { logout } from "../src/features/auth/logout";
+import {
+  requestAppleDeletionCredential,
+  requestGoogleDeletionCredential,
+} from "../src/features/settings/accountDeletion/reauthenticate";
+import type { AccountDeletionMethod } from "../src/features/settings/accountDeletion/types";
+import { useDeleteAccount } from "../src/features/settings/accountDeletion/useDeleteAccount";
 import { useChangePassword } from "../src/features/settings/useChangePassword";
 import { useResendPendingEmail } from "../src/features/settings/useResendPendingEmail";
 import { useSettingsProfile } from "../src/features/settings/useSettingsProfile";
 import { useUpdateSettingsProfile } from "../src/features/settings/useUpdateSettingsProfile";
 import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../src/shared/ui";
 import { SettingsApiError } from "../src/features/settings/types";
+import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
 
 const extractFieldErrors = (error: unknown): Record<string, string> => {
   if (!(error instanceof SettingsApiError) || !error.details) {
@@ -40,11 +49,14 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { setLocale } = useLocalization();
   const { profileResponse, isLoading, isRefreshing, error, refresh } = useSettingsProfile();
   const updateProfileMutation = useUpdateSettingsProfile();
   const resendEmailMutation = useResendPendingEmail();
   const changePasswordMutation = useChangePassword();
+  const deleteAccountMutation = useDeleteAccount();
+  const { statusResponse: subscriptionStatus } = useSubscriptionStatus();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,6 +77,12 @@ export default function SettingsScreen() {
 
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordFieldErrors, setPasswordFieldErrors] = useState<Record<string, string>>({});
+
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteMethod, setDeleteMethod] = useState<AccountDeletionMethod | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profileResponse) {
@@ -210,6 +228,83 @@ export default function SettingsScreen() {
       setPasswordError(getErrorMessage(mutationError, translate("Unable to change password.")));
     }
   }, [changePasswordMutation, confirmNewPassword, currentPassword, newPassword, router]);
+
+  const hasActiveAppleSubscription = useMemo(
+    () => subscriptionStatus?.sources.some(
+      (source) => source.provider === "APPLE" && ["ACTIVE", "PAST_DUE"].includes(source.status),
+    ) ?? false,
+    [subscriptionStatus?.sources],
+  );
+
+  const openAppleSubscriptionManagement = useCallback(async () => {
+    const urls = [
+      "itms-apps://apps.apple.com/account/subscriptions",
+      "https://apps.apple.com/account/subscriptions",
+    ];
+    for (const url of urls) {
+      try {
+        await Linking.openURL(url);
+        return;
+      } catch {
+        // Try the web fallback when the App Store URL is unavailable.
+      }
+    }
+    setDeleteError(translate("Unable to open subscription management."));
+  }, []);
+
+  const handleDeleteAccount = useCallback(async () => {
+    if (!deleteMethod || deleteConfirmation !== "DELETE") {
+      return;
+    }
+    setDeleteError(null);
+
+    try {
+      const payload = {
+        confirmation: deleteConfirmation,
+        method: deleteMethod,
+        ...(deleteMethod === "PASSWORD" ? { currentPassword: deletePassword } : {}),
+      };
+
+      if (deleteMethod === "GOOGLE") {
+        const idToken = await requestGoogleDeletionCredential();
+        if (!idToken) {
+          return;
+        }
+        await deleteAccountMutation.mutateAsync({ ...payload, googleIdToken: idToken });
+      } else if (deleteMethod === "APPLE") {
+        const credential = await requestAppleDeletionCredential();
+        if (!credential) {
+          return;
+        }
+        await deleteAccountMutation.mutateAsync({
+          ...payload,
+          appleIdentityToken: credential.identityToken,
+          appleNonce: credential.nonce,
+          appleAuthorizationCode: credential.authorizationCode,
+        });
+      } else {
+        await deleteAccountMutation.mutateAsync(payload);
+      }
+
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      try {
+        await logout();
+      } finally {
+        router.replace("/login");
+        Alert.alert(translate("Account deleted"));
+      }
+    } catch (mutationError) {
+      setDeleteError(getErrorMessage(mutationError, translate("Unable to delete the account.")));
+    }
+  }, [
+    deleteAccountMutation,
+    deleteConfirmation,
+    deleteMethod,
+    deletePassword,
+    queryClient,
+    router,
+  ]);
 
   return (
     <ScreenContainer>
@@ -408,6 +503,123 @@ export default function SettingsScreen() {
             </View>
           ) : null}
         </Card>
+
+        <Card style={{ ...styles.card, ...styles.dangerCard }}>
+          <Text variant="subtitle" style={styles.dangerText}>{translate("Danger zone")}</Text>
+          <Text variant="caption">
+            {translate("Deleting your account permanently removes your profile and financial data. This action cannot be undone.")}
+          </Text>
+
+          {!showDeleteForm ? (
+            <Button
+              title={translate("Delete MoneyDrive account")}
+              variant="outline"
+              tone="danger"
+              onPress={() => setShowDeleteForm(true)}
+            />
+          ) : (
+            <View style={styles.deleteForm}>
+              <Text style={styles.dangerText}>
+                {translate("Accounts, categories, budgets, transactions, transfers, settings, and access tokens will be deleted.")}
+              </Text>
+
+              {hasActiveAppleSubscription ? (
+                <View style={styles.subscriptionWarning}>
+                  <Text style={styles.warningText}>
+                    {translate("Deleting MoneyDrive does not cancel App Store billing. Cancel the subscription in Apple settings if you no longer want it.")}
+                  </Text>
+                  <Button
+                    title={translate("Manage Apple subscription")}
+                    variant="outline"
+                    tone="secondary"
+                    size="sm"
+                    onPress={() => void openAppleSubscriptionManagement()}
+                  />
+                </View>
+              ) : null}
+
+              <Input
+                placeholder={translate("Type DELETE to confirm")}
+                value={deleteConfirmation}
+                onChangeText={setDeleteConfirmation}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+
+              <Text variant="caption">{translate("Confirm your identity")}</Text>
+              <View style={styles.methodButtons}>
+                {profile?.hasPassword ? (
+                  <Button
+                    title={translate("Password")}
+                    variant={deleteMethod === "PASSWORD" ? "primary" : "outline"}
+                    tone={deleteMethod === "PASSWORD" ? "danger" : "secondary"}
+                    size="sm"
+                    onPress={() => setDeleteMethod("PASSWORD")}
+                  />
+                ) : null}
+                {Platform.OS === "ios" ? (
+                  <>
+                    <Button
+                      title={translate("Google Sign-In")}
+                      variant={deleteMethod === "GOOGLE" ? "primary" : "outline"}
+                      tone={deleteMethod === "GOOGLE" ? "danger" : "secondary"}
+                      size="sm"
+                      onPress={() => setDeleteMethod("GOOGLE")}
+                    />
+                    <Button
+                      title={translate("Sign in with Apple")}
+                      variant={deleteMethod === "APPLE" ? "primary" : "outline"}
+                      tone={deleteMethod === "APPLE" ? "danger" : "secondary"}
+                      size="sm"
+                      onPress={() => setDeleteMethod("APPLE")}
+                    />
+                  </>
+                ) : null}
+              </View>
+
+              {deleteMethod === "PASSWORD" ? (
+                <Input
+                  placeholder={translate("Current password")}
+                  secureTextEntry
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                />
+              ) : null}
+
+              {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+
+              <Button
+                title={deleteAccountMutation.isPending
+                  ? translate("Deleting account...")
+                  : translate("Delete MoneyDrive account permanently")}
+                tone="danger"
+                disabled={
+                  deleteAccountMutation.isPending
+                  || deleteConfirmation !== "DELETE"
+                  || !deleteMethod
+                  || (deleteMethod === "PASSWORD" && !deletePassword)
+                }
+                onPress={() => void handleDeleteAccount()}
+              />
+              <Button
+                title={translate("Cancel")}
+                variant="ghost"
+                tone="secondary"
+                disabled={deleteAccountMutation.isPending}
+                onPress={() => {
+                  setShowDeleteForm(false);
+                  setDeleteConfirmation("");
+                  setDeleteMethod(null);
+                  setDeletePassword("");
+                  setDeleteError(null);
+                }}
+              />
+            </View>
+          )}
+        </Card>
       </ScrollView>
     </ScreenContainer>
   );
@@ -461,6 +673,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   passwordForm: {
+    gap: spacing.sm,
+  },
+  dangerCard: {
+    borderColor: colors.danger,
+  },
+  dangerText: {
+    color: colors.danger,
+  },
+  deleteForm: {
+    gap: spacing.sm,
+  },
+  subscriptionWarning: {
+    gap: spacing.sm,
+  },
+  methodButtons: {
     gap: spacing.sm,
   },
 });

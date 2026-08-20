@@ -394,6 +394,21 @@ const trTR = {
   "‹ Back": "‹ Geri",
   "Account \"{{name}}\" will be deleted.": "\"{{name}}\" hesabı silinecek.",
   "Category \"{{name}}\" will be deleted.": "\"{{name}}\" kategorisi silinecek.",
+  "Account deleted": "Hesap silindi",
+  "Accounts, categories, budgets, transactions, transfers, settings, and access tokens will be deleted.": "Hesaplar, kategoriler, bütçeler, işlemler, transferler, ayarlar ve erişim belirteçleri silinecek.",
+  "Apple did not return credentials required for account deletion.": "Apple, hesabı silmek için gereken kimlik bilgilerini döndürmedi.",
+  "Confirm your identity": "Kimliğinizi doğrulayın",
+  "Danger zone": "Tehlikeli bölge",
+  "Delete MoneyDrive account": "MoneyDrive hesabını sil",
+  "Delete MoneyDrive account permanently": "MoneyDrive hesabını kalıcı olarak sil",
+  "Deleting account...": "Hesap siliniyor...",
+  "Deleting your account permanently removes your profile and financial data. This action cannot be undone.": "Hesabınızı kalıcı olarak silmek profilinizi ve finansal verilerinizi kaldırır. Bu işlem geri alınamaz.",
+  "Deleting MoneyDrive does not cancel App Store billing. Cancel the subscription in Apple settings if you no longer want it.": "MoneyDrive'ı silmek App Store faturalandırmasını iptal etmez. Artık istemiyorsanız Apple ayarlarından aboneliği iptal edin.",
+  "Google Sign-In": "Google ile giriş",
+  "Manage Apple subscription": "Apple aboneliğini yönet",
+  "Sign in with Apple": "Apple ile giriş yap",
+  "Type DELETE to confirm": "Onaylamak için DELETE yazın",
+  "Unable to open subscription management.": "Abonelik yönetimi açılamadı.",
 } as const;
 
 export default trTR;

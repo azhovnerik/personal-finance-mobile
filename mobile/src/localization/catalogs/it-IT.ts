@@ -394,6 +394,21 @@ const it = {
   "‹ Back": "‹ Indietro",
   "Account \"{{name}}\" will be deleted.": "Il conto \"{{name}}\" verrà eliminato.",
   "Category \"{{name}}\" will be deleted.": "La categoria \"{{name}}\" verrà eliminata.",
+  "Account deleted": "Account eliminato",
+  "Accounts, categories, budgets, transactions, transfers, settings, and access tokens will be deleted.": "Verranno eliminati conti, categorie, budget, transazioni, trasferimenti, impostazioni e token di accesso.",
+  "Apple did not return credentials required for account deletion.": "Apple non ha restituito le credenziali necessarie per eliminare l’account.",
+  "Confirm your identity": "Conferma la tua identità",
+  "Danger zone": "Zona pericolosa",
+  "Delete MoneyDrive account": "Elimina account MoneyDrive",
+  "Delete MoneyDrive account permanently": "Elimina definitivamente l’account MoneyDrive",
+  "Deleting account...": "Eliminazione account...",
+  "Deleting your account permanently removes your profile and financial data. This action cannot be undone.": "L’eliminazione definitiva dell’account rimuove il profilo e i dati finanziari. Questa azione non può essere annullata.",
+  "Deleting MoneyDrive does not cancel App Store billing. Cancel the subscription in Apple settings if you no longer want it.": "Eliminare MoneyDrive non annulla la fatturazione dell’App Store. Annulla l’abbonamento nelle impostazioni Apple se non lo desideri più.",
+  "Google Sign-In": "Accedi con Google",
+  "Manage Apple subscription": "Gestisci abbonamento Apple",
+  "Sign in with Apple": "Accedi con Apple",
+  "Type DELETE to confirm": "Digita DELETE per confermare",
+  "Unable to open subscription management.": "Impossibile aprire la gestione degli abbonamenti.",
 } as const;
 
 export default it;

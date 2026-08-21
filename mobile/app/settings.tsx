@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import type { CurrencyCode } from "../src/shared/api/dto";
 import { clearAuthSession } from "../src/features/auth/api";
@@ -255,6 +256,12 @@ export default function SettingsScreen() {
     }
     return translate("Delete MoneyDrive account permanently");
   }, [deleteAccountMutation.isPending, deleteMethod, isDeleteReauthenticationPending]);
+
+  const isDeleteActionDisabled = deleteAccountMutation.isPending
+    || isDeleteReauthenticationPending
+    || deleteConfirmation !== "DELETE"
+    || !deleteMethod
+    || (deleteMethod === "PASSWORD" && !deletePassword);
 
   const openAppleSubscriptionManagement = useCallback(async () => {
     const urls = [
@@ -626,18 +633,28 @@ export default function SettingsScreen() {
 
               {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
 
-              <Button
-                title={deleteActionTitle}
-                tone="danger"
-                disabled={
-                  deleteAccountMutation.isPending
-                  || isDeleteReauthenticationPending
-                  || deleteConfirmation !== "DELETE"
-                  || !deleteMethod
-                  || (deleteMethod === "PASSWORD" && !deletePassword)
-                }
-                onPress={() => void handleDeleteAccount()}
-              />
+              {deleteMethod === "APPLE" ? (
+                <View
+                  accessibilityState={{ disabled: isDeleteActionDisabled }}
+                  pointerEvents={isDeleteActionDisabled ? "none" : "auto"}
+                  style={isDeleteActionDisabled ? styles.disabledAppleButton : null}
+                >
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                    cornerRadius={10}
+                    style={styles.appleDeleteButton}
+                    onPress={() => void handleDeleteAccount()}
+                  />
+                </View>
+              ) : (
+                <Button
+                  title={deleteActionTitle}
+                  tone="danger"
+                  disabled={isDeleteActionDisabled}
+                  onPress={() => void handleDeleteAccount()}
+                />
+              )}
               <Button
                 title={translate("Cancel")}
                 variant="ghost"
@@ -723,5 +740,12 @@ const styles = StyleSheet.create({
   },
   methodButtons: {
     gap: spacing.sm,
+  },
+  appleDeleteButton: {
+    width: "100%",
+    height: 50,
+  },
+  disabledAppleButton: {
+    opacity: 0.5,
   },
 });

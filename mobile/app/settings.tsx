@@ -83,6 +83,7 @@ export default function SettingsScreen() {
   const [deleteMethod, setDeleteMethod] = useState<AccountDeletionMethod | null>(null);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleteReauthenticationPending, setIsDeleteReauthenticationPending] = useState(false);
 
   useEffect(() => {
     if (!profileResponse) {
@@ -236,6 +237,25 @@ export default function SettingsScreen() {
     [subscriptionStatus?.sources],
   );
 
+  const deleteActionTitle = useMemo(() => {
+    if (isDeleteReauthenticationPending && deleteMethod === "GOOGLE") {
+      return translate("Signing in with Google...");
+    }
+    if (isDeleteReauthenticationPending && deleteMethod === "APPLE") {
+      return translate("Signing in...");
+    }
+    if (deleteAccountMutation.isPending) {
+      return translate("Deleting account...");
+    }
+    if (deleteMethod === "GOOGLE") {
+      return translate("Continue with Google and delete account");
+    }
+    if (deleteMethod === "APPLE") {
+      return translate("Continue with Apple and delete account");
+    }
+    return translate("Delete MoneyDrive account permanently");
+  }, [deleteAccountMutation.isPending, deleteMethod, isDeleteReauthenticationPending]);
+
   const openAppleSubscriptionManagement = useCallback(async () => {
     const urls = [
       "itms-apps://apps.apple.com/account/subscriptions",
@@ -266,13 +286,23 @@ export default function SettingsScreen() {
       };
 
       if (deleteMethod === "GOOGLE") {
-        const idToken = await requestGoogleDeletionCredential();
-        if (!idToken) {
-          return;
+        let idToken: string | null;
+        setIsDeleteReauthenticationPending(true);
+        try {
+          idToken = await requestGoogleDeletionCredential();
+        } finally {
+          setIsDeleteReauthenticationPending(false);
         }
+        if (!idToken) return;
         await deleteAccountMutation.mutateAsync({ ...payload, googleIdToken: idToken });
       } else if (deleteMethod === "APPLE") {
-        const credential = await requestAppleDeletionCredential();
+        let credential;
+        setIsDeleteReauthenticationPending(true);
+        try {
+          credential = await requestAppleDeletionCredential();
+        } finally {
+          setIsDeleteReauthenticationPending(false);
+        }
         if (!credential) {
           return;
         }
@@ -505,7 +535,6 @@ export default function SettingsScreen() {
         </Card>
 
         <Card style={{ ...styles.card, ...styles.dangerCard }}>
-          <Text variant="subtitle" style={styles.dangerText}>{translate("Danger zone")}</Text>
           <Text variant="caption">
             {translate("Deleting your account permanently removes your profile and financial data. This action cannot be undone.")}
           </Text>
@@ -547,6 +576,9 @@ export default function SettingsScreen() {
               />
 
               <Text variant="caption">{translate("Confirm your identity")}</Text>
+              <Text variant="caption">
+                {translate("Choose a verification method. Sign-in will open after you press the final delete button.")}
+              </Text>
               <View style={styles.methodButtons}>
                 {profile?.hasPassword ? (
                   <Button
@@ -554,23 +586,26 @@ export default function SettingsScreen() {
                     variant={deleteMethod === "PASSWORD" ? "primary" : "outline"}
                     tone={deleteMethod === "PASSWORD" ? "danger" : "secondary"}
                     size="sm"
+                    accessibilityState={{ selected: deleteMethod === "PASSWORD" }}
                     onPress={() => setDeleteMethod("PASSWORD")}
                   />
                 ) : null}
                 {Platform.OS === "ios" ? (
                   <>
                     <Button
-                      title={translate("Google Sign-In")}
+                      title={translate("Google")}
                       variant={deleteMethod === "GOOGLE" ? "primary" : "outline"}
                       tone={deleteMethod === "GOOGLE" ? "danger" : "secondary"}
                       size="sm"
+                      accessibilityState={{ selected: deleteMethod === "GOOGLE" }}
                       onPress={() => setDeleteMethod("GOOGLE")}
                     />
                     <Button
-                      title={translate("Sign in with Apple")}
+                      title={translate("Apple")}
                       variant={deleteMethod === "APPLE" ? "primary" : "outline"}
                       tone={deleteMethod === "APPLE" ? "danger" : "secondary"}
                       size="sm"
+                      accessibilityState={{ selected: deleteMethod === "APPLE" }}
                       onPress={() => setDeleteMethod("APPLE")}
                     />
                   </>
@@ -592,12 +627,11 @@ export default function SettingsScreen() {
               {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
 
               <Button
-                title={deleteAccountMutation.isPending
-                  ? translate("Deleting account...")
-                  : translate("Delete MoneyDrive account permanently")}
+                title={deleteActionTitle}
                 tone="danger"
                 disabled={
                   deleteAccountMutation.isPending
+                  || isDeleteReauthenticationPending
                   || deleteConfirmation !== "DELETE"
                   || !deleteMethod
                   || (deleteMethod === "PASSWORD" && !deletePassword)
@@ -608,7 +642,7 @@ export default function SettingsScreen() {
                 title={translate("Cancel")}
                 variant="ghost"
                 tone="secondary"
-                disabled={deleteAccountMutation.isPending}
+                disabled={deleteAccountMutation.isPending || isDeleteReauthenticationPending}
                 onPress={() => {
                   setShowDeleteForm(false);
                   setDeleteConfirmation("");

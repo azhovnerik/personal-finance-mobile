@@ -3,8 +3,9 @@ import { Platform } from "react-native";
 import {
   GoogleOneTapSignIn,
   isCancelledResponse,
-  isNoSavedCredentialFoundResponse,
+  isErrorWithCode,
   isSuccessResponse,
+  statusCodes,
 } from "react-native-nitro-google-signin";
 
 import { translate } from "../../../localization";
@@ -17,22 +18,29 @@ export const requestGoogleDeletionCredential = async (): Promise<string | null> 
     return null;
   }
   configureGoogleSignIn();
-  let response = await GoogleOneTapSignIn.signIn();
-  if (isNoSavedCredentialFoundResponse(response)) {
-    response = await GoogleOneTapSignIn.presentExplicitSignIn();
+  try {
+    const response = await GoogleOneTapSignIn.presentExplicitSignIn();
+    if (isCancelledResponse(response)) {
+      throw new Error(translate("Unable to sign in with Google. Try again."));
+    }
+    if (!isSuccessResponse(response) || !response.data.idToken) {
+      throw new Error(translate("Google did not return an ID token."));
+    }
+    return response.data.idToken;
+  } catch (error) {
+    if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED) {
+      throw new Error(translate("Unable to sign in with Google. Try again."));
+    }
+    throw error;
   }
-  if (isCancelledResponse(response)) {
-    return null;
-  }
-  if (!isSuccessResponse(response) || !response.data.idToken) {
-    throw new Error(translate("Google did not return an ID token."));
-  }
-  return response.data.idToken;
 };
 
 export const requestAppleDeletionCredential = async (): Promise<AppleDeletionCredential | null> => {
   if (Platform.OS !== "ios") {
     return null;
+  }
+  if (!(await AppleAuthentication.isAvailableAsync())) {
+    throw new Error(translate("Apple Sign-In is not available on this device."));
   }
   const { nonce } = await createAppleLoginNonce();
   try {
@@ -50,7 +58,7 @@ export const requestAppleDeletionCredential = async (): Promise<AppleDeletionCre
     };
   } catch (error) {
     if ((error as { code?: string }).code === "ERR_REQUEST_CANCELED") {
-      return null;
+      throw new Error(translate("Apple Sign-In was cancelled."));
     }
     throw error;
   }

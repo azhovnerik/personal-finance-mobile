@@ -166,7 +166,7 @@ export const loginWithApple = async (
   identityToken: string,
   nonce: string,
   name: string | null,
-  authorizationCode: string,
+  authorizationCode: string | null,
 ) =>
   requestJson<AuthResponse>("/api/v2/user/auth/apple", {
     method: "POST",

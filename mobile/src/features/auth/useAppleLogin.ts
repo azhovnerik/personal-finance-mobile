@@ -58,7 +58,7 @@ export const useAppleLogin = () => {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      if (!credential.identityToken) {
+      if (!credential.identityToken || !credential.authorizationCode) {
         throw new Error(translate("Apple did not return an identity token."));
       }
 
@@ -69,6 +69,7 @@ export const useAppleLogin = () => {
         credential.identityToken,
         nonce,
         formattedName || null,
+        credential.authorizationCode,
       );
       await persistAuthTokenFromResponse(authResponse);
       return authResponse;

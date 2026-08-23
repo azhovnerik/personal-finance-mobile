@@ -69,6 +69,7 @@ export const useAppleLogin = () => {
         credential.identityToken,
         nonce,
         formattedName || null,
+        credential.authorizationCode ?? null,
       );
       await persistAuthTokenFromResponse(authResponse);
       return authResponse;

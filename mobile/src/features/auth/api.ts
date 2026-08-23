@@ -162,10 +162,15 @@ export const createAppleLoginNonce = async () =>
     method: "POST",
   });
 
-export const loginWithApple = async (identityToken: string, nonce: string, name: string | null) =>
+export const loginWithApple = async (
+  identityToken: string,
+  nonce: string,
+  name: string | null,
+  authorizationCode: string | null,
+) =>
   requestJson<AuthResponse>("/api/v2/user/auth/apple", {
     method: "POST",
-    body: { identityToken, nonce, name },
+    body: { identityToken, nonce, name, authorizationCode },
   });
 
 export const register = async (payload: { email: string; name: string; password: string; language?: string }) =>

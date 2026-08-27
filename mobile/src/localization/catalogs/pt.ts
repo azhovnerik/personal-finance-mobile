@@ -414,6 +414,9 @@ const pt = {
   "Type DELETE to confirm": "Escreva DELETE para confirmar",
   "Unable to delete the account.": "Não foi possível eliminar a conta.",
   "Unable to open subscription management.": "Não foi possível abrir a gestão de assinaturas.",
+  Legal: "Informações legais",
+  "Privacy Policy": "Política de Privacidade",
+  "Unable to open the Privacy Policy.": "Não foi possível abrir a Política de Privacidade.",
 } as const;
 
 export default pt;

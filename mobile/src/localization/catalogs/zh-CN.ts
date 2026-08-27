@@ -414,6 +414,9 @@ const zhCN = {
   "Sign in with Apple": "使用 Apple 登录",
   "Type DELETE to confirm": "输入 DELETE 以确认",
   "Unable to open subscription management.": "无法打开订阅管理。",
+  Legal: "法律信息",
+  "Privacy Policy": "隐私政策",
+  "Unable to open the Privacy Policy.": "无法打开隐私政策。",
 } as const;
 
 export default zhCN;

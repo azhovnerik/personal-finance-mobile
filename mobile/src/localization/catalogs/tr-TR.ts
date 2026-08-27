@@ -414,6 +414,9 @@ const trTR = {
   "Sign in with Apple": "Apple ile giriş yap",
   "Type DELETE to confirm": "Onaylamak için DELETE yazın",
   "Unable to open subscription management.": "Abonelik yönetimi açılamadı.",
+  Legal: "Yasal",
+  "Privacy Policy": "Gizlilik Politikası",
+  "Unable to open the Privacy Policy.": "Gizlilik Politikası açılamıyor.",
 } as const;
 
 export default trTR;

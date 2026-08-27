@@ -414,6 +414,9 @@ const nlNL = {
   "Sign in with Apple": "Log in met Apple",
   "Type DELETE to confirm": "Typ DELETE om te bevestigen",
   "Unable to open subscription management.": "Abonnementbeheer kon niet worden geopend.",
+  Legal: "Juridisch",
+  "Privacy Policy": "Privacybeleid",
+  "Unable to open the Privacy Policy.": "Het Privacybeleid kan niet worden geopend.",
 } as const;
 
 export default nlNL;

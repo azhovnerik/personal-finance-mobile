@@ -414,6 +414,9 @@ const ptBR = {
   "Type DELETE to confirm": "Digite DELETE para confirmar",
   "Unable to delete the account.": "Não foi possível excluir a conta.",
   "Unable to open subscription management.": "Não foi possível abrir o gerenciamento de assinaturas.",
+  Legal: "Informações legais",
+  "Privacy Policy": "Política de Privacidade",
+  "Unable to open the Privacy Policy.": "Não foi possível abrir a Política de Privacidade.",
 } as const;
 
 export default ptBR;

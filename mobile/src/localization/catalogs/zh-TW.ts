@@ -414,6 +414,9 @@ const zhTW = {
   "Type DELETE to confirm": "輸入 DELETE 以確認",
   "Unable to delete the account.": "無法刪除帳戶。",
   "Unable to open subscription management.": "無法開啟訂閱管理。",
+  Legal: "法律資訊",
+  "Privacy Policy": "隱私權政策",
+  "Unable to open the Privacy Policy.": "無法開啟隱私權政策。",
 } as const;
 
 export default zhTW;

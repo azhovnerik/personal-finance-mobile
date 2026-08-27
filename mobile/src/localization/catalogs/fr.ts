@@ -414,6 +414,9 @@ const fr = {
   "Type DELETE to confirm": "Saisissez DELETE pour confirmer",
   "Unable to delete the account.": "Impossible de supprimer le compte.",
   "Unable to open subscription management.": "Impossible d’ouvrir la gestion des abonnements.",
+  Legal: "Mentions légales",
+  "Privacy Policy": "Politique de confidentialité",
+  "Unable to open the Privacy Policy.": "Impossible d’ouvrir la Politique de confidentialité.",
 } as const;
 
 export default fr;

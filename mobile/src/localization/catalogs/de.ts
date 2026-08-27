@@ -414,6 +414,9 @@ const de = {
   "Sign in with Apple": "Mit Apple anmelden",
   "Type DELETE to confirm": "Zur Bestätigung DELETE eingeben",
   "Unable to open subscription management.": "Die Abonnementverwaltung konnte nicht geöffnet werden.",
+  Legal: "Rechtliches",
+  "Privacy Policy": "Datenschutzerklärung",
+  "Unable to open the Privacy Policy.": "Die Datenschutzerklärung konnte nicht geöffnet werden.",
 } as const;
 
 export default de;

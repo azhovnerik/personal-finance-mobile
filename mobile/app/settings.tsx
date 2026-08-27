@@ -23,6 +23,8 @@ import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } f
 import { SettingsApiError } from "../src/features/settings/types";
 import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
 
+const PRIVACY_POLICY_URL = "https://www.moneydrive.me/en/privacy";
+
 const extractFieldErrors = (error: unknown): Record<string, string> => {
   if (!(error instanceof SettingsApiError) || !error.details) {
     return {};
@@ -277,6 +279,14 @@ export default function SettingsScreen() {
       }
     }
     setDeleteError(translate("Unable to open subscription management."));
+  }, []);
+
+  const openPrivacyPolicy = useCallback(async () => {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert(translate("Unable to open the Privacy Policy."));
+    }
   }, []);
 
   const handleDeleteAccount = useCallback(async () => {
@@ -539,6 +549,16 @@ export default function SettingsScreen() {
               />
             </View>
           ) : null}
+        </Card>
+
+        <Card style={styles.card}>
+          <Text variant="subtitle">{translate("Legal")}</Text>
+          <Button
+            title={translate("Privacy Policy")}
+            variant="outline"
+            tone="secondary"
+            onPress={() => void openPrivacyPolicy()}
+          />
         </Card>
 
         <Card style={{ ...styles.card, ...styles.dangerCard }}>

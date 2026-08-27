@@ -414,6 +414,9 @@ const ua = {
   "Sign in with Apple": "Увійти через Apple",
   "Type DELETE to confirm": "Введіть DELETE для підтвердження",
   "Unable to open subscription management.": "Не вдалося відкрити керування підпискою.",
+  Legal: "Правова інформація",
+  "Privacy Policy": "Політика конфіденційності",
+  "Unable to open the Privacy Policy.": "Не вдалося відкрити Політику конфіденційності.",
 } as const;
 
 export default ua;

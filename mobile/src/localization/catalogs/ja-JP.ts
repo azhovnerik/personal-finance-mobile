@@ -414,6 +414,9 @@ const jaJP = {
   "Sign in with Apple": "Appleでサインイン",
   "Type DELETE to confirm": "確認のためDELETEと入力",
   "Unable to open subscription management.": "サブスクリプション管理を開けませんでした。",
+  Legal: "法的情報",
+  "Privacy Policy": "プライバシーポリシー",
+  "Unable to open the Privacy Policy.": "プライバシーポリシーを開けません。",
 } as const;
 
 export default jaJP;

@@ -414,6 +414,9 @@ const koKR = {
   "Sign in with Apple": "Apple로 로그인",
   "Type DELETE to confirm": "확인하려면 DELETE 입력",
   "Unable to open subscription management.": "구독 관리를 열 수 없습니다.",
+  Legal: "법률 정보",
+  "Privacy Policy": "개인정보 처리방침",
+  "Unable to open the Privacy Policy.": "개인정보 처리방침을 열 수 없습니다.",
 } as const;
 
 export default koKR;

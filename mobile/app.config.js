@@ -2,6 +2,25 @@ const staticConfig = require("./app.json");
 
 const GOOGLE_CLIENT_ID_SUFFIX = ".apps.googleusercontent.com";
 const IOS_BUILD_PROFILES = new Set(["development", "app-store"]);
+const APP_FUNCTIONALITY_PURPOSE = "NSPrivacyCollectedDataTypePurposeAppFunctionality";
+const MONEYDRIVE_COLLECTED_DATA_TYPES = [
+  "NSPrivacyCollectedDataTypeName",
+  "NSPrivacyCollectedDataTypeEmailAddress",
+  "NSPrivacyCollectedDataTypeOtherUserContactInfo",
+  "NSPrivacyCollectedDataTypeOtherFinancialInfo",
+  "NSPrivacyCollectedDataTypeCoarseLocation",
+  "NSPrivacyCollectedDataTypeCustomerSupport",
+  "NSPrivacyCollectedDataTypeOtherUserContent",
+  "NSPrivacyCollectedDataTypeUserID",
+  "NSPrivacyCollectedDataTypePurchaseHistory",
+  "NSPrivacyCollectedDataTypeOtherUsageData",
+  "NSPrivacyCollectedDataTypeOtherDataTypes",
+].map((dataType) => ({
+  NSPrivacyCollectedDataType: dataType,
+  NSPrivacyCollectedDataTypeLinked: true,
+  NSPrivacyCollectedDataTypeTracking: false,
+  NSPrivacyCollectedDataTypePurposes: [APP_FUNCTIONALITY_PURPOSE],
+}));
 
 const resolveIosBuildProfile = () => {
   const profile = process.env.IOS_BUILD_PROFILE?.trim() || "development";
@@ -55,6 +74,10 @@ module.exports = () => {
     ios: {
       ...staticConfig.expo.ios,
       infoPlist: iosInfoPlist,
+      privacyManifests: {
+        NSPrivacyCollectedDataTypes: MONEYDRIVE_COLLECTED_DATA_TYPES,
+        NSPrivacyTracking: false,
+      },
     },
     plugins,
   };

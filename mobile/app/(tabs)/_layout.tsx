@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: "50%",
     marginLeft: -32,
-    bottom: spacing.lg,
+    bottom: spacing.xl + spacing.md,
     zIndex: 20,
     alignItems: "center",
     justifyContent: "center",

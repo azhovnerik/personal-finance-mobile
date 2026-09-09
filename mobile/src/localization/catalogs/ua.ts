@@ -417,6 +417,8 @@ const ua = {
   Legal: "Правова інформація",
   "Privacy Policy": "Політика конфіденційності",
   "Unable to open the Privacy Policy.": "Не вдалося відкрити Політику конфіденційності.",
+  "Terms of Use (EULA)": "Умови використання (EULA)",
+  "Unable to open the Terms of Use.": "Не вдалося відкрити Умови використання.",
 } as const;
 
 export default ua;

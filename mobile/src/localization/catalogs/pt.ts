@@ -417,6 +417,8 @@ const pt = {
   Legal: "Informações legais",
   "Privacy Policy": "Política de Privacidade",
   "Unable to open the Privacy Policy.": "Não foi possível abrir a Política de Privacidade.",
+  "Terms of Use (EULA)": "Termos de Utilização (EULA)",
+  "Unable to open the Terms of Use.": "Não foi possível abrir os Termos de Utilização.",
 } as const;
 
 export default pt;

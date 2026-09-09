@@ -417,6 +417,8 @@ const trTR = {
   Legal: "Yasal",
   "Privacy Policy": "Gizlilik Politikası",
   "Unable to open the Privacy Policy.": "Gizlilik Politikası açılamıyor.",
+  "Terms of Use (EULA)": "Kullanım Koşulları (EULA)",
+  "Unable to open the Terms of Use.": "Kullanım Koşulları açılamıyor.",
 } as const;
 
 export default trTR;

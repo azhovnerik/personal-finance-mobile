@@ -417,6 +417,8 @@ const zhCN = {
   Legal: "法律信息",
   "Privacy Policy": "隐私政策",
   "Unable to open the Privacy Policy.": "无法打开隐私政策。",
+  "Terms of Use (EULA)": "使用条款 (EULA)",
+  "Unable to open the Terms of Use.": "无法打开使用条款。",
 } as const;
 
 export default zhCN;

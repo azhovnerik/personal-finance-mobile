@@ -417,6 +417,8 @@ const nlNL = {
   Legal: "Juridisch",
   "Privacy Policy": "Privacybeleid",
   "Unable to open the Privacy Policy.": "Het Privacybeleid kan niet worden geopend.",
+  "Terms of Use (EULA)": "Gebruiksvoorwaarden (EULA)",
+  "Unable to open the Terms of Use.": "De Gebruiksvoorwaarden kunnen niet worden geopend.",
 } as const;
 
 export default nlNL;

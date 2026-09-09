@@ -417,6 +417,8 @@ const zhTW = {
   Legal: "法律資訊",
   "Privacy Policy": "隱私權政策",
   "Unable to open the Privacy Policy.": "無法開啟隱私權政策。",
+  "Terms of Use (EULA)": "使用條款（EULA）",
+  "Unable to open the Terms of Use.": "無法開啟使用條款。",
 } as const;
 
 export default zhTW;

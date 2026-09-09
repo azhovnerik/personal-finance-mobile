@@ -37,6 +37,9 @@ const periodLabels: Record<string, string> = {
   MONTHLY: "Monthly",
 };
 
+const PRIVACY_POLICY_URL = "https://www.moneydrive.me/en/privacy";
+const TERMS_OF_USE_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+
 const userErrorMessage = (error: unknown) => {
   if (error instanceof StorePurchaseCancelledError) {
     return null;
@@ -274,6 +277,22 @@ export default function SubscriptionsScreen() {
     }
   };
 
+  const openPrivacyPolicy = async () => {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert(translate("Unable to open the Privacy Policy."));
+    }
+  };
+
+  const openTermsOfUse = async () => {
+    try {
+      await Linking.openURL(TERMS_OF_USE_URL);
+    } catch {
+      Alert.alert(translate("Unable to open the Terms of Use."));
+    }
+  };
+
   return (
     <ScreenContainer>
       <ScrollView
@@ -429,6 +448,22 @@ export default function SubscriptionsScreen() {
             />
           </>
         ) : null}
+
+        <Card style={styles.card}>
+          <Text variant="subtitle">{translate("Legal")}</Text>
+          <Button
+            title={translate("Privacy Policy")}
+            variant="outline"
+            tone="secondary"
+            onPress={() => void openPrivacyPolicy()}
+          />
+          <Button
+            title={translate("Terms of Use (EULA)")}
+            variant="outline"
+            tone="secondary"
+            onPress={() => void openTermsOfUse()}
+          />
+        </Card>
       </ScrollView>
     </ScreenContainer>
   );

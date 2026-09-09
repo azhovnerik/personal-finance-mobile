@@ -417,6 +417,8 @@ const koKR = {
   Legal: "법률 정보",
   "Privacy Policy": "개인정보 처리방침",
   "Unable to open the Privacy Policy.": "개인정보 처리방침을 열 수 없습니다.",
+  "Terms of Use (EULA)": "이용 약관(EULA)",
+  "Unable to open the Terms of Use.": "이용 약관을 열 수 없습니다.",
 } as const;
 
 export default koKR;

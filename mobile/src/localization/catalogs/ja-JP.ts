@@ -417,6 +417,8 @@ const jaJP = {
   Legal: "法的情報",
   "Privacy Policy": "プライバシーポリシー",
   "Unable to open the Privacy Policy.": "プライバシーポリシーを開けません。",
+  "Terms of Use (EULA)": "利用規約（EULA）",
+  "Unable to open the Terms of Use.": "利用規約を開けません。",
 } as const;
 
 export default jaJP;

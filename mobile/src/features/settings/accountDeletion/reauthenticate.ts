@@ -14,11 +14,12 @@ import { configureGoogleSignIn } from "../../auth/googleSignIn";
 import type { AppleDeletionCredential } from "./types";
 
 export const requestGoogleDeletionCredential = async (): Promise<string | null> => {
-  if (Platform.OS !== "ios") {
+  if (Platform.OS !== "ios" && Platform.OS !== "android") {
     return null;
   }
   configureGoogleSignIn();
   try {
+    await GoogleOneTapSignIn.checkPlayServices();
     const response = await GoogleOneTapSignIn.presentExplicitSignIn();
     if (isCancelledResponse(response)) {
       throw new Error(translate("Unable to sign in with Google. Try again."));

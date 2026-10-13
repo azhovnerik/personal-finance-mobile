@@ -11,19 +11,19 @@ export const configureGoogleSignIn = () => {
 
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
-  if (!webClientId || !iosClientId) {
+  if (!webClientId || (Platform.OS === "ios" && !iosClientId)) {
     throw new Error(translate("Google Sign-In is not configured for this build."));
   }
 
   GoogleOneTapSignIn.configure({
     webClientId,
-    iosClientId,
+    ...(Platform.OS === "ios" ? { iosClientId } : {}),
   });
   googleSignInConfigured = true;
 };
 
 export const signOutGoogleSession = async (): Promise<void> => {
-  if (Platform.OS !== "ios") {
+  if (Platform.OS !== "ios" && Platform.OS !== "android") {
     return;
   }
 

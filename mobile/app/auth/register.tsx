@@ -129,13 +129,6 @@ export default function RegisterScreen() {
         }
     };
 
-    const onClick = () => {
-        const defaultPassword = process.env.EXPO_PUBLIC_DEFAULT_PASSWORD ?? "";
-        setPassword(defaultPassword);
-        setConfirmPassword(defaultPassword);
-        setError(defaultPassword || null);
-    }
-
     return (
         <ScreenContainer style={styles.screen}>
             <Card style={styles.card}>
@@ -188,7 +181,6 @@ export default function RegisterScreen() {
                         disabled={isSubmitting}/>
                 <Button title={translate("Back to sign in")} variant="outline" tone="secondary"
                         onPress={() => router.replace("/login")}/>
-                <Button title={translate("Fill password")} variant="outline" tone="secondary" onPress={() => onClick()}/>
             </Card>
         </ScreenContainer>
     );

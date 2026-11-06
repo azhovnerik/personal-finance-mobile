@@ -4,6 +4,7 @@ import { Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, View 
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { AccountDeletionCard } from "../src/features/settings/accountDeletion/AccountDeletionCard";
 import { logout } from "../src/features/auth/logout";
 import { useRestoreSubscriptions } from "../src/features/subscriptions/useRestoreSubscriptions";
 import {
@@ -464,6 +465,9 @@ export default function SubscriptionsScreen() {
             onPress={() => void openTermsOfUse()}
           />
         </Card>
+        {!status.isLoadingStatus && status.statusResponse?.premiumActive === false ? (
+          <AccountDeletionCard subscriptionStatus={status.statusResponse} disabled={isBusy} />
+        ) : null}
       </ScrollView>
     </ScreenContainer>
   );

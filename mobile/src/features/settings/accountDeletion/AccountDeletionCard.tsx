@@ -31,6 +31,7 @@ export const AccountDeletionCard = ({ subscriptionStatus, disabled = false }: Ac
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleteReauthenticationPending, setIsDeleteReauthenticationPending] = useState(false);
+  const normalizedDeleteConfirmation = deleteConfirmation.trim();
 
   const hasActiveAppleSubscription = useMemo(
     () => subscriptionStatus?.sources.some(
@@ -61,7 +62,7 @@ export const AccountDeletionCard = ({ subscriptionStatus, disabled = false }: Ac
   const isDeleteActionDisabled = disabled
     || deleteAccountMutation.isPending
     || isDeleteReauthenticationPending
-    || deleteConfirmation !== "DELETE"
+    || normalizedDeleteConfirmation !== "DELETE"
     || !deleteMethod
     || (deleteMethod === "PASSWORD" && !deletePassword);
 
@@ -82,14 +83,14 @@ export const AccountDeletionCard = ({ subscriptionStatus, disabled = false }: Ac
   }, []);
 
   const handleDeleteAccount = useCallback(async () => {
-    if (!deleteMethod || deleteConfirmation !== "DELETE") {
+    if (!deleteMethod || normalizedDeleteConfirmation !== "DELETE") {
       return;
     }
     setDeleteError(null);
 
     try {
       const payload = {
-        confirmation: deleteConfirmation,
+        confirmation: normalizedDeleteConfirmation,
         method: deleteMethod,
         ...(deleteMethod === "PASSWORD" ? { currentPassword: deletePassword } : {}),
       };
@@ -141,7 +142,7 @@ export const AccountDeletionCard = ({ subscriptionStatus, disabled = false }: Ac
     }
   }, [
     deleteAccountMutation,
-    deleteConfirmation,
+    normalizedDeleteConfirmation,
     deleteMethod,
     deletePassword,
     queryClient,

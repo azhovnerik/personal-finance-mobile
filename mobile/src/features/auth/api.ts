@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { localizeSystemMessage, translate } from "../../localization";
 import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken, removeOnboardingBaseCurrencySelected, removeToken, setToken } from "../../storage/auth";
+import { cancelDailyReminder } from "../notifications/dailyReminder";
 import type {
   ApiErrorResponse,
   AuthResponse,
@@ -293,5 +294,10 @@ export const persistAuthTokenFromResponse = async (response: { token?: string | 
 
 export const clearAuthSession = async () => {
   await removeToken();
+  try {
+    await cancelDailyReminder();
+  } catch (error) {
+    console.warn("Unable to cancel daily reminder", error);
+  }
   await removeOnboardingBaseCurrencySelected();
 };

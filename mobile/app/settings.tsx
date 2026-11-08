@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import type { CurrencyCode } from "../src/shared/api/dto";
 import { clearAuthSession } from "../src/features/auth/api";
 import { AccountDeletionCard } from "../src/features/settings/accountDeletion/AccountDeletionCard";
+import { DailyReminderCard } from "../src/features/notifications/DailyReminderCard";
 import { useChangePassword } from "../src/features/settings/useChangePassword";
 import { useResendPendingEmail } from "../src/features/settings/useResendPendingEmail";
 import { useSettingsProfile } from "../src/features/settings/useSettingsProfile";
@@ -338,6 +339,8 @@ export default function SettingsScreen() {
             onPress={() => void handleSaveProfile()}
           />
         </Card>
+
+        <DailyReminderCard />
 
         {profile?.pendingEmail ? (
           <Card style={styles.card}>

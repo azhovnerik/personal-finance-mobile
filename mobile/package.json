@@ -11,6 +11,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "localization:check": "node scripts/check-localization.js",
+    "test:reminders": "node --test scripts/daily-reminder.test.cjs",
     "generate:fluent-emoji-icons": "node scripts/generate-fluent-emoji-icons.js"
   },
   "dependencies": {

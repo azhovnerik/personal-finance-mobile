@@ -1,4 +1,12 @@
 const nlNL = {
+  "Daily reminder": "Dagelijkse herinnering",
+  "Remind me at 21:00 local time.": "Herinner mij om 21:00 lokale tijd.",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "Schakel deze herinnering hier uit of beheer meldingen in de iOS-instellingen.",
+  "Notifications are disabled in iOS Settings.": "Meldingen zijn uitgeschakeld in de iOS-instellingen.",
+  "Open iOS Settings": "iOS-instellingen openen",
+  "Unable to update reminder settings. Please try again.": "De herinneringsinstellingen konden niet worden bijgewerkt. Probeer het opnieuw.",
+  "Have you recorded today's expenses?": "Heb je de uitgaven van vandaag vastgelegd?",
+
   "+{{amount}} above plan 🚀": "+{{amount}} boven plan 🚀",
   "30 days": "30 dagen",
   "A subcategory cannot contain nested subcategories.": "Een subcategorie kan geen geneste subcategorieën bevatten.",

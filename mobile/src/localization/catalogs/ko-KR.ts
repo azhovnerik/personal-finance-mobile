@@ -1,4 +1,12 @@
 const koKR = {
+  "Daily reminder": "매일 알림",
+  "Remind me at 21:00 local time.": "현지 시간 오후 9시에 알려드립니다.",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "여기에서 알림을 끄거나 iOS 설정에서 알림을 관리하세요.",
+  "Notifications are disabled in iOS Settings.": "iOS 설정에서 알림이 꺼져 있습니다.",
+  "Open iOS Settings": "iOS 설정 열기",
+  "Unable to update reminder settings. Please try again.": "알림 설정을 업데이트하지 못했습니다. 다시 시도해 주세요.",
+  "Have you recorded today's expenses?": "오늘 지출을 기록하셨나요?",
+
   "+{{amount}} above plan 🚀": "예산보다 {{amount}} 초과 🚀",
   "30 days": "30일",
   "A subcategory cannot contain nested subcategories.": "하위 카테고리에는 중첩된 하위 카테고리가 포함될 수 없습니다.",

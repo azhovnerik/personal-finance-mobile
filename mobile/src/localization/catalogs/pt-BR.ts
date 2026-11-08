@@ -1,4 +1,12 @@
 const ptBR = {
+  "Daily reminder": "Lembrete diário",
+  "Remind me at 21:00 local time.": "Lembrar às 21:00, horário local.",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "Desative este lembrete aqui ou gerencie as notificações nos ajustes do iOS.",
+  "Notifications are disabled in iOS Settings.": "As notificações estão desativadas nos ajustes do iOS.",
+  "Open iOS Settings": "Abrir ajustes do iOS",
+  "Unable to update reminder settings. Please try again.": "Não foi possível atualizar os ajustes do lembrete. Tente novamente.",
+  "Have you recorded today's expenses?": "Você já registrou as despesas de hoje?",
+
   "+{{amount}} above plan 🚀": "+{{amount}} acima do plano 🚀",
   "30 days": "30 dias",
   "A subcategory cannot contain nested subcategories.": "Uma subcategoria não pode conter subcategorias aninhadas.",

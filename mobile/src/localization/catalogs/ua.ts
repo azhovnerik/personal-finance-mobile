@@ -1,4 +1,12 @@
 const ua = {
+  "Daily reminder": "Щоденне нагадування",
+  "Remind me at 21:00 local time.": "Нагадувати о 21:00 за місцевим часом.",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "Вимкніть це нагадування тут або керуйте сповіщеннями в налаштуваннях iOS.",
+  "Notifications are disabled in iOS Settings.": "Сповіщення вимкнено в налаштуваннях iOS.",
+  "Open iOS Settings": "Відкрити налаштування iOS",
+  "Unable to update reminder settings. Please try again.": "Не вдалося оновити налаштування нагадування. Спробуйте ще раз.",
+  "Have you recorded today's expenses?": "Ви вже внесли сьогоднішні витрати?",
+
   "+{{amount}} above plan 🚀": "+{{amount}} понад план 🚀",
   "30 days": "30 днів",
   "A subcategory cannot contain nested subcategories.": "Підкатегорія не може містити вкладені підкатегорії.",

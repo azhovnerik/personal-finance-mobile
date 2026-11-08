@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { localizeSystemMessage, translate } from "../../localization";
 import { API_BASE_URL } from "../../shared/lib/api/config";
 import { getToken, removeOnboardingBaseCurrencySelected, removeToken, setToken } from "../../storage/auth";
@@ -154,6 +155,7 @@ export const login = async (email: string, password: string) =>
 export const loginWithGoogle = async (idToken: string) =>
   requestJson<AuthResponse>("/api/v2/user/auth/google", {
     method: "POST",
+    headers: { "X-Client-Platform": Platform.OS },
     body: { idToken },
   });
 
@@ -170,12 +172,14 @@ export const loginWithApple = async (
 ) =>
   requestJson<AuthResponse>("/api/v2/user/auth/apple", {
     method: "POST",
+    headers: { "X-Client-Platform": Platform.OS },
     body: { identityToken, nonce, name, authorizationCode },
   });
 
 export const register = async (payload: { email: string; name: string; password: string; language?: string }) =>
   requestJson<RegisterResponse>("/api/v2/user/auth/register", {
     method: "POST",
+    headers: { "X-Client-Platform": Platform.OS },
     body: payload,
   });
 

@@ -19,7 +19,7 @@ export const useGoogleLogin = () => {
   const [error, setError] = useState<string | null>(null);
 
   const login = useCallback(async (): Promise<AuthResponse | null> => {
-    if (Platform.OS !== "ios") {
+    if (Platform.OS !== "ios" && Platform.OS !== "android") {
       return null;
     }
 
@@ -27,6 +27,7 @@ export const useGoogleLogin = () => {
     setError(null);
     try {
       configureGoogleSignIn();
+      await GoogleOneTapSignIn.checkPlayServices();
 
       let response = await GoogleOneTapSignIn.signIn();
       if (isNoSavedCredentialFoundResponse(response)) {
@@ -62,6 +63,6 @@ export const useGoogleLogin = () => {
     login,
     isLoading,
     error,
-    isAvailable: Platform.OS === "ios",
+    isAvailable: Platform.OS === "ios" || Platform.OS === "android",
   };
 };

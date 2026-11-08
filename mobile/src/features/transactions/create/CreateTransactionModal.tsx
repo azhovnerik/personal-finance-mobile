@@ -311,7 +311,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
         >
           <View style={styles.amountRow}>
             <View style={styles.currencyBadge}>
-              <Text style={styles.currencyText}>{mockUser.baseCurrency ?? "UAH"}</Text>
+              <Text style={styles.currencyText}>{selectedAccount?.currency ?? mockUser.baseCurrency ?? "UAH"}</Text>
             </View>
             <View style={styles.amountInput}>
               <Text variant="caption">{translate("Amount")}</Text>

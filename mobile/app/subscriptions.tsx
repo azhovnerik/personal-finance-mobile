@@ -458,12 +458,14 @@ export default function SubscriptionsScreen() {
             tone="secondary"
             onPress={() => void openPrivacyPolicy()}
           />
-          <Button
-            title={translate("Terms of Use (EULA)")}
-            variant="outline"
-            tone="secondary"
-            onPress={() => void openTermsOfUse()}
-          />
+          {Platform.OS === "ios" ? (
+            <Button
+              title={translate("Terms of Use (EULA)")}
+              variant="outline"
+              tone="secondary"
+              onPress={() => void openTermsOfUse()}
+            />
+          ) : null}
         </Card>
         {!status.isLoadingStatus && status.statusResponse?.premiumActive === false ? (
           <AccountDeletionCard subscriptionStatus={status.statusResponse} disabled={isBusy} />

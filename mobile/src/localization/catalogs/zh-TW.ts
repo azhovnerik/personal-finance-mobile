@@ -1,4 +1,12 @@
 const zhTW = {
+  "Daily reminder": "每日提醒",
+  "Remind me at 21:00 local time.": "在當地時間21:00提醒我。",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "在此關閉提醒，或在iOS設定中管理通知。",
+  "Notifications are disabled in iOS Settings.": "通知已在iOS設定中關閉。",
+  "Open iOS Settings": "開啟iOS設定",
+  "Unable to update reminder settings. Please try again.": "無法更新提醒設定。請再試一次。",
+  "Have you recorded today's expenses?": "今天的支出記帳了嗎？",
+
   "+{{amount}} above plan 🚀": "超出預算 {{amount}} 🚀",
   "30 days": "30天",
   "A subcategory cannot contain nested subcategories.": "子類別不能包含巢狀子類別。",

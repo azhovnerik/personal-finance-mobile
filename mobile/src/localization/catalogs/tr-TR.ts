@@ -1,4 +1,12 @@
 const trTR = {
+  "Daily reminder": "Günlük hatırlatıcı",
+  "Remind me at 21:00 local time.": "Yerel saatle 21:00’de hatırlat.",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "Bu hatırlatıcıyı buradan kapatabilir veya iOS Ayarları’ndan bildirimleri yönetebilirsiniz.",
+  "Notifications are disabled in iOS Settings.": "Bildirimler iOS Ayarları’nda kapalı.",
+  "Open iOS Settings": "iOS Ayarları’nı aç",
+  "Unable to update reminder settings. Please try again.": "Hatırlatıcı ayarları güncellenemedi. Lütfen tekrar deneyin.",
+  "Have you recorded today's expenses?": "Bugünün harcamalarını kaydettiniz mi?",
+
   "+{{amount}} above plan 🚀": "+{{amount}} planın üstünde 🚀",
   "30 days": "30 gün",
   "A subcategory cannot contain nested subcategories.": "Bir alt kategori iç içe geçmiş alt kategoriler içeremez.",

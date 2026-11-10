@@ -1,4 +1,12 @@
 const jaJP = {
+  "Daily reminder": "毎日のリマインダー",
+  "Remind me at 21:00 local time.": "現地時間の21:00に通知します。",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "ここでリマインダーをオフにするか、iOSの設定で通知を管理できます。",
+  "Notifications are disabled in iOS Settings.": "iOSの設定で通知が無効になっています。",
+  "Open iOS Settings": "iOSの設定を開く",
+  "Unable to update reminder settings. Please try again.": "リマインダーの設定を更新できませんでした。もう一度お試しください。",
+  "Have you recorded today's expenses?": "今日の支出は記録しましたか？",
+
   "+{{amount}} above plan 🚀": "予算を{{amount}}超過 🚀",
   "30 days": "30日",
   "A subcategory cannot contain nested subcategories.": "サブカテゴリには、ネストされたサブカテゴリを含めることはできません。",

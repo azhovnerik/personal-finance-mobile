@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { AccountDeletionCard } from "../src/features/settings/accountDeletion/AccountDeletionCard";
+import { DailyReminderCard } from "../src/features/notifications/DailyReminderCard";
 import { logout } from "../src/features/auth/logout";
 import { useRestoreSubscriptions } from "../src/features/subscriptions/useRestoreSubscriptions";
 import {
@@ -466,7 +467,10 @@ export default function SubscriptionsScreen() {
           />
         </Card>
         {!status.isLoadingStatus && status.statusResponse?.premiumActive === false ? (
-          <AccountDeletionCard subscriptionStatus={status.statusResponse} disabled={isBusy} />
+          <>
+            <DailyReminderCard />
+            <AccountDeletionCard subscriptionStatus={status.statusResponse} disabled={isBusy} />
+          </>
         ) : null}
       </ScrollView>
     </ScreenContainer>

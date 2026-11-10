@@ -6,6 +6,7 @@ import { LocalizationProvider } from "../src/localization/LocalizationProvider";
 import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
 import { useStorePurchaseObserver } from "../src/features/subscriptions/useStorePurchaseObserver";
 import { getToken } from "../src/storage/auth";
+import { DailyReminderObserver } from "../src/features/notifications/DailyReminderObserver";
 
 const isSubscriptionExemptPath = (pathname: string, firstSegment: string | undefined) =>
   (pathname === "/" && firstSegment !== "(tabs)") ||
@@ -50,6 +51,7 @@ const LocalizedApp = () => {
   return (
     <>
       <StorePurchaseObserver />
+      <DailyReminderObserver />
       <SubscriptionGate />
       <Stack
         screenOptions={{

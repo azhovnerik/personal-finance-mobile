@@ -1,4 +1,12 @@
 const zhCN = {
+  "Daily reminder": "每日提醒",
+  "Remind me at 21:00 local time.": "在当地时间21:00提醒我。",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "在此关闭提醒，或在iOS设置中管理通知。",
+  "Notifications are disabled in iOS Settings.": "通知已在iOS设置中关闭。",
+  "Open iOS Settings": "打开iOS设置",
+  "Unable to update reminder settings. Please try again.": "无法更新提醒设置。请重试。",
+  "Have you recorded today's expenses?": "今天的支出记账了吗？",
+
   "+{{amount}} above plan 🚀": "超出预算 {{amount}} 🚀",
   "30 days": "30天",
   "A subcategory cannot contain nested subcategories.": "子类别不能包含嵌套子类别。",

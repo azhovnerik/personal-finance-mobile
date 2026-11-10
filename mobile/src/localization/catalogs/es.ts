@@ -1,4 +1,12 @@
 const es = {
+  "Daily reminder": "Recordatorio diario",
+  "Remind me at 21:00 local time.": "Recordarme a las 21:00, hora local.",
+  "Turn this reminder off here, or manage notifications in iOS Settings.": "Desactiva este recordatorio aquí o gestiona las notificaciones en los ajustes de iOS.",
+  "Notifications are disabled in iOS Settings.": "Las notificaciones están desactivadas en los ajustes de iOS.",
+  "Open iOS Settings": "Abrir ajustes de iOS",
+  "Unable to update reminder settings. Please try again.": "No se pudieron actualizar los ajustes del recordatorio. Inténtalo de nuevo.",
+  "Have you recorded today's expenses?": "¿Has registrado los gastos de hoy?",
+
   "+{{amount}} above plan 🚀": "+{{amount}} por encima del plan 🚀",
   "30 days": "30 días",
   "A subcategory cannot contain nested subcategories.": "Una subcategoría no puede contener subcategorías anidadas.",

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { AppState, Linking, Platform, StyleSheet, Switch, View } from "react-native";
+import { AppState, Platform, StyleSheet, Switch, View } from "react-native";
 
 import { translate } from "../../localization";
-import { Button, Card, Text, colors, spacing } from "../../shared/ui";
+import { Card, Text, colors, spacing } from "../../shared/ui";
 import { getDailyReminderState, setDailyReminderEnabled, subscribeDailyReminder } from "./dailyReminder";
 
 export function DailyReminderCard() {
@@ -68,14 +68,6 @@ export function DailyReminderCard() {
         {translate("Turn this reminder off here, or manage notifications in iOS Settings.")}
       </Text>
       {state.blocked ? <Text variant="caption">{translate("Notifications are disabled in iOS Settings.")}</Text> : null}
-      <Button
-        title={translate("Open iOS Settings")}
-        variant="outline"
-        size="sm"
-        onPress={() => {
-          void Linking.openSettings().catch(() => setError(true));
-        }}
-      />
       {error ? <Text style={styles.error}>{translate("Unable to update reminder settings. Please try again.")}</Text> : null}
     </Card>
   );

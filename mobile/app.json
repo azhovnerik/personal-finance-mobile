@@ -3,7 +3,7 @@
     "name": "moneydrive.me",
     "slug": "moneydrive.me",
     "scheme": "moneydrive",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "me.moneydrive.app",
-      "buildNumber": "9",
+      "buildNumber": "14",
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDevelopmentRegion": "en",

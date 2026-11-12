@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,6 +22,7 @@ const parseAccountParam = (raw?: string): AccountDto | null => {
 };
 
 export default function AccountDetailsScreen() {
+  const { allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ account?: string; accountId?: string }>();
@@ -34,6 +36,7 @@ export default function AccountDetailsScreen() {
   const baseCurrency = "UAH";
 
   const openEdit = () => {
+    if (!allowWrite()) return;
     if (!selectedAccount) {
       return;
     }
@@ -42,6 +45,7 @@ export default function AccountDetailsScreen() {
   };
 
   const openBalance = () => {
+    if (!allowWrite()) return;
     if (!selectedAccount) {
       return;
     }
@@ -50,6 +54,7 @@ export default function AccountDetailsScreen() {
   };
 
   const confirmDelete = () => {
+    if (!allowWrite()) return;
     if (!selectedAccount?.id) {
       return;
     }

@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -59,6 +60,7 @@ const getLast30DaysPeriod = () => {
 };
 
 export default function DashboardScreen() {
+  const { allowWrite } = useFinancialAccess();
   useLocalization();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -264,7 +266,7 @@ export default function DashboardScreen() {
             <Card style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <Text variant="subtitle">{translate("Accounts")}</Text>
-                <Button title={translate("Add account")} variant="outline" tone="primary" size="sm" onPress={() => router.push("/accounts/edit")} />
+                <Button title={translate("Add account")} variant="outline" tone="primary" size="sm" onPress={() => { if (allowWrite()) router.push("/accounts/edit"); }} />
               </View>
               <View style={styles.accountList}>
                 {summary.accounts.length === 0 ? <Text variant="caption">{translate("No accounts.")}</Text> : null}

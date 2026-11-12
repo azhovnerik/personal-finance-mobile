@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { getCurrentIntlLocale, translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
@@ -240,6 +241,7 @@ const CategorySection = ({
 };
 
 export default function BudgetsScreen() {
+  const { allowWrite } = useFinancialAccess();
   useLocalization();
   const router = useRouter();
   const { budgets, isLoading, isRefreshing, error, refresh } = useBudgets();
@@ -269,6 +271,7 @@ export default function BudgetsScreen() {
   };
 
   const openAddCategory = (budgetId: string, type: "INCOME" | "EXPENSES", categoryId?: string) => {
+    if (!allowWrite()) return;
     const categoryParam = categoryId ? `&categoryId=${categoryId}` : "";
     router.push(`/budgets/categories/add?budgetId=${budgetId}&type=${type}${categoryParam}`);
   };
@@ -282,6 +285,7 @@ export default function BudgetsScreen() {
   };
 
   const onCreateBudget = async () => {
+    if (!allowWrite()) return;
     await createBudget(monthApiFromDate(selectedMonth));
     await refresh();
   };

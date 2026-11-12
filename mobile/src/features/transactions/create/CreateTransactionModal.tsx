@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../subscriptions/FinancialAccessProvider";
 import { localizeSystemMessage, translate } from "../../../localization";
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -115,6 +116,7 @@ const toAccount = (
 };
 
 export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionModalProps) => {
+  const { allowWrite } = useFinancialAccess();
   const handleUnauthorized = useUnauthorizedRedirect();
   const insets = useSafeAreaInsets();
   const [formState, setFormState] = useState<TransactionFormState>(() => getInitialFormState());
@@ -180,6 +182,7 @@ export const CreateTransactionModal = ({ visible, onClose }: CreateTransactionMo
   };
 
   const handleSave = async () => {
+    if (!allowWrite()) { onClose(); return; }
     if (isSaving) {
       return;
     }

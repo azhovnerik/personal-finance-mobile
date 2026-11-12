@@ -427,6 +427,10 @@ const ua = {
   "Unable to open the Privacy Policy.": "Не вдалося відкрити Політику конфіденційності.",
   "Terms of Use (EULA)": "Умови використання (EULA)",
   "Unable to open the Terms of Use.": "Не вдалося відкрити Умови використання.",
+  "Your data is available in read-only mode.": "Ваші дані доступні в режимі перегляду.",
+  "Continue tracking your finances": "Продовжуйте вести облік фінансів",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "Оформіть підписку, щоб додавати, редагувати та видаляти фінансові дані. Перегляд та експорт збережених даних на сайті залишаються доступними.",
+  "Continue viewing": "Продовжити перегляд",
 } as const;
 
 export default ua;

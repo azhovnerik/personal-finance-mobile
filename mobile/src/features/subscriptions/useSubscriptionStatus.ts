@@ -1,3 +1,4 @@
+import { getAuthSessionVersion } from "../../storage/auth";
 import { translate } from "../../localization";
 import { useCallback, useEffect } from "react";
 import { AppState } from "react-native";
@@ -12,10 +13,11 @@ export const useSubscriptionStatus = (enabled = true) => {
   const { withSubscriptionAuth } = useSubscriptionAuth();
 
   const query = useQuery({
-    queryKey: SUBSCRIPTION_STATUS_QUERY_KEY,
+    queryKey: [...SUBSCRIPTION_STATUS_QUERY_KEY, getAuthSessionVersion()],
     queryFn: () => withSubscriptionAuth(getSubscriptionStatus),
     enabled,
     staleTime: 0,
+    refetchInterval: 60_000,
     refetchOnMount: "always",
   });
 

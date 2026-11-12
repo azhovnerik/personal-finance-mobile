@@ -1,3 +1,4 @@
+import { financialFetch as fetch } from "../subscriptions/financialAccessEvents";
 import { localizeSystemMessage, translate } from "../../localization";
 import { useCallback, useEffect, useMemo, useState } from "react";
 

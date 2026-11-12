@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../../src/features/subscriptions/FinancialAccessProvider";
 import { localizeSystemMessage, translate } from "../../../src/localization";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -18,6 +19,7 @@ const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
 };
 
 export default function BudgetCategoryDetailsScreen() {
+  const { canWrite, allowWrite } = useFinancialAccess();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; budgetId?: string }>();
   const categoryId = typeof params.id === "string" ? params.id : undefined;
@@ -68,6 +70,7 @@ export default function BudgetCategoryDetailsScreen() {
   };
 
   const onSave = async () => {
+    if (!allowWrite()) return;
     if (!budgetId || !targetCategory || !targetCategory.id) {
       return;
     }
@@ -93,6 +96,7 @@ export default function BudgetCategoryDetailsScreen() {
   };
 
   const onDelete = () => {
+    if (!allowWrite()) return;
     if (!budgetId || !targetCategory || !targetCategory.id) {
       return;
     }
@@ -180,7 +184,7 @@ export default function BudgetCategoryDetailsScreen() {
 
             <Card style={styles.formCard}>
               <Text variant="subtitle">{translate("Editing")}</Text>
-              <View style={styles.field}>
+              <View pointerEvents={canWrite ? "auto" : "none"} style={styles.field}>
                 <Text variant="caption">
                   {translate("Planned amount ({{currency}})", { currency: categoryCurrency })}
                 </Text>
@@ -196,7 +200,7 @@ export default function BudgetCategoryDetailsScreen() {
                 </Pressable>
               </View>
 
-              <View style={styles.field}>
+              <View pointerEvents={canWrite ? "auto" : "none"} style={styles.field}>
                 <Text variant="caption">{translate("Comment")}</Text>
                 <Input
                   value={commentInput}

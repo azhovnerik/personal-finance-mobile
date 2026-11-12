@@ -427,6 +427,10 @@ const trTR = {
   "Unable to open the Privacy Policy.": "Gizlilik Politikası açılamıyor.",
   "Terms of Use (EULA)": "Kullanım Koşulları (EULA)",
   "Unable to open the Terms of Use.": "Kullanım Koşulları açılamıyor.",
+  "Your data is available in read-only mode.": "Verileriniz salt okunur modda kullanılabilir.",
+  "Continue tracking your finances": "Mali durumunuzu takip etmeye devam edin",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "Finansal veri eklemek, düzenlemek veya silmek için abone olun. Kaydedilen verilerinizi web sitesinde görüntülemeye ve dışa aktarmaya devam edebilirsiniz.",
+  "Continue viewing": "Görüntülemeye devam et",
 } as const;
 
 export default trTR;

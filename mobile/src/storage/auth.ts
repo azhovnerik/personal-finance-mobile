@@ -4,6 +4,8 @@ const TOKEN_KEY = "auth_token";
 const ONBOARDING_BASE_CURRENCY_SELECTED_KEY = "onboarding_base_currency_selected";
 
 let unauthorizedTransitionClaimed = false;
+let authSessionVersion = 0;
+export const getAuthSessionVersion = () => authSessionVersion;
 
 export const claimUnauthorizedTransition = () => {
   if (unauthorizedTransitionClaimed) {
@@ -43,6 +45,7 @@ export const getToken = async (): Promise<string | null> => {
 
 export const setToken = async (token: string): Promise<void> => {
   resetUnauthorizedTransition();
+  authSessionVersion++;
   if (await isSecureStoreAvailable()) {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     return;
@@ -52,6 +55,7 @@ export const setToken = async (token: string): Promise<void> => {
 };
 
 export const removeToken = async (): Promise<void> => {
+  authSessionVersion++;
   if (await isSecureStoreAvailable()) {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     return;

@@ -427,6 +427,10 @@ const nlNL = {
   "Unable to open the Privacy Policy.": "Het Privacybeleid kan niet worden geopend.",
   "Terms of Use (EULA)": "Gebruiksvoorwaarden (EULA)",
   "Unable to open the Terms of Use.": "De Gebruiksvoorwaarden kunnen niet worden geopend.",
+  "Your data is available in read-only mode.": "Je gegevens zijn beschikbaar in de leesmodus.",
+  "Continue tracking your finances": "Blijf je financiën bijhouden",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "Neem een abonnement om financiële gegevens toe te voegen, te bewerken of te verwijderen. Je kunt opgeslagen gegevens nog steeds bekijken en exporteren op de website.",
+  "Continue viewing": "Verder bekijken",
 } as const;
 
 export default nlNL;

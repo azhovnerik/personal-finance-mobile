@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { Alert, Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -110,6 +111,7 @@ const toBackendDateTime = (date: string, previousDateTime?: string | null) => {
 };
 
 export default function EditTransactionScreen() {
+  const { canWrite, allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ transaction?: string }>();
@@ -177,6 +179,7 @@ export default function EditTransactionScreen() {
   };
 
   const handleSave = async () => {
+    if (!allowWrite()) return;
     if (!initialTransaction || !initialTransaction.id) {
       setLocalError(translate("Unable to save the transaction."));
       return;
@@ -243,6 +246,7 @@ export default function EditTransactionScreen() {
   };
 
   const handleDelete = () => {
+    if (!allowWrite()) return;
     if (!initialTransaction?.id) {
       setLocalError(translate("Unable to delete the transaction."));
       return;
@@ -278,7 +282,7 @@ export default function EditTransactionScreen() {
           <Pressable onPress={() => router.back()}>
             <Text style={styles.modalAction}>{translate("Cancel")}</Text>
           </Pressable>
-          <Text variant="subtitle">{translate("Edit transaction")}</Text>
+          <Text variant="subtitle">{canWrite ? translate("Edit transaction") : translate("Transaction")}</Text>
           <View style={styles.modalActionSpacer} />
         </View>
 
@@ -287,6 +291,7 @@ export default function EditTransactionScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="always"
         >
+          <View pointerEvents={canWrite ? "auto" : "none"}>
           <View style={styles.amountRow}>
             <View style={styles.currencyBadge}>
               <Text style={styles.currencyText}>{initialTransaction?.currency ?? mockUser.baseCurrency ?? "UAH"}</Text>
@@ -362,13 +367,14 @@ export default function EditTransactionScreen() {
               setFormState((prev) => ({ ...prev, accountId: value }));
             }}
           />
+          </View>
         </ScrollView>
 
         <View style={styles.footer}>
           {localError ? <Text style={styles.errorText}>{localError}</Text> : null}
           {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
           <Button
-            title={isSaving ? translate("Saving...") : translate("Save")}
+            title={!canWrite ? translate("Edit") : isSaving ? translate("Saving...") : translate("Save")}
             size="lg"
             disabled={isSaving || isDeleting}
             onPress={() => void handleSave()}

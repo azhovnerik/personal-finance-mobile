@@ -1,46 +1,11 @@
-import { useEffect, useState } from "react";
-import { Stack, usePathname, useRouter, useSegments } from "expo-router";
+import { useState } from "react";
+import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { LocalizationProvider } from "../src/localization/LocalizationProvider";
-import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
+import { FinancialAccessProvider } from "../src/features/subscriptions/FinancialAccessProvider";
 import { useStorePurchaseObserver } from "../src/features/subscriptions/useStorePurchaseObserver";
-import { getToken } from "../src/storage/auth";
 import { DailyReminderObserver } from "../src/features/notifications/DailyReminderObserver";
-
-const isSubscriptionExemptPath = (pathname: string, firstSegment: string | undefined) =>
-  (pathname === "/" && firstSegment !== "(tabs)") ||
-  pathname.startsWith("/login") ||
-  pathname.startsWith("/auth/") ||
-  pathname.startsWith("/onboarding") ||
-  pathname.startsWith("/subscriptions");
-
-const SubscriptionGate = () => {
-  const pathname = usePathname();
-  const segments = useSegments();
-  const router = useRouter();
-  const [hasToken, setHasToken] = useState(false);
-  const exempt = isSubscriptionExemptPath(pathname, segments[0]);
-  const status = useSubscriptionStatus(hasToken && !exempt);
-
-  useEffect(() => {
-    void getToken().then((token) => setHasToken(Boolean(token)));
-  }, [pathname]);
-
-  useEffect(() => {
-    if (
-      hasToken &&
-      !exempt &&
-      !status.isLoadingStatus &&
-      status.statusResponse &&
-      !status.statusResponse.premiumActive
-    ) {
-      router.replace("/subscriptions");
-    }
-  }, [exempt, hasToken, router, status.isLoadingStatus, status.statusResponse]);
-
-  return null;
-};
 
 const StorePurchaseObserver = () => {
   useStorePurchaseObserver();
@@ -49,16 +14,15 @@ const StorePurchaseObserver = () => {
 
 const LocalizedApp = () => {
   return (
-    <>
+    <FinancialAccessProvider>
       <StorePurchaseObserver />
       <DailyReminderObserver />
-      <SubscriptionGate />
       <Stack
         screenOptions={{
           headerShown: false,
         }}
       />
-    </>
+    </FinancialAccessProvider>
   );
 };
 

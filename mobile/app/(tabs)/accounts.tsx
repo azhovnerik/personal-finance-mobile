@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -8,6 +9,7 @@ import { formatCurrency } from "../../src/shared/utils/format";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
 
 export default function AccountsScreen() {
+  const { allowWrite } = useFinancialAccess();
   useLocalization();
   const router = useRouter();
   const baseCurrency = "UAH";
@@ -15,6 +17,7 @@ export default function AccountsScreen() {
   const accountItems = Array.isArray(accounts) ? accounts : [];
 
   const openEdit = (account?: unknown) => {
+    if (!allowWrite()) return;
     const payload = account ? encodeURIComponent(JSON.stringify(account)) : undefined;
     router.push({ pathname: "/accounts/edit", params: payload ? { account: payload } : {} });
   };

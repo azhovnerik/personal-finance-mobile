@@ -34,6 +34,9 @@ export type SubscriptionSourceDto = {
 
 export type SubscriptionStatusResponse = {
   premiumActive: boolean;
+  canReadFinancialData: boolean;
+  canWriteFinancialData: boolean;
+  readOnlyPeriodKey: string;
   status: SubscriptionState | null;
   effectiveTo: string | null;
   autoRenew: boolean;

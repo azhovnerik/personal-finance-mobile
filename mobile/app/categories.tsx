@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../src/localization";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -38,6 +39,7 @@ type CategoriesScreenProps = {
 };
 
 export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProps) {
+  const { allowWrite } = useFinancialAccess();
   const router = useRouter();
   const params = useLocalSearchParams<{ type?: string; path?: string }>();
   const [selectedType, setSelectedType] = useState<CategoryType>("EXPENSES");
@@ -104,6 +106,7 @@ export function CategoriesScreen({ showBackButton = true }: CategoriesScreenProp
   };
 
   const openCreateScreen = () => {
+    if (!allowWrite()) return;
     router.push({
       pathname: "/category-edit",
       params: {

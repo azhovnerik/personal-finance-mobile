@@ -1,3 +1,4 @@
+import { financialFetch as fetch } from "../subscriptions/financialAccessEvents";
 import { localizeSystemMessage, translate } from "../../localization";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";

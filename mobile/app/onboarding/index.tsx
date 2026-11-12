@@ -2,6 +2,8 @@ import { localizeSystemMessage, translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { SUBSCRIPTION_STATUS_QUERY_KEY } from "../../src/features/subscriptions/useSubscriptionStatus";
 import { useRouter } from "expo-router";
 
 import type { CurrencyCode } from "../../src/shared/api/dto";
@@ -98,6 +100,7 @@ const validateExpenseDraft = (expense: ExpenseDraft): { errors: ExpenseFieldErro
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { setLocale } = useLocalization();
   const [session, setSession] = useState<OnboardingSessionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,8 +142,11 @@ export default function OnboardingScreen() {
     }
 
     if (session.completed || session.nextAction === "MAIN_APP") {
-      router.replace("/(tabs)");
-      return;
+      let active = true;
+      void queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_STATUS_QUERY_KEY }).then(() => {
+        if (active) router.replace("/(tabs)");
+      });
+      return () => { active = false; };
     }
 
     if (session.screen === "BASE_CURRENCY" && isBaseCurrencyPayload(session.payload)) {
@@ -155,7 +161,7 @@ export default function OnboardingScreen() {
       setExpenseFieldErrors({});
       setIsExpenseAmountKeypadOpen(false);
     }
-  }, [router, session]);
+  }, [queryClient, router, session]);
 
   const basePayload = isBaseCurrencyPayload(session?.payload) ? session.payload : null;
   const expensePayload = isFirstExpensePayload(session?.payload) ? session.payload : null;

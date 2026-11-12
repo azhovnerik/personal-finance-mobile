@@ -86,13 +86,14 @@ test('dashboard at root stays protected while public login paths are excluded', 
 });
 
 // Exercise the provider's hooks and rendered controls without a native runtime.
-function providerHarness(initialStatus) {
+function providerHarness(initialStatus, pathname = "/") {
   const slots = [];
   let cursor = 0;
   let effects = [];
   let status = initialStatus;
   const tokens = { value: 'token' };
-  const router = { replace() {}, push() {}, canGoBack: () => false };
+  const redirects = [];
+  const router = { replace: path => redirects.push(path), push: path => redirects.push(path), canGoBack: () => false };
   const changed = (old, deps) => !old || deps.some((value, i) => !Object.is(value, old[i]));
   const react = {
     createContext: () => ({ Provider: 'AccessProvider' }),
@@ -129,7 +130,7 @@ function providerHarness(initialStatus) {
       SafeAreaView: 'SafeAreaView', SafeAreaInsetsContext: { Provider: 'InsetsProvider' },
       useSafeAreaInsets: () => ({ top: 44, bottom: 34, left: 0, right: 0 }),
     },
-    'expo-router': { usePathname: () => '/', useSegments: () => ['(tabs)'], useRouter: () => router },
+    'expo-router': { usePathname: () => pathname, useSegments: () => ['(tabs)'], useRouter: () => router },
     '../../shared/ui': { Text: 'Text', Button: 'Button', colors: {}, spacing: {} },
     '../../localization': { translate: key => key },
     './accessRoutes': { isPublicSubscriptionPath: () => false },
@@ -148,6 +149,7 @@ function providerHarness(initialStatus) {
     return dependencies[name];
   } });
   return {
+    redirects,
     setStatus: value => { status = value; },
     render() {
       cursor = 0;
@@ -216,4 +218,20 @@ test('known read-only state locks fields and consumes top inset once', async () 
   assert.equal(elements(tree, 'SafeAreaView')[0].props.edges[0], 'top');
   assert.equal(elements(tree, 'InsetsProvider')[0].props.value.top, 0);
   assert.equal(elements(tree, 'InsetsProvider')[0].props.value.bottom, 34);
+});
+
+
+test('pending initial trial keeps onboarding open without an expiry offer or financial write access', async () => {
+  const app = providerHarness({ statusResponse: { canWriteFinancialData: false, initialTrialPending: true },
+    error: null, isLoadingStatus: false, isRefreshingStatus: false, refresh: async () => {} }, '/onboarding');
+  app.render();
+  await Promise.resolve();
+  const tree = app.render();
+  assert.equal(tree.props.value.canWrite, false);
+  assert.equal(tree.props.value.isReadOnly, false);
+  assert.equal(elements(tree, 'SafeAreaView').length, 0);
+  assert.equal(elements(tree, 'Modal').filter(modal => modal.props.visible).length, 0);
+  assert.equal(app.redirects.length, 0);
+  assert.equal(tree.props.value.allowWrite(), false);
+  assert.deepEqual(app.redirects, ['/onboarding']);
 });

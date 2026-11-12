@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaInsetsContext, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePathname, useRouter, useSegments } from "expo-router";
 import { Text, Button, colors, spacing } from "../../shared/ui";
 import { translate } from "../../localization";
@@ -10,23 +10,28 @@ import { useSubscriptionStatus } from "./useSubscriptionStatus";
 import { subscribeFinancialSubscription } from "./financialAccessEvents";
 import { hasSeenReadOnlyPrompt, markReadOnlyPromptSeen } from "./readOnlyPromptStorage";
 
-const FinancialAccessContext = createContext<{ canWrite: boolean; isLoading: boolean; allowWrite: () => boolean }>({ canWrite: false, isLoading: true, allowWrite: () => false });
+const FinancialAccessContext = createContext<{ canWrite: boolean; isReadOnly: boolean; isLoading: boolean; allowWrite: () => boolean }>({ canWrite: false, isReadOnly: false, isLoading: true, allowWrite: () => false });
 export const useFinancialAccess = () => useContext(FinancialAccessContext);
 
 export const FinancialAccessProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
-  const [hasToken, setHasToken] = useState(false);
+  const [hasToken, setHasToken] = useState<boolean | null>(null);
   const [showOffer, setShowOffer] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
   const returnAfterPurchase = useRef(false);
   const previousPath = useRef(pathname);
   const promptedPeriod = useRef<string | null>(null);
   const publicPath = isPublicSubscriptionPath(pathname, segments[0]);
   const onboardingPath = pathname.startsWith("/onboarding");
-  const status = useSubscriptionStatus(hasToken && !publicPath);
-  const canWrite = hasToken && !publicPath && (status.statusResponse?.canWriteFinancialData ?? status.statusResponse?.premiumActive ?? false);
-  const readOnly = hasToken && !publicPath && !onboardingPath && status.statusResponse !== null && !canWrite;
+  const status = useSubscriptionStatus(hasToken === true && !publicPath);
+  const canWrite = hasToken === true && !publicPath && (status.statusResponse?.canWriteFinancialData ?? status.statusResponse?.premiumActive ?? false);
+  const isReadOnly = hasToken === true && !publicPath && status.statusResponse !== null && !canWrite;
+  const readOnly = isReadOnly && !onboardingPath;
+  const isLoading = hasToken === null || (hasToken && !publicPath && !status.statusResponse && status.isLoadingStatus);
+  const showBanner = readOnly && pathname !== "/subscriptions";
   const period = status.statusResponse?.readOnlyPeriodKey;
 
   useEffect(() => {
@@ -56,7 +61,9 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
 
   useEffect(() => {
     if (pathname === "/subscriptions" && previousPath.current !== pathname && readOnly) returnAfterPurchase.current = true;
+    if (previousPath.current === "/subscriptions" && pathname !== "/subscriptions") returnAfterPurchase.current = false;
     previousPath.current = pathname;
+    if (status.statusResponse) setShowStatus(false);
     if (canWrite) {
       setShowOffer(false);
       if (returnAfterPurchase.current && pathname === "/subscriptions") {
@@ -65,19 +72,24 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
         else router.replace("/(tabs)");
       }
     }
-    if (!hasToken || publicPath) setShowOffer(false);
-  }, [canWrite, readOnly, pathname, router, hasToken, publicPath]);
+    if (!hasToken || publicPath) {
+      setShowOffer(false);
+      setShowStatus(false);
+      returnAfterPurchase.current = false;
+    }
+  }, [canWrite, readOnly, pathname, router, hasToken, publicPath, status.statusResponse]);
 
   const allowWrite = useCallback(() => {
     if (canWrite) return true;
     if (!hasToken || publicPath) return false;
     if (!status.statusResponse) {
-      void status.refresh();
+      setShowStatus(true);
+      if (!status.isRefreshingStatus) void status.refresh();
       return false;
     }
     setShowOffer(true);
     return false;
-  }, [canWrite, hasToken, publicPath, status.statusResponse, status.refresh]);
+  }, [canWrite, hasToken, publicPath, status.statusResponse, status.refresh, status.isRefreshingStatus]);
   const dismiss = () => {
     if (period) void markReadOnlyPromptSeen(period);
     setShowOffer(false);
@@ -89,9 +101,9 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
   };
 
   return (
-    <FinancialAccessContext.Provider value={{ canWrite, isLoading: !status.statusResponse, allowWrite }}>
+    <FinancialAccessContext.Provider value={{ canWrite, isReadOnly, isLoading, allowWrite }}>
       <View style={styles.container}>
-        {readOnly && pathname !== "/subscriptions" ? (
+        {showBanner ? (
           <SafeAreaView edges={["top"]} style={styles.banner}>
             <Pressable onPress={subscribe} style={styles.bannerContent}>
               <Text variant="caption">{translate("Your data is available in read-only mode.")}</Text>
@@ -99,8 +111,21 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
             </Pressable>
           </SafeAreaView>
         ) : null}
-        {children}
+        <SafeAreaInsetsContext.Provider value={showBanner ? { ...insets, top: 0 } : insets}>
+          {children}
+        </SafeAreaInsetsContext.Provider>
       </View>
+      <Modal visible={showStatus} transparent animationType="fade" onRequestClose={() => setShowStatus(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.offer}>
+            <Text>{status.error
+              ? translate("Unable to load subscription status.")
+              : translate("Loading subscription status...")}</Text>
+            <Button title={translate("Retry")} disabled={status.isRefreshingStatus} onPress={() => void status.refresh()} />
+            <Button title={translate("Continue viewing")} variant="outline" onPress={() => setShowStatus(false)} />
+          </View>
+        </View>
+      </Modal>
       <Modal visible={showOffer} transparent animationType="fade" onRequestClose={dismiss}>
         <View style={styles.overlay}>
           <View style={styles.offer}>

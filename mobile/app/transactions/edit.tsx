@@ -111,7 +111,7 @@ const toBackendDateTime = (date: string, previousDateTime?: string | null) => {
 };
 
 export default function EditTransactionScreen() {
-  const { canWrite, allowWrite } = useFinancialAccess();
+  const { canWrite, isReadOnly, allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ transaction?: string }>();
@@ -291,7 +291,7 @@ export default function EditTransactionScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="always"
         >
-          <View pointerEvents={canWrite ? "auto" : "none"}>
+          <View pointerEvents={isReadOnly ? "none" : "auto"}>
           <View style={styles.amountRow}>
             <View style={styles.currencyBadge}>
               <Text style={styles.currencyText}>{initialTransaction?.currency ?? mockUser.baseCurrency ?? "UAH"}</Text>

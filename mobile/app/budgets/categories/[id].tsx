@@ -19,7 +19,7 @@ const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
 };
 
 export default function BudgetCategoryDetailsScreen() {
-  const { canWrite, allowWrite } = useFinancialAccess();
+  const { isReadOnly, allowWrite } = useFinancialAccess();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; budgetId?: string }>();
   const categoryId = typeof params.id === "string" ? params.id : undefined;
@@ -184,7 +184,7 @@ export default function BudgetCategoryDetailsScreen() {
 
             <Card style={styles.formCard}>
               <Text variant="subtitle">{translate("Editing")}</Text>
-              <View pointerEvents={canWrite ? "auto" : "none"} style={styles.field}>
+              <View pointerEvents={isReadOnly ? "none" : "auto"} style={styles.field}>
                 <Text variant="caption">
                   {translate("Planned amount ({{currency}})", { currency: categoryCurrency })}
                 </Text>
@@ -200,7 +200,7 @@ export default function BudgetCategoryDetailsScreen() {
                 </Pressable>
               </View>
 
-              <View pointerEvents={canWrite ? "auto" : "none"} style={styles.field}>
+              <View pointerEvents={isReadOnly ? "none" : "auto"} style={styles.field}>
                 <Text variant="caption">{translate("Comment")}</Text>
                 <Input
                   value={commentInput}

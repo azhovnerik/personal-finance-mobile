@@ -50,7 +50,7 @@ const toFormState = (category: CategoryReactDto): CategoryFormState => ({
 });
 
 export default function CategoryEditScreen() {
-  const { canWrite, allowWrite } = useFinancialAccess();
+  const { isReadOnly, allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -271,7 +271,7 @@ export default function CategoryEditScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View pointerEvents={canWrite ? "auto" : "none"}>
+          <View pointerEvents={isReadOnly ? "none" : "auto"}>
           <Card style={styles.metaCard}>
             <Text variant="caption">
               {translate("Type: {{type}}", {

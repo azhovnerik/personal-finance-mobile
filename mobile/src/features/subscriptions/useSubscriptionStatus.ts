@@ -21,19 +21,21 @@ export const useSubscriptionStatus = (enabled = true) => {
     refetchOnMount: "always",
   });
 
+  const { refetch } = query;
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
       if (enabled && state === "active") {
-        void query.refetch();
+        void refetch();
       }
     });
 
     return () => subscription.remove();
-  }, [enabled, query]);
+  }, [enabled, refetch]);
 
   const refresh = useCallback(async () => {
-    await query.refetch();
-  }, [query]);
+    await refetch();
+  }, [refetch]);
 
   return {
     statusResponse: query.data ?? null,

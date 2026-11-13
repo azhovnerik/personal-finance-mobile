@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../../src/localization";
 import { Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -20,6 +21,7 @@ const renderCategoryName = (item: BudgetCategoryDetailedDto) => {
 };
 
 export default function AddBudgetCategoryScreen() {
+  const { allowWrite } = useFinancialAccess();
   const router = useRouter();
   const params = useLocalSearchParams<{ budgetId?: string; categoryId?: string; type?: string }>();
   const budgetId = typeof params.budgetId === "string" ? params.budgetId : undefined;
@@ -98,6 +100,7 @@ export default function AddBudgetCategoryScreen() {
   const factAmount = resolveAmount(factOnlyCategory?.factAmountInBase, factOnlyCategory?.factAmount);
 
   const onSave = async () => {
+    if (!allowWrite()) return;
     if (!budgetId || !type || !selectedCategoryId) {
       return;
     }

@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -40,6 +41,7 @@ const INITIAL_FORM: AccountFormState = {
 };
 
 export default function EditAccountScreen() {
+  const { allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ account?: string }>();
@@ -71,6 +73,7 @@ export default function EditAccountScreen() {
   }, [params.account]);
 
   const handleSave = async () => {
+    if (!allowWrite()) return;
     setIsAmountKeypadOpen(false);
     setLocalError(null);
     const name = form.name.trim();

@@ -312,18 +312,7 @@ export default function SubscriptionsScreen() {
             <Text variant="title">{translate("Subscription")}</Text>
             <Text variant="caption">{translate("Manage premium access")}</Text>
           </View>
-          {!status.isLoadingStatus && !premiumActive ? (
-            <Button
-              title={translate("Logout")}
-              variant="outline"
-              tone="danger"
-              size="sm"
-              disabled={isBusy}
-              onPress={() => void handleLogout()}
-            />
-          ) : (
-            <Button title={translate("Back")} variant="outline" tone="secondary" size="sm" onPress={handleBack} />
-          )}
+          <Button title={translate("Back")} variant="outline" tone="secondary" size="sm" onPress={handleBack} />
         </View>
 
         <Card style={styles.card}>

@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../src/features/subscriptions/FinancialAccessProvider";
 import { localizeSystemMessage, translate } from "../src/localization";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -49,6 +50,7 @@ const toFormState = (category: CategoryReactDto): CategoryFormState => ({
 });
 
 export default function CategoryEditScreen() {
+  const { isReadOnly, allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -149,6 +151,7 @@ export default function CategoryEditScreen() {
   };
 
   const handleSave = async () => {
+    if (!allowWrite()) return;
     setLocalError(null);
     if (mode === "edit" && !editingCategory) {
       setLocalError(translate("Unable to open the category for editing."));
@@ -189,6 +192,7 @@ export default function CategoryEditScreen() {
   };
 
   const handleDelete = () => {
+    if (!allowWrite()) return;
     if (!editingCategory) {
       return;
     }
@@ -267,6 +271,7 @@ export default function CategoryEditScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View pointerEvents={isReadOnly ? "none" : "auto"}>
           <Card style={styles.metaCard}>
             <Text variant="caption">
               {translate("Type: {{type}}", {
@@ -354,6 +359,7 @@ export default function CategoryEditScreen() {
               disabled={isSaving}
             />
           ) : null}
+          </View>
         </ScrollView>
 
         <View style={styles.footer}>

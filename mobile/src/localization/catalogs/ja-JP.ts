@@ -427,6 +427,10 @@ const jaJP = {
   "Unable to open the Privacy Policy.": "プライバシーポリシーを開けません。",
   "Terms of Use (EULA)": "利用規約（EULA）",
   "Unable to open the Terms of Use.": "利用規約を開けません。",
+  "Your data is available in read-only mode.": "データは閲覧専用モードで利用できます。",
+  "Continue tracking your finances": "家計の記録を続けましょう",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "金融データの追加・編集・削除にはサブスクリプションが必要です。保存済みデータの閲覧とエクスポートはウェブサイトで引き続き利用できます。",
+  "Continue viewing": "閲覧を続ける",
 } as const;
 
 export default jaJP;

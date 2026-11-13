@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { useLocalization } from "../../src/localization/LocalizationProvider";
 import { useEffect, useState } from "react";
@@ -11,14 +12,16 @@ import { CreateTransactionModal } from "../../src/features/transactions/create/C
 export default function TabsLayout() {
   useLocalization();
   const router = useRouter();
+  const { allowWrite, isLoading: isLoadingAccess } = useFinancialAccess();
   const { openCreate } = useGlobalSearchParams<{ openCreate?: string }>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   useEffect(() => {
-    if (openCreate === "1") {
-      setIsCreateOpen(true);
+    if (openCreate === "1" && !isLoadingAccess) {
+      if (allowWrite()) setIsCreateOpen(true);
+      router.setParams({ openCreate: undefined });
     }
-  }, [openCreate]);
+  }, [openCreate, isLoadingAccess, allowWrite, router]);
 
   const closeCreate = () => {
     setIsCreateOpen(false);
@@ -83,7 +86,7 @@ export default function TabsLayout() {
           />
           <Tabs.Screen name="add" options={{ href: null }} />
         </Tabs>
-        <Pressable style={styles.addButtonWrapper} onPress={() => setIsCreateOpen(true)}>
+        <Pressable style={styles.addButtonWrapper} onPress={() => { if (allowWrite()) setIsCreateOpen(true); }}>
           <View style={styles.addButton}>
             <Text style={styles.addButtonLabel}>+</Text>
           </View>

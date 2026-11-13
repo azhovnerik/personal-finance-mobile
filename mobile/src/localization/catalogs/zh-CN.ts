@@ -427,6 +427,10 @@ const zhCN = {
   "Unable to open the Privacy Policy.": "无法打开隐私政策。",
   "Terms of Use (EULA)": "使用条款 (EULA)",
   "Unable to open the Terms of Use.": "无法打开使用条款。",
+  "Your data is available in read-only mode.": "您的数据可在只读模式下查看。",
+  "Continue tracking your finances": "继续记录您的财务",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "订阅后即可添加、编辑或删除财务数据。您仍可在网站上查看和导出已保存的数据。",
+  "Continue viewing": "继续查看",
 } as const;
 
 export default zhCN;

@@ -1,3 +1,4 @@
+import { useFinancialAccess } from "../../src/features/subscriptions/FinancialAccessProvider";
 import { translate } from "../../src/localization";
 import { Keyboard, Pressable, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -10,6 +11,7 @@ import { useAccounts } from "../../src/features/accounts/useAccounts";
 import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
 
 export default function AccountBalanceScreen() {
+  const { allowWrite } = useFinancialAccess();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ account?: string }>();
@@ -34,6 +36,7 @@ export default function AccountBalanceScreen() {
   }, [params.account]);
 
   const handleSave = async () => {
+    if (!allowWrite()) return;
     setIsAmountKeypadOpen(false);
     if (!account?.id) {
       setLocalError(translate("Missing account ID."));

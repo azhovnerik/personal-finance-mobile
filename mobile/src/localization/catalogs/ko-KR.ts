@@ -427,6 +427,10 @@ const koKR = {
   "Unable to open the Privacy Policy.": "개인정보 처리방침을 열 수 없습니다.",
   "Terms of Use (EULA)": "이용 약관(EULA)",
   "Unable to open the Terms of Use.": "이용 약관을 열 수 없습니다.",
+  "Your data is available in read-only mode.": "저장된 데이터를 읽기 전용 모드로 볼 수 있습니다.",
+  "Continue tracking your finances": "계속해서 재정을 관리하세요",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "금융 데이터를 추가, 수정 또는 삭제하려면 구독하세요. 저장된 데이터는 웹사이트에서 계속 조회하고 내보낼 수 있습니다.",
+  "Continue viewing": "계속 조회하기",
 } as const;
 
 export default koKR;

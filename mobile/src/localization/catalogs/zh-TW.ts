@@ -427,6 +427,10 @@ const zhTW = {
   "Unable to open the Privacy Policy.": "無法開啟隱私權政策。",
   "Terms of Use (EULA)": "使用條款（EULA）",
   "Unable to open the Terms of Use.": "無法開啟使用條款。",
+  "Your data is available in read-only mode.": "您的資料可在唯讀模式下檢視。",
+  "Continue tracking your finances": "繼續記錄您的財務",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "訂閱後即可新增、編輯或刪除財務資料。您仍可在網站上檢視及匯出已儲存的資料。",
+  "Continue viewing": "繼續檢視",
 } as const;
 
 export default zhTW;

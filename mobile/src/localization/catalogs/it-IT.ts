@@ -427,6 +427,10 @@ const it = {
   "Unable to open the Privacy Policy.": "Impossibile aprire l’Informativa sulla privacy.",
   "Terms of Use (EULA)": "Termini di utilizzo (EULA)",
   "Unable to open the Terms of Use.": "Impossibile aprire i Termini di utilizzo.",
+  "Your data is available in read-only mode.": "I tuoi dati sono disponibili in sola lettura.",
+  "Continue tracking your finances": "Continua a monitorare le tue finanze",
+  "Subscribe to add, edit or delete financial data. You can still view and export your saved data on the website.": "Abbonati per aggiungere, modificare o eliminare dati finanziari. Puoi continuare a visualizzare ed esportare i dati salvati sul sito web.",
+  "Continue viewing": "Continua a visualizzare",
 } as const;
 
 export default it;

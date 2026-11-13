@@ -28,7 +28,8 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
   const onboardingPath = pathname.startsWith("/onboarding");
   const status = useSubscriptionStatus(hasToken === true && !publicPath);
   const canWrite = hasToken === true && !publicPath && (status.statusResponse?.canWriteFinancialData ?? status.statusResponse?.premiumActive ?? false);
-  const isReadOnly = hasToken === true && !publicPath && status.statusResponse !== null && !canWrite;
+  const initialTrialPending = status.statusResponse?.initialTrialPending === true;
+  const isReadOnly = !initialTrialPending && hasToken === true && !publicPath && status.statusResponse !== null && !canWrite;
   const readOnly = isReadOnly && !onboardingPath;
   const isLoading = hasToken === null || (hasToken && !publicPath && !status.statusResponse && status.isLoadingStatus);
   const showBanner = readOnly && pathname !== "/subscriptions";
@@ -41,8 +42,8 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
   }, [pathname]);
 
   useEffect(() => {
-    if (hasToken && onboardingPath && status.statusResponse && !canWrite) router.replace("/(tabs)");
-  }, [hasToken, onboardingPath, status.statusResponse, canWrite, router]);
+    if (hasToken && onboardingPath && status.statusResponse && !canWrite && !initialTrialPending) router.replace("/(tabs)");
+  }, [hasToken, onboardingPath, status.statusResponse, canWrite, initialTrialPending, router]);
 
   useEffect(() => subscribeFinancialSubscription(() => {
     if (!hasToken || publicPath) return;
@@ -82,6 +83,10 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
   const allowWrite = useCallback(() => {
     if (canWrite) return true;
     if (!hasToken || publicPath) return false;
+    if (initialTrialPending) {
+      router.push("/onboarding");
+      return false;
+    }
     if (!status.statusResponse) {
       setShowStatus(true);
       if (!status.isRefreshingStatus) void status.refresh();
@@ -89,7 +94,7 @@ export const FinancialAccessProvider = ({ children }: { children: ReactNode }) =
     }
     setShowOffer(true);
     return false;
-  }, [canWrite, hasToken, publicPath, status.statusResponse, status.refresh, status.isRefreshingStatus]);
+  }, [canWrite, hasToken, publicPath, status.statusResponse, status.refresh, status.isRefreshingStatus, initialTrialPending, router]);
   const dismiss = () => {
     if (period) void markReadOnlyPromptSeen(period);
     setShowOffer(false);

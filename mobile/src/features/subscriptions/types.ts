@@ -36,6 +36,7 @@ export type SubscriptionStatusResponse = {
   premiumActive: boolean;
   canReadFinancialData: boolean;
   canWriteFinancialData: boolean;
+  initialTrialPending: boolean;
   readOnlyPeriodKey: string;
   status: SubscriptionState | null;
   effectiveTo: string | null;

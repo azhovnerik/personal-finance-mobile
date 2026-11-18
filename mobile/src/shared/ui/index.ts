@@ -6,6 +6,7 @@ export { Card } from "./Card";
 export { Input } from "./Input";
 export { Chip } from "./Chip";
 export { Select } from "./Select";
+export { CurrencySelect } from "./CurrencySelect";
 export { DateInput } from "./DateInput";
 export { AppIcon } from "./AppIcon";
 export { colors, radius, spacing } from "./theme";

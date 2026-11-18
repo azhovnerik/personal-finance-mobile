@@ -21,7 +21,7 @@ import type {
 } from "../../src/features/auth/types";
 import { CategoryPickerField } from "../../src/features/categories/components/CategoryPickerField";
 import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
-import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Card, Input, ScreenContainer, Select, CurrencySelect, Text, colors, spacing } from "../../src/shared/ui";
 
 type ExpenseDraft = {
   date: string;
@@ -170,10 +170,6 @@ export default function OnboardingScreen() {
     () => (basePayload?.supportedLanguages ?? []).map((item) => ({ value: item.code, label: item.label })),
     [basePayload?.supportedLanguages],
   );
-  const currencyOptions = useMemo(
-    () => (basePayload?.supportedCurrencies ?? []).map((item) => ({ value: item, label: item })),
-    [basePayload?.supportedCurrencies],
-  );
   const accountOptions = useMemo(
     () => (expensePayload?.accountOptions ?? []).map((item) => ({ value: item.id, label: item.name })),
     [expensePayload?.accountOptions],
@@ -321,9 +317,10 @@ export default function OnboardingScreen() {
               onChange={(value) => setSelectedLanguage(value)}
               placeholder={translate("Interface language")}
             />
-            <Select
+            <CurrencySelect
               value={selectedCurrency}
-              options={currencyOptions}
+              currencies={basePayload?.supportedCurrencies ?? []}
+              baseCurrency={basePayload?.baseCurrency || session.user.baseCurrency}
               onChange={(value) => setSelectedCurrency(value as CurrencyCode)}
               placeholder={translate("Select a currency")}
             />

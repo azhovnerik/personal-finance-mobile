@@ -1,8 +1,9 @@
 import { translate } from "../../localization";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useMemo, useState } from "react";
 
 import { Text } from "./Text";
+import { Input } from "./Input";
 import { colors, radius, spacing } from "./theme";
 
 export type SelectOption = {
@@ -14,11 +15,17 @@ type SelectProps = {
   placeholder?: string;
   value?: string | null;
   options: SelectOption[];
+  searchable?: boolean;
   onChange: (value: string) => void;
 };
 
-export function Select({ placeholder, value, options, onChange }: SelectProps) {
+export function Select({ placeholder, value, options, onChange, searchable = false }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const query = search.trim().toLowerCase();
+  const visibleOptions = searchable && query
+    ? options.filter((option) => `${option.value} ${option.label}`.toLowerCase().includes(query))
+    : options;
 
   const selectedLabel = useMemo(() => {
     const match = options.find((option) => option.value === value);
@@ -29,7 +36,13 @@ export function Select({ placeholder, value, options, onChange }: SelectProps) {
 
   return (
     <>
-      <Pressable style={styles.input} onPress={() => setIsOpen(true)}>
+      <Pressable
+        style={styles.input}
+        onPress={() => {
+          setSearch("");
+          setIsOpen(true);
+        }}
+      >
         <Text style={selectedLabel ? styles.valueText : styles.placeholderText}>{displayLabel}</Text>
       </Pressable>
 
@@ -37,8 +50,22 @@ export function Select({ placeholder, value, options, onChange }: SelectProps) {
         <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)}>
           <Pressable style={styles.modalCard}>
             <Text variant="subtitle">{translate("Select")}</Text>
-            <ScrollView style={styles.optionList} contentContainerStyle={styles.optionContent}>
-              {options.map((option) => (
+            {searchable ? (
+              <Input
+                placeholder={translate("Search")}
+                accessibilityLabel={translate("Search")}
+                value={search}
+                onChangeText={setSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            ) : null}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              style={styles.optionList}
+              contentContainerStyle={styles.optionContent}
+            >
+              {visibleOptions.map((option) => (
                 <Pressable
                   key={option.value}
                   style={styles.optionRow}

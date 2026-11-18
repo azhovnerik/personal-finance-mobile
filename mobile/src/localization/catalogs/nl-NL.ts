@@ -1,4 +1,5 @@
 const nlNL = {
+  "Search": "Zoeken",
   "Daily reminder": "Dagelijkse herinnering",
   "Remind me at 21:00 local time.": "Herinner mij om 21:00 lokale tijd.",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "Schakel deze herinnering hier uit of beheer meldingen in de iOS-instellingen.",

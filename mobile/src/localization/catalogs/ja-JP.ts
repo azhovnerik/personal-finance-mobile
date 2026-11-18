@@ -1,4 +1,5 @@
 const jaJP = {
+  "Search": "検索",
   "Daily reminder": "毎日のリマインダー",
   "Remind me at 21:00 local time.": "現地時間の21:00に通知します。",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "ここでリマインダーをオフにするか、iOSの設定で通知を管理できます。",

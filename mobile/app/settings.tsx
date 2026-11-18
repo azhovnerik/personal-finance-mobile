@@ -12,7 +12,7 @@ import { useChangePassword } from "../src/features/settings/useChangePassword";
 import { useResendPendingEmail } from "../src/features/settings/useResendPendingEmail";
 import { useSettingsProfile } from "../src/features/settings/useSettingsProfile";
 import { useUpdateSettingsProfile } from "../src/features/settings/useUpdateSettingsProfile";
-import { Button, Card, Input, ScreenContainer, Select, Text, colors, spacing } from "../src/shared/ui";
+import { Button, Card, Input, ScreenContainer, Select, CurrencySelect, Text, colors, spacing } from "../src/shared/ui";
 import { SettingsApiError } from "../src/features/settings/types";
 import { useSubscriptionStatus } from "../src/features/subscriptions/useSubscriptionStatus";
 
@@ -96,24 +96,11 @@ export default function SettingsScreen() {
     }));
   }, [profileResponse?.options.supportedLanguages]);
 
-  const currencyOptions = useMemo(() => {
-    return (profileResponse?.options.supportedCurrencies ?? []).map((code) => ({
-      label: code,
-      value: code,
-    }));
-  }, [profileResponse?.options.supportedCurrencies]);
-
   const profile = profileResponse?.profile;
   const canChangeBaseCurrency = profileResponse?.capabilities.canChangeBaseCurrency ?? true;
-  const effectiveCurrencyOptions = useMemo(() => {
-    if (canChangeBaseCurrency) {
-      return currencyOptions;
-    }
-    if (baseCurrency) {
-      return [{ label: baseCurrency, value: baseCurrency }];
-    }
-    return [];
-  }, [baseCurrency, canChangeBaseCurrency, currencyOptions]);
+  const availableCurrencies = canChangeBaseCurrency
+    ? profileResponse?.options.supportedCurrencies ?? []
+    : baseCurrency ? [baseCurrency] : [];
 
   const handleSaveProfile = useCallback(async () => {
     setSuccessMessage(null);
@@ -319,10 +306,11 @@ export default function SettingsScreen() {
           />
           {fieldErrors.language ? <Text style={styles.errorText}>{fieldErrors.language}</Text> : null}
 
-          <Select
+          <CurrencySelect
             placeholder={translate("Base currency")}
             value={baseCurrency}
-            options={effectiveCurrencyOptions}
+            currencies={availableCurrencies}
+            baseCurrency={profileResponse?.profile.baseCurrency}
             onChange={(value) => {
               setBaseCurrency(value as CurrencyCode);
               setIsProfileDirty(true);

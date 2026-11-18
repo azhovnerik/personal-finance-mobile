@@ -1,4 +1,5 @@
 const de = {
+  "Search": "Suchen",
   "Daily reminder": "Tägliche Erinnerung",
   "Remind me at 21:00 local time.": "Um 21:00 Uhr Ortszeit erinnern.",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "Deaktivieren Sie diese Erinnerung hier oder verwalten Sie Mitteilungen in den iOS-Einstellungen.",

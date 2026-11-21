@@ -102,6 +102,10 @@ components:
         createdAt:
           type: string
           format: date-time
+    CurrencyCode:
+      type: string
+      enum: [USD, EUR, GBP, UAH, PLN, CHF, CAD, AUD, SEK, NOK, JPY, CZK, DKK, HUF, RON, MDL, TRY, CNY, HKD, TWD, SGD, KRW, INR, THB, IDR, MYR, PHP, BRL, MXN, ILS, AED, SAR, ZAR, NZD, KZT, GEL]
+      example: USD
     Transaction:
       type: object
       required:
@@ -122,8 +126,7 @@ components:
           type: number
           format: float
         currency:
-          type: string
-          example: USD
+          $ref: "#/components/schemas/CurrencyCode"
         category:
           type: string
         description:

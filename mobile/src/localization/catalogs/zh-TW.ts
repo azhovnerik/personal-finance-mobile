@@ -1,4 +1,5 @@
 const zhTW = {
+  "Search": "搜尋",
   "Daily reminder": "每日提醒",
   "Remind me at 21:00 local time.": "在當地時間21:00提醒我。",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "在此關閉提醒，或在iOS設定中管理通知。",

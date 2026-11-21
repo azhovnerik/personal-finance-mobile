@@ -1,4 +1,5 @@
 const ptBR = {
+  "Search": "Pesquisar",
   "Daily reminder": "Lembrete diário",
   "Remind me at 21:00 local time.": "Lembrar às 21:00, horário local.",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "Desative este lembrete aqui ou gerencie as notificações nos ajustes do iOS.",

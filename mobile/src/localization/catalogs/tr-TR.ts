@@ -1,4 +1,5 @@
 const trTR = {
+  "Search": "Ara",
   "Daily reminder": "Günlük hatırlatıcı",
   "Remind me at 21:00 local time.": "Yerel saatle 21:00’de hatırlat.",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "Bu hatırlatıcıyı buradan kapatabilir veya iOS Ayarları’ndan bildirimleri yönetebilirsiniz.",

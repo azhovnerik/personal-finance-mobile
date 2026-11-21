@@ -1,4 +1,5 @@
 const ua = {
+  "Search": "Пошук",
   "Daily reminder": "Щоденне нагадування",
   "Remind me at 21:00 local time.": "Нагадувати о 21:00 за місцевим часом.",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "Вимкніть це нагадування тут або керуйте сповіщеннями в налаштуваннях iOS.",

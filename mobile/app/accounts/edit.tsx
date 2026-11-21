@@ -5,15 +5,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, Input, ScreenContainer, Select, Text, colors, spacing } from "../../src/shared/ui";
+import { Button, Input, ScreenContainer, Select, CurrencySelect, Text, colors, spacing } from "../../src/shared/ui";
 import { AccountDto, AccountType, CurrencyCode } from "../../src/shared/api/dto";
 import { useAccounts } from "../../src/features/accounts/useAccounts";
+import { useSettingsProfile } from "../../src/features/settings/useSettingsProfile";
 import { AmountKeypad } from "../../src/features/transactions/components/AmountKeypad";
 
 type AccountFormState = {
   name: string;
   type: AccountType;
-  currency: CurrencyCode;
+  currency: CurrencyCode | null;
   balance: string;
   description: string;
 };
@@ -25,17 +26,10 @@ const ACCOUNT_TYPE_OPTIONS = [
   { value: "DEBT", label: "Debt" },
 ];
 
-const CURRENCY_OPTIONS = [
-  { value: "UAH", label: "UAH" },
-  { value: "USD", label: "USD" },
-  { value: "EUR", label: "EUR" },
-  { value: "PLN", label: "PLN" },
-];
-
 const INITIAL_FORM: AccountFormState = {
   name: "",
   type: "CARD",
-  currency: "UAH",
+  currency: null,
   balance: "0",
   description: "",
 };
@@ -46,6 +40,13 @@ export default function EditAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ account?: string }>();
   const { isSaving, actionError, createAccount, updateAccount } = useAccounts();
+  const {
+    profileResponse,
+    isLoading: isLoadingCurrencies,
+    error: currenciesError,
+    refresh: refreshCurrencies,
+  } = useSettingsProfile();
+  const currencies = profileResponse?.options.supportedCurrencies ?? [];
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<AccountFormState>(INITIAL_FORM);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -72,6 +73,13 @@ export default function EditAccountScreen() {
     }
   }, [params.account]);
 
+  useEffect(() => {
+    const baseCurrency = profileResponse?.profile.baseCurrency;
+    if (!params.account && baseCurrency) {
+      setForm((prev) => prev.currency ? prev : { ...prev, currency: baseCurrency });
+    }
+  }, [params.account, profileResponse?.profile.baseCurrency]);
+
   const handleSave = async () => {
     if (!allowWrite()) return;
     setIsAmountKeypadOpen(false);
@@ -79,6 +87,10 @@ export default function EditAccountScreen() {
     const name = form.name.trim();
     if (!name) {
       setLocalError(translate("Enter an account name."));
+      return;
+    }
+    if (!form.currency) {
+      setLocalError(translate("Select a currency"));
       return;
     }
     const balance = Number.parseFloat(form.balance.replace(",", "."));
@@ -131,12 +143,23 @@ export default function EditAccountScreen() {
             options={ACCOUNT_TYPE_OPTIONS.map((option) => ({ ...option, label: translate(option.label) }))}
             onChange={(value) => setForm((prev) => ({ ...prev, type: value as AccountType }))}
           />
-          <Select
-            placeholder={translate("Currency")}
-            value={form.currency}
-            options={CURRENCY_OPTIONS}
-            onChange={(value) => setForm((prev) => ({ ...prev, currency: value as CurrencyCode }))}
-          />
+          {isLoadingCurrencies ? (
+            <Text>{translate("Loading...")}</Text>
+          ) : (
+            <CurrencySelect
+              placeholder={translate("Currency")}
+              value={form.currency}
+              currencies={currencies.length ? currencies : form.currency ? [form.currency] : []}
+              baseCurrency={profileResponse?.profile.baseCurrency}
+              onChange={(value) => setForm((prev) => ({ ...prev, currency: value as CurrencyCode }))}
+            />
+          )}
+          {currenciesError ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text style={styles.errorText}>{currenciesError}</Text>
+              <Button title={translate("Retry")} onPress={() => void refreshCurrencies()} />
+            </View>
+          ) : null}
           <Input
             placeholder={translate("Description")}
             value={form.description}
@@ -161,7 +184,7 @@ export default function EditAccountScreen() {
           {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
           <Button
             title={isSaving ? translate("Saving...") : editingId ? translate("Update") : translate("Create")}
-            disabled={isSaving}
+            disabled={isSaving || !form.currency}
             onPress={handleSave}
           />
         </View>

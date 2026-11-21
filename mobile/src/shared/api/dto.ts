@@ -16,7 +16,31 @@ export type CurrencyCode =
   | "SEK"
   | "NOK"
   | "JPY"
-  | "CZK";
+  | "CZK"
+  | "DKK"
+  | "HUF"
+  | "RON"
+  | "MDL"
+  | "TRY"
+  | "CNY"
+  | "HKD"
+  | "TWD"
+  | "SGD"
+  | "KRW"
+  | "INR"
+  | "THB"
+  | "IDR"
+  | "MYR"
+  | "PHP"
+  | "BRL"
+  | "MXN"
+  | "ILS"
+  | "AED"
+  | "SAR"
+  | "ZAR"
+  | "NZD"
+  | "KZT"
+  | "GEL";
 
 export interface UserApp {
   id?: UUID;

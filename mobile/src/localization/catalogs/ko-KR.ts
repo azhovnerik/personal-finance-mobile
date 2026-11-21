@@ -1,4 +1,5 @@
 const koKR = {
+  "Search": "검색",
   "Daily reminder": "매일 알림",
   "Remind me at 21:00 local time.": "현지 시간 오후 9시에 알려드립니다.",
   "Turn this reminder off here, or manage notifications in iOS Settings.": "여기에서 알림을 끄거나 iOS 설정에서 알림을 관리하세요.",
